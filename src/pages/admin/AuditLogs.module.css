@@ -1,0 +1,224 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-5);
+  padding: var(--spacing-6);
+}
+
+.panel {
+  padding: var(--spacing-5);
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+}
+
+.filters {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  flex-wrap: wrap;
+}
+
+.filters select {
+  height: var(--height-input-md);
+  padding: 0 var(--spacing-3);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-surface);
+  color: var(--color-text-primary);
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--spacing-4);
+}
+
+.sectionHeader h2 {
+  margin: 0 0 4px;
+}
+
+.sectionHeader p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-body-sm);
+}
+
+.count {
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-body-sm);
+}
+
+.tableWrap {
+  width: 100%;
+  overflow-x: auto;
+  margin-top: var(--spacing-4);
+}
+
+.tableWrap table {
+  width: 100%;
+  min-width: 1250px;
+  border-collapse: collapse;
+}
+
+.tableWrap th,
+.tableWrap td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--color-border-subtle);
+  font-size: var(--font-size-body-sm);
+  white-space: nowrap;
+}
+
+.tableWrap th {
+  color: var(--color-text-tertiary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.tableWrap tbody tr:hover {
+  background: var(--color-bg-subtle);
+}
+
+.mono {
+  font-family: var(--font-family-mono);
+}
+
+.live {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--color-primary-dark);
+  font-size: var(--font-size-body-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.live > span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--color-primary);
+}
+
+.serviceTabs {
+  display: flex;
+  overflow-x: auto;
+  margin-top: var(--spacing-4);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.serviceTabs button {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 11px 14px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.serviceTabs button:hover {
+  color: var(--color-text-primary);
+}
+
+.serviceTabs .activeService {
+  border-bottom-color: var(--color-primary);
+  color: var(--color-primary-dark);
+  font-weight: var(--font-weight-semibold);
+}
+
+.serviceDetail {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-6);
+  margin-top: var(--spacing-5);
+}
+
+.serviceTitle {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  min-width: 240px;
+}
+
+.serviceTitle h3 {
+  margin: 0 0 7px;
+}
+
+.serviceIcon {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-md);
+  background: var(--color-primary-light);
+  color: var(--color-primary-dark);
+}
+
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  flex: 1;
+  gap: var(--spacing-3);
+}
+
+.metrics > div {
+  padding: var(--spacing-4);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-subtle);
+}
+
+.metrics span,
+.metrics strong {
+  display: block;
+}
+
+.metrics span {
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-caption);
+}
+
+.metrics strong {
+  margin-top: 6px;
+  font-size: var(--font-size-body-lg);
+}
+
+.monitoringFooter {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: var(--spacing-4);
+  padding-top: var(--spacing-4);
+  border-top: 1px solid var(--color-border-subtle);
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-caption);
+}
+
+@media (max-width: 1000px) {
+  .serviceDetail {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .metrics {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 650px) {
+  .page {
+    padding: var(--spacing-4);
+  }
+
+  .sectionHeader {
+    flex-direction: column;
+  }
+
+  .metrics {
+    grid-template-columns: 1fr;
+  }
+}
