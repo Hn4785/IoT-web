@@ -1,7 +1,7 @@
 # Integration Core Tasks
 
 - [x] Task 1: Reproducible tooling boundary
-- [ ] Task 2: Validated runtime configuration (in progress)
+- [x] Task 2: Validated runtime configuration
 - [ ] Task 3: Public health contract
 - [ ] Task 4: Safe errors, request IDs, and HTTP hardening
 - [ ] Task 5: Weather query and response contracts
