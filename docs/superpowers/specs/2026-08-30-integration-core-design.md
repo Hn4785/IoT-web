@@ -1,7 +1,7 @@
 # Design Spec: `integration-core`
 
 Date: 2026-08-30
-Status: Awaiting user review
+Status: Approved by user
 Initiative: IoT Soil Monitoring Backend
 
 ## Objective
