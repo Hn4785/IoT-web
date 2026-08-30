@@ -168,14 +168,14 @@ History supports `station`, `type`, `fields`, `begin`, `end`, `limit`, `order`,
 Assets are the Weather API key, future application credentials, station-scoped
 observation data, trustworthy health output, and diagnostic logs.
 
-| Trust boundary | Abuse case | Required mitigation |
-|---|---|---|
-| Environment to process | Missing, malformed, or logged secret | Fail-fast validation and redacted logging |
-| Browser to API | Oversized or malicious query | Schema validation, size limits, stable errors |
-| API to Weather API | SSRF, hangs, redirects, secret leakage | Fixed origin, production HTTPS, timeout, redirect rejection, redaction |
-| Weather API to API | Malformed or hostile JSON | Defensive parsing and complete schema validation |
-| Exception to HTTP | Stack trace or implementation disclosure | Global safe mapper with request ID |
-| Caller to health | Flooding | Bounded global rate limit before public deployment |
+| Trust boundary         | Abuse case                               | Required mitigation                                                    |
+| ---------------------- | ---------------------------------------- | ---------------------------------------------------------------------- |
+| Environment to process | Missing, malformed, or logged secret     | Fail-fast validation and redacted logging                              |
+| Browser to API         | Oversized or malicious query             | Schema validation, size limits, stable errors                          |
+| API to Weather API     | SSRF, hangs, redirects, secret leakage   | Fixed origin, production HTTPS, timeout, redirect rejection, redaction |
+| Weather API to API     | Malformed or hostile JSON                | Defensive parsing and complete schema validation                       |
+| Exception to HTTP      | Stack trace or implementation disclosure | Global safe mapper with request ID                                     |
+| Caller to health       | Flooding                                 | Bounded global rate limit before public deployment                     |
 
 STRIDE priorities here are tampering, information disclosure, denial of service,
 and spoofed upstream data. User spoofing and privilege escalation are addressed

@@ -21,13 +21,14 @@
 - Weather requests use a validated configured origin, production HTTPS, explicit timeout, and redirect rejection.
 - Public station endpoints remain out of scope until `identity-access` exists.
 - Every production behavior is preceded by a test that is observed failing for the expected reason.
-- Dependency installation permits only the reviewed `esbuild@0.28.2` postinstall needed by Vitest tooling; no blanket script approval.
+- Dependency releases must be at least 24 hours old. The optional Scarf telemetry postinstall is explicitly denied; no blanket script approval is allowed.
 
 ## File map
 
 ```text
 package.json                         dependency and command boundary
 pnpm-lock.yaml                       authoritative dependency resolution
+pnpm-workspace.yaml                  release-age and build-script policy
 .npmrc                              fail-closed install policy
 .gitignore                          secret/build exclusions
 .env.example                        non-secret runtime variable names
@@ -59,6 +60,7 @@ test/integration/*.spec.ts            consumer-visible HTTP behavior
 ### Task 1: Reproducible Tooling Boundary
 
 **Files:**
+
 - Create: `package.json`
 - Create: `.npmrc`
 - Create: `.gitignore`
@@ -72,6 +74,7 @@ test/integration/*.spec.ts            consumer-visible HTTP behavior
 - Generate: `pnpm-lock.yaml`
 
 **Interfaces:**
+
 - Consumes: Node.js `>=24.19.0 <25`, pnpm `11.19.0`.
 - Produces: deterministic `pnpm build`, `pnpm typecheck`, `pnpm lint`, `pnpm test`, and `pnpm test:coverage` commands.
 
@@ -106,7 +109,7 @@ test/integration/*.spec.ts            consumer-visible HTTP behavior
     "fastify": "5.12.1",
     "reflect-metadata": "0.2.2",
     "rxjs": "7.8.2",
-    "zod": "4.5.4"
+    "zod": "4.4.3"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
@@ -120,9 +123,17 @@ test/integration/*.spec.ts            consumer-visible HTTP behavior
     "typescript": "6.0.3",
     "typescript-eslint": "8.68.0",
     "vitest": "4.1.11"
-  },
-  "pnpm": { "onlyBuiltDependencies": ["esbuild"] }
+  }
 }
+```
+
+`pnpm-workspace.yaml`:
+
+```yaml
+allowBuilds:
+  '@scarf/scarf': false
+minimumReleaseAge: 1440
+minimumReleaseAgeStrict: true
 ```
 
 `.npmrc`:
@@ -254,12 +265,12 @@ pnpm test test/tooling.spec.ts
 pnpm typecheck
 ```
 
-Expected: only the explicitly reviewed `esbuild` build is permitted; the tooling test passes and typecheck is clean.
+Expected: Scarf telemetry is explicitly denied, no unexpected build remains pending, the tooling test passes, and typecheck is clean.
 
 - [ ] **Step 5: Commit the tooling boundary**
 
 ```powershell
-git add package.json pnpm-lock.yaml .npmrc .gitignore .env.example tsconfig.json tsconfig.build.json eslint.config.mjs prettier.config.mjs vitest.config.ts test/tooling.spec.ts
+git add package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc .gitignore .env.example tsconfig.json tsconfig.build.json eslint.config.mjs prettier.config.mjs vitest.config.ts test/tooling.spec.ts
 git commit -m "chore: establish reproducible backend tooling"
 ```
 
@@ -268,10 +279,12 @@ git commit -m "chore: establish reproducible backend tooling"
 ### Task 2: Validated Runtime Configuration
 
 **Files:**
+
 - Create: `src/config/runtime-config.spec.ts`
 - Create: `src/config/runtime-config.ts`
 
 **Interfaces:**
+
 - Consumes: a `NodeJS.ProcessEnv`-compatible record.
 - Produces: `parseRuntimeConfig(env): RuntimeConfig`; `RuntimeConfig` has normalized `nodeEnv`, `port`, `logLevel`, `weatherApiBaseUrl`, `weatherApiKey`, and `weatherApiTimeoutMs`.
 
@@ -285,14 +298,20 @@ describe('parseRuntimeConfig', () => {
   it('normalizes a complete development configuration', () => {
     expect(
       parseRuntimeConfig({
-        NODE_ENV: 'development', PORT: '3100', LOG_LEVEL: 'info',
+        NODE_ENV: 'development',
+        PORT: '3100',
+        LOG_LEVEL: 'info',
         WEATHER_API_BASE_URL: 'https://weather.example/api/v1/',
-        WEATHER_API_KEY: 'local-test-key', WEATHER_API_TIMEOUT_MS: '2500',
+        WEATHER_API_KEY: 'local-test-key',
+        WEATHER_API_TIMEOUT_MS: '2500',
       }),
     ).toEqual({
-      nodeEnv: 'development', port: 3100, logLevel: 'info',
+      nodeEnv: 'development',
+      port: 3100,
+      logLevel: 'info',
       weatherApiBaseUrl: 'https://weather.example/api/v1',
-      weatherApiKey: 'local-test-key', weatherApiTimeoutMs: 2500,
+      weatherApiKey: 'local-test-key',
+      weatherApiTimeoutMs: 2500,
     });
   });
 });
@@ -352,28 +371,43 @@ Add this table-driven test, run it RED, then add the refinement below:
 
 ```ts
 it.each([
-  ['production HTTP', { NODE_ENV: 'production', WEATHER_API_BASE_URL: 'http://weather.example/api/v1' }],
+  [
+    'production HTTP',
+    { NODE_ENV: 'production', WEATHER_API_BASE_URL: 'http://weather.example/api/v1' },
+  ],
   ['blank key', { WEATHER_API_KEY: '   ' }],
   ['zero port', { PORT: '0' }],
   ['oversized timeout', { WEATHER_API_TIMEOUT_MS: '30001' }],
 ])('rejects %s', (_name, override) => {
   const valid = {
-    NODE_ENV: 'development', PORT: '3000', LOG_LEVEL: 'info',
+    NODE_ENV: 'development',
+    PORT: '3000',
+    LOG_LEVEL: 'info',
     WEATHER_API_BASE_URL: 'https://weather.example/api/v1',
-    WEATHER_API_KEY: 'test-key', WEATHER_API_TIMEOUT_MS: '5000',
+    WEATHER_API_KEY: 'test-key',
+    WEATHER_API_TIMEOUT_MS: '5000',
   };
   expect(() => parseRuntimeConfig({ ...valid, ...override })).toThrow();
 });
 ```
 
 ```ts
-const runtimeConfigSchema = z.object({
-  // fields from Step 3; WEATHER_API_KEY uses z.string().trim().min(1)
-}).superRefine((value, context) => {
-  if (value.NODE_ENV === 'production' && new URL(value.WEATHER_API_BASE_URL).protocol !== 'https:') {
-    context.addIssue({ code: 'custom', path: ['WEATHER_API_BASE_URL'], message: 'HTTPS is required in production' });
-  }
-});
+const runtimeConfigSchema = z
+  .object({
+    // fields from Step 3; WEATHER_API_KEY uses z.string().trim().min(1)
+  })
+  .superRefine((value, context) => {
+    if (
+      value.NODE_ENV === 'production' &&
+      new URL(value.WEATHER_API_BASE_URL).protocol !== 'https:'
+    ) {
+      context.addIssue({
+        code: 'custom',
+        path: ['WEATHER_API_BASE_URL'],
+        message: 'HTTPS is required in production',
+      });
+    }
+  });
 ```
 
 Run: `pnpm test src/config/runtime-config.spec.ts`
@@ -392,6 +426,7 @@ git commit -m "feat: validate runtime configuration"
 ### Task 3: Public Health Contract
 
 **Files:**
+
 - Create: `src/health/health.controller.ts`
 - Create: `src/health/health.module.ts`
 - Create: `src/app/app.module.ts`
@@ -401,6 +436,7 @@ git commit -m "feat: validate runtime configuration"
 - Create: `test/integration/health.spec.ts`
 
 **Interfaces:**
+
 - Consumes: `RuntimeConfig` and package version `0.1.0`.
 - Produces: `createApp(config): Promise<NestFastifyApplication>` and `GET /api/v1/health`.
 
@@ -413,13 +449,18 @@ import { createApp } from '../../src/app/create-app.js';
 
 describe('GET /api/v1/health', () => {
   let app: NestFastifyApplication | undefined;
-  afterEach(async () => { await app?.close(); });
+  afterEach(async () => {
+    await app?.close();
+  });
 
   it('returns the stable liveness envelope without secret values', async () => {
     app = await createApp({
-      nodeEnv: 'test', port: 3000, logLevel: 'error',
+      nodeEnv: 'test',
+      port: 3000,
+      logLevel: 'error',
       weatherApiBaseUrl: 'http://127.0.0.1:9999/api/v1',
-      weatherApiKey: 'must-not-appear', weatherApiTimeoutMs: 500,
+      weatherApiKey: 'must-not-appear',
+      weatherApiTimeoutMs: 500,
     });
     const response = await app.inject({ method: 'GET', url: '/api/v1/health' });
     expect(response.statusCode).toBe(200);
@@ -469,7 +510,11 @@ export const RUNTIME_CONFIG = Symbol('RUNTIME_CONFIG');
 @Module({})
 export class RuntimeConfigModule {
   static register(config: RuntimeConfig): DynamicModule {
-    return { module: RuntimeConfigModule, providers: [{ provide: RUNTIME_CONFIG, useValue: config }], exports: [RUNTIME_CONFIG] };
+    return {
+      module: RuntimeConfigModule,
+      providers: [{ provide: RUNTIME_CONFIG, useValue: config }],
+      exports: [RUNTIME_CONFIG],
+    };
   }
 }
 ```
@@ -488,7 +533,9 @@ export class AppModule {
 // src/app/create-app.ts
 export async function createApp(config: RuntimeConfig): Promise<NestFastifyApplication> {
   const app = await NestFactory.create<NestFastifyApplication>(
-    AppModule.register(config), new FastifyAdapter(), { logger: false },
+    AppModule.register(config),
+    new FastifyAdapter(),
+    { logger: false },
   );
   app.setGlobalPrefix('api/v1');
   await app.init();
@@ -528,6 +575,7 @@ git commit -m "feat: expose public health contract"
 ### Task 4: Safe Errors, Request IDs, and HTTP Hardening
 
 **Files:**
+
 - Create: `src/common/errors/app-error.ts`
 - Create: `src/common/errors/http-error.filter.ts`
 - Create: `src/common/http/request-id.ts`
@@ -536,6 +584,7 @@ git commit -m "feat: expose public health contract"
 - Create: `test/integration/security-headers.spec.ts`
 
 **Interfaces:**
+
 - Consumes: thrown `AppError` or unknown exception and optional inbound `x-request-id`.
 - Produces: `AppError(code, statusCode, safeMessage, cause?)`; safe JSON errors; `x-request-id` response header; Helmet headers; bounded global rate limit.
 
@@ -544,7 +593,9 @@ git commit -m "feat: expose public health contract"
 ```ts
 it('normalizes an unknown route and returns its request id', async () => {
   const response = await app.inject({
-    method: 'GET', url: '/api/v1/missing', headers: { 'x-request-id': 'req-test-123' },
+    method: 'GET',
+    url: '/api/v1/missing',
+    headers: { 'x-request-id': 'req-test-123' },
   });
   expect(response.statusCode).toBe(404);
   expect(response.headers['x-request-id']).toBe('req-test-123');
@@ -566,8 +617,12 @@ Expected: FAIL because Nest's default 404 body is returned.
 
 ```ts
 export type AppErrorCode =
-  | 'VALIDATION_ERROR' | 'NOT_FOUND' | 'RATE_LIMITED'
-  | 'UPSTREAM_TIMEOUT' | 'UPSTREAM_UNAVAILABLE' | 'INTERNAL_ERROR';
+  | 'VALIDATION_ERROR'
+  | 'NOT_FOUND'
+  | 'RATE_LIMITED'
+  | 'UPSTREAM_TIMEOUT'
+  | 'UPSTREAM_UNAVAILABLE'
+  | 'INTERNAL_ERROR';
 
 export class AppError extends Error {
   constructor(
@@ -575,7 +630,9 @@ export class AppError extends Error {
     readonly statusCode: number,
     readonly safeMessage: string,
     options?: ErrorOptions,
-  ) { super(safeMessage, options); }
+  ) {
+    super(safeMessage, options);
+  }
 }
 ```
 
@@ -598,26 +655,34 @@ export function selectRequestId(value: string | string[] | undefined): string {
 const adapter = new FastifyAdapter({
   genReqId: (request) => selectRequestId(request.headers['x-request-id']),
 });
-const app = await NestFactory.create<NestFastifyApplication>(AppModule.register(config), adapter, { logger: false });
-app.getHttpAdapter().getInstance().addHook('onSend', (request, reply, payload, done) => {
-  void reply.header('x-request-id', request.id);
-  done(null, payload);
+const app = await NestFactory.create<NestFastifyApplication>(AppModule.register(config), adapter, {
+  logger: false,
 });
+app
+  .getHttpAdapter()
+  .getInstance()
+  .addHook('onSend', (request, reply, payload, done) => {
+    void reply.header('x-request-id', request.id);
+    done(null, payload);
+  });
 ```
 
 ```ts
 // filter mapping body; use FastifyRequest/FastifyReply from fastify
-const status = exception instanceof AppError
-  ? exception.statusCode
-  : exception instanceof HttpException
-    ? exception.getStatus()
-    : 500;
-const code = exception instanceof AppError
-  ? exception.code
-  : status === 404 ? 'NOT_FOUND' : 'INTERNAL_ERROR';
-const message = exception instanceof AppError
-  ? exception.safeMessage
-  : status === 404 ? 'Resource not found' : 'An unexpected error occurred';
+const status =
+  exception instanceof AppError
+    ? exception.statusCode
+    : exception instanceof HttpException
+      ? exception.getStatus()
+      : 500;
+const code =
+  exception instanceof AppError ? exception.code : status === 404 ? 'NOT_FOUND' : 'INTERNAL_ERROR';
+const message =
+  exception instanceof AppError
+    ? exception.safeMessage
+    : status === 404
+      ? 'Resource not found'
+      : 'An unexpected error occurred';
 reply.status(status).send({ success: false, error: { code, message }, requestId: request.id });
 ```
 
@@ -667,10 +732,12 @@ git commit -m "feat: normalize and harden HTTP responses"
 ### Task 5: Weather Query and Response Contracts
 
 **Files:**
+
 - Create: `src/integrations/weather/contracts.spec.ts`
 - Create: `src/integrations/weather/contracts.ts`
 
 **Interfaces:**
+
 - Consumes: unknown latest/history queries and unknown Weather API JSON.
 - Produces: `parseLatestWeatherQuery`, `parseWeatherHistoryQuery`, `parseWeatherHealthResponse`, `parseWeatherStationsResponse`, `parseWeatherLatestResponse`, `parseWeatherHistoryResponse` plus inferred readonly types.
 
@@ -678,20 +745,25 @@ git commit -m "feat: normalize and harden HTTP responses"
 
 ```ts
 it('accepts and normalizes a latest soil query', () => {
-  expect(parseLatestWeatherQuery({
-    station: ['CENTER', 'NODE01'], type: ['soil'], fields: ['moisture', 'ph'],
-  })).toEqual({
-    station: ['CENTER', 'NODE01'], type: ['soil'], fields: ['moisture', 'ph'],
+  expect(
+    parseLatestWeatherQuery({
+      station: ['CENTER', 'NODE01'],
+      type: ['soil'],
+      fields: ['moisture', 'ph'],
+    }),
+  ).toEqual({
+    station: ['CENTER', 'NODE01'],
+    type: ['soil'],
+    fields: ['moisture', 'ph'],
   });
 });
 
-it.each([
-  [{ type: ['unknown'] }],
-  [{ station: [''] }],
-  [{ fields: ['temperature', '<script>'] }],
-])('rejects an unsafe latest query %#', (input) => {
-  expect(() => parseLatestWeatherQuery(input)).toThrow();
-});
+it.each([[{ type: ['unknown'] }], [{ station: [''] }], [{ fields: ['temperature', '<script>'] }]])(
+  'rejects an unsafe latest query %#',
+  (input) => {
+    expect(() => parseLatestWeatherQuery(input)).toThrow();
+  },
+);
 ```
 
 - [ ] **Step 2: Verify RED, then implement minimum latest schema**
@@ -707,7 +779,10 @@ const stationCode = z.string().regex(/^[A-Za-z0-9_-]{1,64}$/);
 const fieldName = z.string().regex(/^[A-Za-z][A-Za-z0-9_]{0,63}$/);
 const measurement = z.enum(['weather', 'water', 'soil']);
 const uniqueList = <T extends z.ZodType<string>>(item: T) =>
-  z.array(item).max(100).refine((items) => new Set(items).size === items.length, 'duplicates are not allowed');
+  z
+    .array(item)
+    .max(100)
+    .refine((items) => new Set(items).size === items.length, 'duplicates are not allowed');
 const latestWeatherQuerySchema = z.strictObject({
   station: uniqueList(stationCode).optional(),
   type: uniqueList(measurement).optional(),
@@ -720,10 +795,16 @@ export const parseLatestWeatherQuery = (input: unknown) => latestWeatherQuerySch
 
 ```ts
 it('rejects history when begin is after end', () => {
-  expect(() => parseWeatherHistoryQuery({
-    begin: '2026-08-31T00:00:00Z', end: '2026-08-30T00:00:00Z',
-    limit: 100, order: 'asc', interval: 'raw', aggregate: 'mean',
-  })).toThrow();
+  expect(() =>
+    parseWeatherHistoryQuery({
+      begin: '2026-08-31T00:00:00Z',
+      end: '2026-08-30T00:00:00Z',
+      limit: 100,
+      order: 'asc',
+      interval: 'raw',
+      aggregate: 'mean',
+    }),
+  ).toThrow();
 });
 ```
 
@@ -732,18 +813,26 @@ Add literal passing coverage for limits `1` and `5000`; failing coverage for
 properties. Observe failure, then apply this strict refined schema:
 
 ```ts
-const utcTimestamp = z.string().refine((value) => value.endsWith('Z') && !Number.isNaN(Date.parse(value)), 'UTC timestamp required');
-const weatherHistoryQuerySchema = latestWeatherQuerySchema.extend({
-  begin: utcTimestamp.optional(),
-  end: utcTimestamp.optional(),
-  limit: z.number().int().min(1).max(5000).default(100),
-  order: z.enum(['asc', 'desc']).default('desc'),
-  interval: z.enum(['raw', '1m', '5m', '10m', '30m', '1h', '6h', '1d', '1w']).default('raw'),
-  aggregate: z.enum(['mean', 'min', 'max', 'first', 'last', 'sum', 'count']).default('mean'),
-}).strict().refine(
-  (value) => !value.begin || !value.end || Date.parse(value.begin) <= Date.parse(value.end),
-  { path: ['begin'], message: 'begin must not be after end' },
-);
+const utcTimestamp = z
+  .string()
+  .refine(
+    (value) => value.endsWith('Z') && !Number.isNaN(Date.parse(value)),
+    'UTC timestamp required',
+  );
+const weatherHistoryQuerySchema = latestWeatherQuerySchema
+  .extend({
+    begin: utcTimestamp.optional(),
+    end: utcTimestamp.optional(),
+    limit: z.number().int().min(1).max(5000).default(100),
+    order: z.enum(['asc', 'desc']).default('desc'),
+    interval: z.enum(['raw', '1m', '5m', '10m', '30m', '1h', '6h', '1d', '1w']).default('raw'),
+    aggregate: z.enum(['mean', 'min', 'max', 'first', 'last', 'sum', 'count']).default('mean'),
+  })
+  .strict()
+  .refine(
+    (value) => !value.begin || !value.end || Date.parse(value.begin) <= Date.parse(value.end),
+    { path: ['begin'], message: 'begin must not be after end' },
+  );
 export const parseWeatherHistoryQuery = (input: unknown) => weatherHistoryQuerySchema.parse(input);
 ```
 
@@ -753,22 +842,39 @@ export const parseWeatherHistoryQuery = (input: unknown) => weatherHistoryQueryS
 it('preserves a valid sparse raw history record', () => {
   const parsed = parseWeatherHistoryResponse({
     success: true,
-    data: [{ station: 'NODE01', history: { soil: [
-      { ts: 1784276746000, time: '2026-07-17T08:25:46Z', light: 28.958 },
-    ] } }],
+    data: [
+      {
+        station: 'NODE01',
+        history: { soil: [{ ts: 1784276746000, time: '2026-07-17T08:25:46Z', light: 28.958 }] },
+      },
+    ],
   });
   expect(parsed.data[0]?.history.soil?.[0]).toEqual({
-    ts: 1784276746000, time: '2026-07-17T08:25:46Z', light: 28.958,
+    ts: 1784276746000,
+    time: '2026-07-17T08:25:46Z',
+    light: 28.958,
   });
 });
 
 it('rejects a successful latest envelope with a string timestamp', () => {
-  expect(() => parseWeatherLatestResponse({
-    success: true,
-    data: [{ station: 'NODE01', latest: { soil: {
-      ts: '1784882119021', time: '2026-07-24T08:35:19Z', _fieldTs: {}, moisture: 43,
-    } } }],
-  })).toThrow();
+  expect(() =>
+    parseWeatherLatestResponse({
+      success: true,
+      data: [
+        {
+          station: 'NODE01',
+          latest: {
+            soil: {
+              ts: '1784882119021',
+              time: '2026-07-24T08:35:19Z',
+              _fieldTs: {},
+              moisture: 43,
+            },
+          },
+        },
+      ],
+    }),
+  ).toThrow();
 });
 ```
 
@@ -779,21 +885,40 @@ each endpoint calls the corresponding `.parse(input)` and returns its inferred t
 const timestampMs = z.number().int().nonnegative();
 const dynamicValue = z.union([z.number(), z.string(), z.boolean(), z.null()]);
 const fieldTimestamps = z.record(fieldName, timestampMs);
-const latestMeasurement = z.object({
-  ts: timestampMs, time: utcTimestamp, _fieldTs: fieldTimestamps,
-}).catchall(dynamicValue);
+const latestMeasurement = z
+  .object({
+    ts: timestampMs,
+    time: utcTimestamp,
+    _fieldTs: fieldTimestamps,
+  })
+  .catchall(dynamicValue);
 const historyRecord = z.object({ ts: timestampMs, time: utcTimestamp }).catchall(dynamicValue);
 const latestByType = z.partialRecord(measurement, latestMeasurement);
 const historyByType = z.partialRecord(measurement, z.array(historyRecord));
-const successEnvelope = <T extends z.ZodType>(data: T) => z.object({ success: z.literal(true), data }).strict();
-const healthResponseSchema = successEnvelope(z.object({
-  service: z.string(), version: z.string(), status: z.string(), environment: z.string(),
-  ts: timestampMs, time: utcTimestamp,
-}).strict());
+const successEnvelope = <T extends z.ZodType>(data: T) =>
+  z.object({ success: z.literal(true), data }).strict();
+const healthResponseSchema = successEnvelope(
+  z
+    .object({
+      service: z.string(),
+      version: z.string(),
+      status: z.string(),
+      environment: z.string(),
+      ts: timestampMs,
+      time: utcTimestamp,
+    })
+    .strict(),
+);
 const stationsResponseSchema = successEnvelope(z.array(stationCode));
-const latestResponseSchema = successEnvelope(z.array(z.object({ station: stationCode, latest: latestByType }).strict()));
-const historyResponseSchema = successEnvelope(z.array(z.object({ station: stationCode, history: historyByType }).strict()));
-const failureResponseSchema = z.object({ success: z.literal(false), message: z.string().min(1) }).strict();
+const latestResponseSchema = successEnvelope(
+  z.array(z.object({ station: stationCode, latest: latestByType }).strict()),
+);
+const historyResponseSchema = successEnvelope(
+  z.array(z.object({ station: stationCode, history: historyByType }).strict()),
+);
+const failureResponseSchema = z
+  .object({ success: z.literal(false), message: z.string().min(1) })
+  .strict();
 
 export type LatestWeatherQuery = z.infer<typeof latestWeatherQuerySchema>;
 export type WeatherHistoryQuery = z.infer<typeof weatherHistoryQuerySchema>;
@@ -830,10 +955,12 @@ raw fields would fail at least one named test.
 ### Task 6: Controlled Upstream Test Server
 
 **Files:**
+
 - Create: `test/helpers/upstream-server.ts`
 - Create: `test/helpers/upstream-server.spec.ts`
 
 **Interfaces:**
+
 - Consumes: a sequence of explicit `UpstreamResponse` fixtures.
 - Produces: `startUpstreamServer(responses): Promise<UpstreamServer>` with `baseUrl`, captured real requests, and `close()` owned by the test helper.
 
@@ -848,9 +975,15 @@ it('serves a literal fixture and captures the actual request', async () => {
     });
     expect(await response.json()).toEqual({ success: true, data: [] });
     expect(server.requests).toEqual([
-      { method: 'GET', path: '/api/v1/stations', headers: expect.objectContaining({ 'x-api-key': 'test-key' }) },
+      {
+        method: 'GET',
+        path: '/api/v1/stations',
+        headers: expect.objectContaining({ 'x-api-key': 'test-key' }),
+      },
     ]);
-  } finally { await server.close(); }
+  } finally {
+    await server.close();
+  }
 });
 ```
 
@@ -904,12 +1037,14 @@ git commit -m "test: add controlled Weather API server"
 ### Task 7: Private Weather Client Success Paths
 
 **Files:**
+
 - Create: `src/integrations/weather/weather-client.ts`
 - Create: `src/integrations/weather/weather-client.service.spec.ts`
 - Create: `src/integrations/weather/weather-client.service.ts`
 - Create: `src/integrations/weather/weather.module.ts`
 
 **Interfaces:**
+
 - Consumes: `RuntimeConfig`, validated query inputs, controlled upstream HTTP.
 - Produces: `WeatherClient` with `getHealth`, `listStations`, `getLatest`, and `getHistory`.
 
@@ -918,7 +1053,20 @@ git commit -m "test: add controlled Weather API server"
 ```ts
 it('uses the API key only for protected upstream endpoints', async () => {
   const upstream = await startUpstreamServer([
-    { status: 200, body: { success: true, data: { service: 'weather-api', version: '1.0.0', status: 'healthy', environment: 'test', ts: 1784271234567, time: '2026-07-21T10:30:15.123Z' } } },
+    {
+      status: 200,
+      body: {
+        success: true,
+        data: {
+          service: 'weather-api',
+          version: '1.0.0',
+          status: 'healthy',
+          environment: 'test',
+          ts: 1784271234567,
+          time: '2026-07-21T10:30:15.123Z',
+        },
+      },
+    },
     { status: 200, body: { success: true, data: ['CENTER', 'NODE01'] } },
   ]);
   const client = makeClient(upstream.baseUrl, 'server-only-key');
@@ -927,7 +1075,9 @@ it('uses the API key only for protected upstream endpoints', async () => {
     expect(await client.listStations()).toEqual(['CENTER', 'NODE01']);
     expect(upstream.requests[0]?.headers['x-api-key']).toBeUndefined();
     expect(upstream.requests[1]?.headers['x-api-key']).toBe('server-only-key');
-  } finally { await upstream.close(); }
+  } finally {
+    await upstream.close();
+  }
 });
 ```
 
@@ -997,11 +1147,13 @@ git commit -m "feat: add validated Weather API client"
 ### Task 8: Weather Client Failure Controls
 
 **Files:**
+
 - Modify: `src/integrations/weather/weather-client.service.spec.ts`
 - Modify: `src/integrations/weather/weather-client.service.ts`
 - Modify: `src/common/errors/app-error.ts`
 
 **Interfaces:**
+
 - Consumes: upstream timeout, redirect, malformed body, invalid schema, and non-2xx responses.
 - Produces: safe `AppError` values using `UPSTREAM_TIMEOUT`, `UPSTREAM_UNAVAILABLE`, or `RATE_LIMITED`; no upstream body or API key in public fields.
 
@@ -1015,10 +1167,13 @@ it('maps an upstream timeout without exposing the API key', async () => {
   const client = makeClient(upstream.baseUrl, 'never-leak-this-key', 25);
   try {
     await expect(client.listStations()).rejects.toMatchObject({
-      code: 'UPSTREAM_TIMEOUT', statusCode: 504,
+      code: 'UPSTREAM_TIMEOUT',
+      statusCode: 504,
       safeMessage: 'Weather service timed out',
     });
-  } finally { await upstream.close(); }
+  } finally {
+    await upstream.close();
+  }
 });
 ```
 
@@ -1056,15 +1211,16 @@ to return `{ code, statusCode, safeMessage }`; it must omit `stack` and `cause`.
 
 Use literal upstream failure envelopes and assert:
 
-| Upstream status | Internal code | HTTP status |
-|---|---|---|
-| 401 or 403 | `UPSTREAM_UNAVAILABLE` | 502 |
-| 429 | `RATE_LIMITED` | 503 |
-| 500 | `UPSTREAM_UNAVAILABLE` | 502 |
+| Upstream status | Internal code          | HTTP status |
+| --------------- | ---------------------- | ----------- |
+| 401 or 403      | `UPSTREAM_UNAVAILABLE` | 502         |
+| 429             | `RATE_LIMITED`         | 503         |
+| 500             | `UPSTREAM_UNAVAILABLE` | 502         |
 
 ```ts
 function mapUpstreamStatus(status: number): AppError {
-  if (status === 429) return new AppError('RATE_LIMITED', 503, 'Weather service rate limit exceeded');
+  if (status === 429)
+    return new AppError('RATE_LIMITED', 503, 'Weather service rate limit exceeded');
   return new AppError('UPSTREAM_UNAVAILABLE', 502, 'Weather service is unavailable');
 }
 ```
@@ -1088,6 +1244,7 @@ git commit -m "feat: bound and sanitize Weather API failures"
 ### Task 9: OpenAPI Contract and Operator Documentation
 
 **Files:**
+
 - Modify: `src/health/health.controller.ts`
 - Modify: `src/app/create-app.ts`
 - Create: `test/integration/openapi.spec.ts`
@@ -1095,6 +1252,7 @@ git commit -m "feat: bound and sanitize Weather API failures"
 - Create: `docs/security/integration-core-threat-model.md`
 
 **Interfaces:**
+
 - Consumes: approved health and error contracts.
 - Produces: `/docs-json` in non-production, documented local commands, environment guidance, and a maintained threat-model checklist.
 
@@ -1153,10 +1311,12 @@ git commit -m "docs: publish integration-core contract"
 ### Task 10: Integration-Core Completion Gate
 
 **Files:**
+
 - Modify only if verification finds an evidenced defect: files owned by Tasks 1-9.
 - Modify: `docs/superpowers/specs/2026-08-30-integration-core-design.md` status after every gate passes.
 
 **Interfaces:**
+
 - Consumes: complete integration-core implementation.
 - Produces: reproducible verification evidence and an approved module ready for `identity-access` specification.
 

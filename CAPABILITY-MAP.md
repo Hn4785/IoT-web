@@ -5,13 +5,13 @@
 Build the Role 3 backend as a secure boundary between the Role 2 web application,
 the existing Weather API, and the future PostgreSQL business database.
 
-| Module id | Responsibility | Depends on |
-|---|---|---|
-| `integration-core` | Runtime configuration, public health check, Weather API client, validation, timeouts, and normalized errors | - |
-| `identity-access` | Login, token lifecycle, RBAC, and farm/plot/station authorization | `integration-core` |
-| `station-data` | Authorized stations, latest data, history, metadata enrichment, and frontend DTOs | `integration-core`, `identity-access` |
-| `alert-config` | Alert rules, alert lifecycle, escalation, and IoT configuration | `station-data` |
-| `operations` | Audit log, monitoring, deployment, backup, and operational documentation | All preceding modules |
+| Module id          | Responsibility                                                                                              | Depends on                            |
+| ------------------ | ----------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| `integration-core` | Runtime configuration, public health check, Weather API client, validation, timeouts, and normalized errors | -                                     |
+| `identity-access`  | Login, token lifecycle, RBAC, and farm/plot/station authorization                                           | `integration-core`                    |
+| `station-data`     | Authorized stations, latest data, history, metadata enrichment, and frontend DTOs                           | `integration-core`, `identity-access` |
+| `alert-config`     | Alert rules, alert lifecycle, escalation, and IoT configuration                                             | `station-data`                        |
+| `operations`       | Audit log, monitoring, deployment, backup, and operational documentation                                    | All preceding modules                 |
 
 Build order:
 
