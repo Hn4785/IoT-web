@@ -1,0 +1,81 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1-5);
+  font-family: var(--font-family-base);
+  font-weight: var(--font-weight-semibold);
+  border-radius: var(--radius-pill);
+  white-space: nowrap;
+}
+
+/* ---------- Sizes ---------- */
+
+.sm {
+  height: 20px;
+  padding: 0 var(--spacing-2);
+  font-size: var(--font-size-tiny);
+}
+
+.md {
+  height: 24px;
+  padding: 0 var(--spacing-2-5);
+  font-size: var(--font-size-caption);
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+}
+
+/* ---------- Color variants ---------- */
+/* background = variant-light token, text/dot = variant-dark/base token */
+
+.success {
+  background-color: var(--color-primary-light);
+  color: var(--color-primary-dark);
+}
+.success .dot {
+  background-color: var(--color-primary);
+}
+
+.neutral {
+  background-color: var(--color-bg-subtle);
+  color: var(--color-text-tertiary);
+}
+.neutral .dot {
+  background-color: var(--color-text-tertiary);
+}
+
+.warning {
+  background-color: var(--color-warning-light);
+  color: var(--color-warning-dark);
+}
+.warning .dot {
+  background-color: var(--color-warning);
+}
+
+.danger {
+  background-color: var(--color-error-light);
+  color: var(--color-error-dark);
+}
+.danger .dot {
+  background-color: var(--color-error);
+}
+
+.info {
+  background-color: var(--color-info-light);
+  color: var(--color-info-dark);
+}
+.info .dot {
+  background-color: var(--color-info);
+}
+
+.purple {
+  background-color: var(--color-purple-light);
+  color: var(--color-purple);
+}
+.purple .dot {
+  background-color: var(--color-purple);
+}

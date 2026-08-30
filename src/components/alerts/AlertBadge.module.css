@@ -1,0 +1,67 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  border: 1px solid transparent;
+  border-radius: var(--radius-full);
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.sm {
+  min-height: 24px;
+  padding: 0 8px;
+  font-size: 11px;
+}
+
+.md {
+  min-height: 28px;
+  padding: 0 10px;
+  font-size: 12px;
+}
+
+.icon {
+  flex-shrink: 0;
+}
+
+/* Severity */
+
+.warning {
+  color: var(--color-warning);
+  background: var(--color-warning-subtle);
+  border-color: var(--color-warning-subtle);
+}
+
+.critical {
+  color: var(--color-danger);
+  background: var(--color-danger-subtle);
+  border-color: var(--color-danger-subtle);
+}
+
+/* Status */
+
+.open {
+  color: var(--color-danger);
+  background: var(--color-danger-subtle);
+  border-color: var(--color-danger-subtle);
+}
+
+.acknowledged {
+  color: var(--color-warning);
+  background: var(--color-warning-subtle);
+  border-color: var(--color-warning-subtle);
+}
+
+.assigned {
+  color: var(--color-primary);
+  background: var(--color-primary-subtle);
+  border-color: var(--color-primary-subtle);
+}
+
+.resolved {
+  color: var(--color-success);
+  background: var(--color-success-subtle);
+  border-color: var(--color-success-subtle);
+}

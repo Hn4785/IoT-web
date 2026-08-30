@@ -1,0 +1,155 @@
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-2);
+  font-family: var(--font-family-base);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  transition: background-color var(--transition-normal),
+              border-color var(--transition-normal),
+              color var(--transition-normal),
+              box-shadow var(--transition-normal);
+}
+
+.button:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* ---------- Sizes ---------- */
+
+.sm {
+  height: var(--height-button-sm);
+  padding: 0 var(--spacing-3);
+  font-size: var(--font-size-body-sm);
+}
+
+.md {
+  height: var(--height-button-md);
+  padding: 0 var(--spacing-4);
+  font-size: var(--font-size-body);
+}
+
+.lg {
+  height: var(--height-button-lg);
+  padding: 0 var(--spacing-5);
+  font-size: var(--font-size-body-lg);
+}
+
+.iconOnly.sm { width: var(--height-button-sm); padding: 0; }
+.iconOnly.md { width: var(--height-button-md); padding: 0; }
+.iconOnly.lg { width: var(--height-button-lg); padding: 0; }
+
+/* ---------- Variants ---------- */
+
+.primary {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-text-inverse);
+}
+.primary:hover:not(:disabled) {
+  background-color: var(--color-primary-dark);
+  border-color: var(--color-primary-dark);
+}
+
+.secondary {
+  background-color: var(--color-bg-subtle);
+  border-color: var(--color-border-default);
+  color: var(--color-text-primary);
+}
+.secondary:hover:not(:disabled) {
+  background-color: var(--color-border-default);
+}
+
+.outline {
+  background-color: transparent;
+  border-color: var(--color-border-default);
+  color: var(--color-text-primary);
+}
+.outline:hover:not(:disabled) {
+  background-color: var(--color-bg-subtle);
+  border-color: var(--color-text-tertiary);
+}
+
+.ghost {
+  background-color: transparent;
+  border-color: transparent;
+  color: var(--color-text-secondary);
+}
+.ghost:hover:not(:disabled) {
+  background-color: var(--color-bg-subtle);
+  color: var(--color-text-primary);
+}
+
+.danger {
+  background-color: var(--color-error);
+  border-color: var(--color-error);
+  color: var(--color-text-inverse);
+}
+.danger:hover:not(:disabled) {
+  background-color: var(--color-error-dark);
+  border-color: var(--color-error-dark);
+}
+
+/* ---------- States ---------- */
+
+.button:disabled {
+  cursor: not-allowed;
+  opacity: var(--opacity-disabled);
+}
+
+.fullWidth {
+  width: 100%;
+}
+
+.spinner {
+  animation: spin 0.6s linear infinite;
+}
+
+.iconLeft,
+.iconRight {
+  display: inline-flex;
+  align-items: center;
+}
+
+.buttonInner {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.content {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+/* Hide label visually while loading but keep its layout space so the
+   button doesn't change width when the spinner appears. */
+.labelHidden {
+  visibility: hidden;
+}
+
+.loadingOverlay {
+  position: absolute;
+  inset: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation: none;
+  }
+}

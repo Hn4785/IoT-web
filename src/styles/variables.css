@@ -1,0 +1,198 @@
+/* ============================================================
+   VARIABLES.CSS
+   Design tokens (single source of truth for the design system)
+   Do NOT put component-specific values here (e.g. KPI card
+   height, modal widths) — those belong in the component's own
+   CSS file. Only tokens shared across multiple components/pages
+   live here.
+   ============================================================ */
+
+:root {
+  /* ------------------------------------------------------------
+     1. COLORS
+     Source: Figma design tokens (Tailwind Slate + Green based)
+     ------------------------------------------------------------ */
+
+  /* Background */
+  --color-bg-page: #F8FAFC;
+  --color-bg-surface: #FFFFFF;
+  --color-bg-subtle: #F1F5F9;
+  --color-bg-dark: #0F172A;
+  --color-bg-dark-alt: #1E293B;
+
+  /* Border */
+  --color-border-default: #E2E8F0;
+  --color-border-subtle: #F1F5F9;
+
+  /* Text */
+  --color-text-primary: #0F172A;
+  --color-text-secondary: #475569;
+  --color-text-tertiary: #64748B;
+  --color-text-placeholder: #94A3B8;
+  --color-text-inverse: #FFFFFF;
+
+  /* Primary / Success (green) */
+  --color-primary: #16A34A;
+  --color-primary-dark: #15803D;
+  --color-primary-light: #DCFCE7;
+
+  /* Error / Danger */
+  --color-error: #EF4444;
+  --color-error-dark: #B91C1C;
+  --color-error-light: #FEE2E2;
+
+  /* Warning */
+  --color-warning: #EAB308;
+  --color-warning-dark: #854D0E;
+  --color-warning-light: #FEF9C3;
+
+  /* Orange / Alert */
+  --color-orange: #F97316;
+  --color-orange-dark: #C2410C;
+  --color-orange-light: #FFEDD5;
+
+  /* Info / Blue */
+  --color-info: #3B82F6;
+  --color-info-dark: #1D4ED8;
+  --color-info-light: #DBEAFE;
+  --color-info-lighter: #EFF6FF;
+
+  /* Purple accent */
+  --color-purple: #A855F7;
+  --color-purple-light: #F3E8FF;
+
+  /* ------------------------------------------------------------
+     2. TYPOGRAPHY
+     Inter: main UI font.
+     JetBrains Mono: Developer Portal, API endpoints, code
+     blocks, JSON responses only.
+     Fonts are loaded via <link> tags in index.html (Google Fonts
+     CDN). See index.html for the <link> tags.
+     ------------------------------------------------------------ */
+
+  --font-family-base: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-family-mono: 'JetBrains Mono', 'Courier New', monospace;
+
+  /* Font sizes */
+  --font-size-display: 32px;   /* H1 / Display */
+  --font-size-h2: 28px;
+  --font-size-h3: 24px;
+  --font-size-h4: 22px;
+  --font-size-h5: 20px;
+  --font-size-h6: 18px;        /* Section title */
+  --font-size-subtitle: 16px;
+  --font-size-body-lg: 15px;
+  --font-size-body: 14px;
+  --font-size-body-sm: 13px;
+  --font-size-caption: 12px;
+  --font-size-tiny: 11px;
+  --font-size-micro: 10px;     /* Badges */
+
+  /* Font weights */
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* Line height */
+  --line-height-base: 1.5;
+  --line-height-heading: 1.25;
+
+  /* Letter spacing */
+  --letter-spacing-normal: 0;
+  --letter-spacing-caption: 0.5px;
+  --letter-spacing-uppercase: 1px;
+
+  /* ------------------------------------------------------------
+     3. SPACING
+     4px base grid, with 2px intermediate steps.
+     ------------------------------------------------------------ */
+
+  --spacing-0-5: 2px;
+  --spacing-1: 4px;
+  --spacing-1-5: 6px;
+  --spacing-2: 8px;
+  --spacing-2-5: 10px;
+  --spacing-3: 12px;
+  --spacing-4: 16px;
+  --spacing-5: 20px;
+  --spacing-6: 24px;
+  --spacing-8: 32px;
+
+  /* ------------------------------------------------------------
+     4. BORDER RADIUS
+     ------------------------------------------------------------ */
+
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
+  --radius-pill: 18px;
+  --radius-full: 20px;
+
+  /* ------------------------------------------------------------
+     5. SHADOW / ELEVATION
+     ------------------------------------------------------------ */
+
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.08);
+  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.15);
+
+  /* ------------------------------------------------------------
+     6. Z-INDEX SCALE
+     Not defined by Figma/SRS — FE-defined convention.
+     ------------------------------------------------------------ */
+
+  --z-dropdown: 100;
+  --z-sticky: 200;   /* sticky header */
+  --z-drawer: 300;
+  --z-modal: 400;
+  --z-toast: 500;
+  --z-tooltip: 600;
+
+  /* ------------------------------------------------------------
+     7. TRANSITION / ANIMATION
+     Kept short & subtle — this is a monitoring dashboard,
+     readability > decoration.
+     ------------------------------------------------------------ */
+
+  --transition-fast: 100ms ease-in-out;
+  --transition-normal: 150ms ease-in-out;
+  --transition-smooth: 200ms ease-in-out;
+
+  /* ------------------------------------------------------------
+     8. OPACITY
+     FE convention, not from SRS/Figma.
+     ------------------------------------------------------------ */
+
+  --opacity-disabled: 0.5;
+  --opacity-muted: 0.7;
+  --opacity-overlay: 0.5;
+
+  /* ------------------------------------------------------------
+     9. LAYOUT / SHARED COMPONENT TOKENS
+     Only tokens reused across many components/pages.
+     Component-specific values (KPI card, modal widths, etc.)
+     stay inside that component's own CSS file.
+     ------------------------------------------------------------ */
+
+  --sidebar-width: 260px;
+  --sidebar-width-collapsed: 72px;
+  --header-height: 64px;
+
+  --height-input-sm: 32px;
+  --height-input-md: 40px;
+  --height-input-lg: 48px;
+
+  --height-button-sm: 32px;
+  --height-button-md: 40px;
+  --height-button-lg: 48px;
+
+  --height-select-sm: 32px;
+  --height-select-md: 40px;
+  --height-select-lg: 48px;
+
+  --height-table-row: 48px;
+}

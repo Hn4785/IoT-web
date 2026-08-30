@@ -1,0 +1,58 @@
+import type { Farm } from "@/types/farm";
+
+export const farms: Farm[] = [
+  {
+    id: "FARM-001",
+    name: "Green Valley Farm",
+    code: "GVF-001",
+    ownerId: "USR-006",
+    address: "Lam Dong, Vietnam",
+    location: {
+      latitude: 11.9404,
+      longitude: 108.4583,
+    },
+    plotCount: 2,
+    stationCount: 2,
+    gatewayCount: 2,
+    sensorCount: 6,
+    status: "active",
+    createdAt: "2026-01-18T08:00:00Z",
+    updatedAt: "2026-08-29T08:00:00Z",
+  },
+  {
+    id: "FARM-002",
+    name: "Sunrise Agriculture Farm",
+    code: "SAF-002",
+    ownerId: "USR-007",
+    address: "Dak Lak, Vietnam",
+    location: {
+      latitude: 12.6667,
+      longitude: 108.05,
+    },
+    plotCount: 2,
+    stationCount: 2,
+    gatewayCount: 2,
+    sensorCount: 6,
+    status: "active",
+    createdAt: "2026-03-12T08:00:00Z",
+    updatedAt: "2026-08-29T07:30:00Z",
+  },
+  {
+    id: "FARM-003",
+    name: "Riverbend Organic Farm",
+    code: "ROF-003",
+    ownerId: "USR-007",
+    address: "Can Tho, Vietnam",
+    location: {
+      latitude: 10.0452,
+      longitude: 105.7469,
+    },
+    plotCount: 1,
+    stationCount: 1,
+    gatewayCount: 1,
+    sensorCount: 3,
+    status: "active",
+    createdAt: "2026-04-20T08:00:00Z",
+    updatedAt: "2026-08-28T16:00:00Z",
+  },
+];

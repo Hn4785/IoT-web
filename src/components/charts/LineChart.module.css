@@ -1,0 +1,90 @@
+.wrapper {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+}
+
+.chart {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.gridLine {
+  stroke: var(--color-border, #e2e8f0);
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+}
+
+.axisLabel {
+  fill: var(--color-text-muted, #64748b);
+  font-size: 11px;
+  font-family: Inter, sans-serif;
+}
+
+.line {
+  fill: none;
+  stroke: var(--color-primary, #16a34a);
+  stroke-width: var(--line-width, 2);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.area {
+  fill: var(--color-primary, #16a34a);
+  opacity: 0.08;
+}
+
+.dot {
+  fill: var(--color-surface, #ffffff);
+  stroke: var(--color-primary, #16a34a);
+  stroke-width: 2;
+  cursor: pointer;
+  transition: r 120ms ease;
+}
+
+.crosshair line {
+  stroke: var(--color-text-muted, #94a3b8);
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+}
+
+.tooltip {
+  position: absolute;
+  z-index: 10;
+  transform: translate(-50%, calc(-100% - 10px));
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 120px;
+  padding: 8px 10px;
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 8px;
+  background: var(--color-surface, #ffffff);
+  box-shadow: var(--shadow-md, 0 4px 12px rgba(15, 23, 42, 0.08));
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.tooltip strong {
+  color: var(--color-text-primary, #0f172a);
+  font-size: 13px;
+}
+
+.tooltip span {
+  color: var(--color-text-muted, #64748b);
+  font-size: 11px;
+}
+
+.emptyState {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 240px;
+  color: var(--color-text-muted, #64748b);
+  font-size: 13px;
+  border: 1px dashed var(--color-border, #e2e8f0);
+  border-radius: 8px;
+  background: var(--color-bg-subtle, #f8fafc);
+}

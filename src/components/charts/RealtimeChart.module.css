@@ -1,0 +1,135 @@
+.container {
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.titleGroup {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  color: var(--color-text-primary, #0f172a);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+}
+
+.liveBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 7px;
+  border-radius: 9999px;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 16px;
+}
+
+.live {
+  color: var(--color-success, #15803d);
+  background: var(--color-success-bg, #f0fdf4);
+}
+
+.notLive {
+  color: var(--color-text-muted, #64748b);
+  background: var(--color-bg-subtle, #f1f5f9);
+}
+
+.liveDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.live .liveDot {
+  animation: pulse 1.6s ease-in-out infinite;
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--color-text-muted, #64748b);
+  font-size: 11px;
+}
+
+.connection {
+  position: relative;
+  padding-left: 12px;
+}
+
+.connection::before {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  content: "";
+  transform: translateY(-50%);
+}
+
+.connected {
+  color: var(--color-success, #15803d);
+}
+
+.connecting {
+  color: var(--color-warning, #d97706);
+}
+
+.disconnected,
+.error {
+  color: var(--color-danger, #dc2626);
+}
+
+.lastUpdated {
+  transition: color 200ms ease;
+}
+
+.updated {
+  color: var(--color-primary, #16a34a);
+}
+
+.chartContainer {
+  width: 100%;
+  min-width: 0;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.45;
+    transform: scale(0.75);
+  }
+}
+
+@media (max-width: 768px) {
+  .header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .meta {
+    flex-wrap: wrap;
+  }
+}
