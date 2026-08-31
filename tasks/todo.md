@@ -3,7 +3,7 @@
 - [x] Task 1: Reproducible tooling boundary
 - [x] Task 2: Validated runtime configuration
 - [x] Task 3: Public health contract
-- [ ] Task 4: Safe errors, request IDs, and HTTP hardening
+- [x] Task 4: Safe errors, request IDs, and HTTP hardening
 - [ ] Task 5: Weather query and response contracts
 - [ ] Task 6: Controlled upstream test server
 - [ ] Task 7: Private Weather client success paths
