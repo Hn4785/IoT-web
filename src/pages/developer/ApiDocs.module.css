@@ -1,0 +1,304 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  padding: 24px;
+  color: var(--color-text-primary);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.eyebrow {
+  margin-bottom: 6px;
+  color: var(--color-primary);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.08em;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: var(--font-size-h2);
+}
+
+.header p {
+  margin: 6px 0 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-body-sm);
+}
+
+.externalButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 38px;
+  padding: 0 13px;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-surface);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
+}
+
+.docsLayout {
+  display: grid;
+  grid-template-columns: 270px minmax(0, 1fr);
+  min-height: 700px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-surface);
+  overflow: hidden;
+}
+
+.sidebar {
+  border-right: 1px solid var(--color-border-subtle);
+  background: var(--color-bg-subtle);
+}
+
+.sidebarTitle {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 17px;
+  border-bottom: 1px solid var(--color-border-subtle);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
+}
+
+.endpointButton {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  padding: 13px 15px;
+  border: 0;
+  border-bottom: 1px solid var(--color-border-subtle);
+  background: transparent;
+  color: var(--color-text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.endpointButton:hover,
+.selected {
+  background: var(--color-bg-surface);
+}
+
+.endpointButton > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.method {
+  color: var(--color-primary-dark);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-bold);
+}
+
+.endpointButton strong {
+  font-size: var(--font-size-caption);
+}
+
+.endpointButton code {
+  overflow: hidden;
+  color: var(--color-text-tertiary);
+  font-family: var(--font-family-mono);
+  font-size: 10px;
+  text-overflow: ellipsis;
+}
+
+.documentation {
+  padding: 28px 34px;
+  overflow-x: hidden;
+}
+
+.endpointHeader {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 16px;
+}
+
+.endpointMethod {
+  padding: 5px 7px;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary-light);
+  color: var(--color-primary-dark);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-tiny);
+  font-weight: var(--font-weight-bold);
+}
+
+.endpointHeader code {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-body-sm);
+}
+
+.documentation h2 {
+  margin: 0;
+  font-size: var(--font-size-h3);
+}
+
+.description {
+  margin: 6px 0 28px;
+  color: var(--color-text-secondary);
+}
+
+.section {
+  margin-top: 28px;
+}
+
+.section h3 {
+  margin: 0 0 11px;
+  font-size: var(--font-size-h5);
+}
+
+.authBox {
+  display: flex;
+  gap: 11px;
+  padding: 13px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-subtle);
+}
+
+.authBox svg {
+  flex: 0 0 auto;
+  color: var(--color-primary);
+}
+
+.authBox div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.authBox strong {
+  font-size: var(--font-size-caption);
+}
+
+.authBox span {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-caption);
+}
+
+.parameterTable {
+  overflow: hidden;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+}
+
+.parameterHead,
+.parameterRow {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr 2fr;
+  gap: 16px;
+  padding: 11px 13px;
+}
+
+.parameterHead {
+  background: var(--color-bg-subtle);
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-tiny);
+  font-weight: var(--font-weight-semibold);
+}
+
+.parameterRow {
+  border-top: 1px solid var(--color-border-subtle);
+  font-size: var(--font-size-caption);
+}
+
+.parameterRow code {
+  font-family: var(--font-family-mono);
+}
+
+.parameterRow span {
+  color: var(--color-text-secondary);
+}
+
+.codeBlock {
+  position: relative;
+  overflow: auto;
+  border-radius: var(--radius-md);
+  background: var(--color-bg-dark);
+  color: var(--color-text-inverse);
+}
+
+.codeBlock pre {
+  margin: 0;
+  padding: 17px;
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-caption);
+  line-height: 1.65;
+}
+
+.codeBlock button {
+  position: absolute;
+  top: 9px;
+  right: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-dark-alt);
+  color: var(--color-text-inverse);
+  cursor: pointer;
+}
+
+.empty {
+  padding: 15px;
+  border: 1px dashed var(--color-border-default);
+  border-radius: var(--radius-md);
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-caption);
+}
+
+.notice {
+  display: flex;
+  gap: 8px;
+  padding: 13px 15px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-subtle);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-caption);
+}
+
+.notice strong {
+  color: var(--color-text-primary);
+}
+
+.notice b {
+  color: var(--color-warning-dark);
+}
+
+@media (max-width: 800px) {
+  .docsLayout {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    border-right: 0;
+    border-bottom: 1px solid var(--color-border-subtle);
+  }
+
+  .documentation {
+    padding: 22px;
+  }
+}

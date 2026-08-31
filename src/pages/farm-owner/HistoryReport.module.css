@@ -1,0 +1,198 @@
+.page {
+  padding: var(--spacing-6);
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+.headerActions {
+  display: flex;
+  gap: var(--spacing-2);
+}
+
+.filterCard,
+.chartCard,
+.statsGrid article {
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.filterCard {
+  padding: var(--spacing-5);
+  margin-bottom: var(--spacing-5);
+}
+
+.filterGrid {
+  display: grid;
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr))
+    minmax(210px, 1.25fr);
+  gap: var(--spacing-4);
+  align-items: end;
+}
+
+.filterGrid label,
+.dateField {
+  display: grid;
+  gap: var(--spacing-2);
+}
+
+.filterGrid label > span,
+.dateField > span {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
+}
+
+.filterGrid select {
+  width: 100%;
+}
+
+.dateField > div {
+  min-width: 0;
+}
+
+.chartCard {
+  padding: var(--spacing-5);
+  margin-bottom: var(--spacing-5);
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--spacing-4);
+  align-items: center;
+}
+
+.titleWithIcon {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.titleWithIcon svg {
+  color: var(--color-primary-dark);
+}
+
+.cardHeader h2 {
+  font-size: var(--font-size-h6);
+}
+
+.cardHeader p {
+  margin-top: 3px;
+  font-size: var(--font-size-body-sm);
+}
+
+.chartControls {
+  display: flex;
+  padding: 2px;
+  background: var(--color-bg-subtle);
+  border-radius: var(--radius-sm);
+}
+
+.chartControls button {
+  padding: 6px 12px;
+  border-radius: var(--radius-xs);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-body-sm);
+}
+
+.chartControls .activeControl {
+  color: var(--color-text-primary);
+  background: var(--color-bg-surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.chart {
+  min-height: 320px;
+  margin-top: var(--spacing-4);
+}
+
+.chartFooter {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--spacing-3);
+  padding-top: var(--spacing-3);
+  border-top: 1px solid var(--color-border-subtle);
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-caption);
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--spacing-4);
+}
+
+.statsGrid article {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px var(--spacing-3);
+  padding: var(--spacing-5);
+}
+
+.statsGrid svg {
+  grid-row: span 2;
+  color: var(--color-primary-dark);
+}
+
+.statsGrid span {
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-caption);
+}
+
+.statsGrid strong {
+  font-size: var(--font-size-body-lg);
+}
+
+.note {
+  margin-top: var(--spacing-4);
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-caption);
+}
+
+@media (max-width: 1100px) {
+  .filterGrid {
+    grid-template-columns:
+      repeat(3, minmax(0, 1fr));
+  }
+
+  .statsGrid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .page {
+    padding: var(--spacing-4);
+  }
+
+  .filterGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .cardHeader {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .chartFooter {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 480px) {
+  .headerActions {
+    width: 100%;
+  }
+
+  .headerActions > * {
+    flex: 1;
+  }
+
+  .statsGrid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,91 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  gap: 5px;
+  width: fit-content;
+  border: 1px solid transparent;
+  border-radius: var(--radius-full);
+  font-weight: var(--font-weight-medium);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.sm {
+  min-height: 24px;
+  padding: 4px 8px;
+  font-size: var(--font-size-xs);
+}
+
+.md {
+  min-height: 28px;
+  padding: 6px 10px;
+  font-size: var(--font-size-sm);
+}
+
+.icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 14px;
+  height: 14px;
+  font-size: 11px;
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+}
+
+.label {
+  line-height: 1.2;
+}
+
+/*
+ * Quality states
+ *
+ * Do not rely on color alone.
+ * SoilQualityBadge always renders the textual label,
+ * so states remain distinguishable for accessibility.
+ */
+
+.good {
+  color: var(--color-success);
+  background: var(--color-success-soft);
+  border-color: var(--color-success-border);
+}
+
+.stale {
+  color: var(--color-warning);
+  background: var(--color-warning-soft);
+  border-color: var(--color-warning-border);
+}
+
+.outOfRange {
+  color: var(--color-warning);
+  background: var(--color-warning-soft);
+  border-color: var(--color-warning-border);
+}
+
+.sensorError {
+  color: var(--color-danger);
+  background: var(--color-danger-soft);
+  border-color: var(--color-danger-border);
+}
+
+.uncalibrated {
+  color: var(--color-warning);
+  background: var(--color-warning-soft);
+  border-color: var(--color-warning-border);
+}
+
+.test {
+  color: var(--color-info);
+  background: var(--color-info-soft);
+  border-color: var(--color-info-border);
+}
+
+.unknown {
+  color: var(--color-text-secondary);
+  background: var(--color-bg-muted);
+  border-color: var(--color-border);
+}

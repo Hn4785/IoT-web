@@ -1,0 +1,244 @@
+.page {
+  padding: var(--spacing-6);
+  max-width: 1500px;
+  margin: 0 auto;
+}
+
+.channelCard,
+.rulesCard {
+  padding: var(--spacing-5);
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: var(--spacing-5);
+}
+
+.sectionHeader {
+  margin-bottom: var(--spacing-5);
+}
+
+.sectionHeader h2 {
+  font-size: var(--font-size-h6);
+}
+
+.sectionHeader p {
+  margin-top: 3px;
+  font-size: var(--font-size-body-sm);
+}
+
+.channelGrid {
+  display: grid;
+  grid-template-columns: repeat(
+    3,
+    minmax(0, 1fr)
+  );
+  gap: var(--spacing-4);
+}
+
+.channel {
+  display: grid;
+  grid-template-columns:
+    auto 1fr auto;
+  align-items: center;
+  gap: var(--spacing-3);
+  padding: var(--spacing-4);
+  border: 1px solid
+    var(--color-border-default);
+  border-radius: var(--radius-md);
+  transition:
+    border-color
+      var(--transition-normal),
+    background-color
+      var(--transition-normal);
+}
+
+.channelEnabled {
+  border-color:
+    var(--color-primary-light);
+  background: #fbfffc;
+}
+
+.channelIcon {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  color: var(--color-primary-dark);
+  background:
+    var(--color-primary-light);
+  border-radius: var(--radius-sm);
+}
+
+.channelInfo {
+  min-width: 0;
+}
+
+.channelInfo strong {
+  font-size: var(--font-size-body-lg);
+}
+
+.channelInfo p {
+  margin-top: 2px;
+  font-size: var(--font-size-caption);
+}
+
+.toggleButton {
+  display: grid;
+  justify-items: center;
+  gap: 0;
+  color: var(--color-text-tertiary);
+}
+
+.toggleButton svg {
+  color: var(--color-text-placeholder);
+}
+
+.channelEnabled
+  .toggleButton svg {
+  color: var(--color-primary);
+}
+
+.toggleButton span {
+  font-size: var(--font-size-tiny);
+  font-weight: var(--font-weight-semibold);
+}
+
+.tableWrapper {
+  overflow-x: auto;
+  border: 1px solid
+    var(--color-border-default);
+  border-radius: var(--radius-md);
+}
+
+.tableWrapper table {
+  min-width: 1050px;
+}
+
+.tableWrapper th,
+.tableWrapper td {
+  padding: var(--spacing-3);
+  text-align: left;
+  border-bottom: 1px solid
+    var(--color-border-subtle);
+  white-space: nowrap;
+}
+
+.tableWrapper th {
+  background: var(--color-bg-subtle);
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
+}
+
+.tableWrapper td {
+  font-size: var(--font-size-body-sm);
+}
+
+.tableWrapper tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.tableWrapper td:first-child {
+  display: grid;
+  gap: 2px;
+}
+
+.tableWrapper
+  td:first-child
+  span {
+  color: var(--color-text-tertiary);
+  font-family:
+    var(--font-family-mono);
+  font-size: var(--font-size-tiny);
+}
+
+.warning,
+.critical {
+  display: inline-flex;
+  padding: 3px 7px;
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-tiny);
+  font-weight: var(--font-weight-semibold);
+}
+
+.warning {
+  color: var(--color-warning-dark);
+  background:
+    var(--color-warning-light);
+}
+
+.critical {
+  color: var(--color-error-dark);
+  background:
+    var(--color-error-light);
+}
+
+.smallToggle {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  color: var(--color-text-placeholder);
+  border: 1px solid
+    var(--color-border-default);
+  border-radius: var(--radius-sm);
+  background:
+    var(--color-bg-surface);
+}
+
+.smallToggle[aria-pressed="true"] {
+  color: var(--color-primary-dark);
+  border-color:
+    var(--color-primary-light);
+  background:
+    var(--color-primary-light);
+}
+
+.ruleStatus {
+  padding: 4px 8px;
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-tiny);
+  font-weight: var(--font-weight-semibold);
+}
+
+.ruleOn {
+  color: var(--color-primary-dark);
+  background:
+    var(--color-primary-light);
+}
+
+.ruleOff {
+  color: var(--color-text-tertiary);
+  background: var(--color-bg-subtle);
+}
+
+.infoBox {
+  display: flex;
+  gap: var(--spacing-3);
+  padding: var(--spacing-4);
+  border: 1px solid
+    var(--color-info-light);
+  border-radius: var(--radius-md);
+  background:
+    var(--color-info-lighter);
+  color: var(--color-info-dark);
+}
+
+.infoBox p {
+  margin-top: 2px;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-caption);
+}
+
+@media (max-width: 900px) {
+  .channelGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .page {
+    padding: var(--spacing-4);
+  }
+}

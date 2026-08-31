@@ -1,0 +1,158 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: var(--spacing-5);
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.card:hover {
+  border-color: var(--color-border-strong);
+  box-shadow: var(--shadow-md);
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--spacing-3);
+}
+
+.titleGroup {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: var(--spacing-2);
+}
+
+.icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  color: var(--color-primary);
+  background: var(--color-primary-soft);
+  border-radius: var(--radius-md);
+}
+
+.title {
+  margin: 0;
+  overflow: hidden;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.valueRow {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--spacing-4);
+  margin-top: var(--spacing-5);
+}
+
+.valueGroup {
+  display: flex;
+  align-items: baseline;
+  min-width: 0;
+  gap: var(--spacing-2);
+}
+
+.value {
+  color: var(--color-text-primary);
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.unit {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.4;
+}
+
+.trend {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.2;
+}
+
+.trendSymbol {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.trendValue {
+  line-height: 1;
+}
+
+.up {
+  color: var(--color-success);
+  background: var(--color-success-soft);
+}
+
+.down {
+  color: var(--color-danger);
+  background: var(--color-danger-soft);
+}
+
+.stable {
+  color: var(--color-text-secondary);
+  background: var(--color-bg-muted);
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  margin-top: var(--spacing-4);
+  padding-top: var(--spacing-3);
+  border-top: 1px solid var(--color-border);
+}
+
+.updatedLabel {
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+  line-height: 1.4;
+}
+
+.updatedAt {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  line-height: 1.4;
+}
+
+@media (max-width: 768px) {
+  .card {
+    padding: var(--spacing-4);
+  }
+
+  .value {
+    font-size: var(--font-size-2xl);
+  }
+
+  .valueRow {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
