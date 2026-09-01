@@ -4,6 +4,7 @@ import type { IncomingMessage } from 'node:http';
 import type { Http2ServerRequest } from 'node:http2';
 import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 import { AppError } from '../common/errors/app-error.js';
 import { HttpErrorFilter } from '../common/errors/http-error.filter.js';
@@ -36,6 +37,19 @@ export async function createApp(config: RuntimeConfig): Promise<NestFastifyAppli
     void reply.header('x-request-id', request.id);
     done(null, payload);
   });
+  if (config.nodeEnv !== 'production') {
+    const openApiConfig = new DocumentBuilder()
+      .setTitle('IoT Soil Monitoring API')
+      .setDescription('Role 3 backend contract for the Role 2 web application')
+      .setVersion('0.1.0')
+      .build();
+    const openApiDocument = SwaggerModule.createDocument(app, openApiConfig);
+    SwaggerModule.setup('/docs', app, openApiDocument, {
+      jsonDocumentUrl: '/docs-json',
+      raw: ['json'],
+      customSiteTitle: 'IoT API Documentation',
+    });
+  }
   await app.init();
   await app.getHttpAdapter().getInstance().ready();
 

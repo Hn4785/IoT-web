@@ -1248,6 +1248,7 @@ git commit -m "feat: bound and sanitize Weather API failures"
 
 - Modify: `src/health/health.controller.ts`
 - Modify: `src/app/create-app.ts`
+- Modify: `test/integration/errors.spec.ts`
 - Create: `test/integration/openapi.spec.ts`
 - Create: `README.md`
 - Create: `docs/security/integration-core-threat-model.md`
@@ -1257,7 +1258,7 @@ git commit -m "feat: bound and sanitize Weather API failures"
 - Consumes: approved health and error contracts.
 - Produces: `/docs-json` in non-production, documented local commands, environment guidance, and a maintained threat-model checklist.
 
-- [ ] **Step 1: RED — OpenAPI exposes only the approved public business path**
+- [x] **Step 1: RED — OpenAPI exposes only the approved public business path**
 
 ```ts
 it('documents the health contract without Weather credentials', async () => {
@@ -1270,7 +1271,7 @@ it('documents the health contract without Weather credentials', async () => {
 });
 ```
 
-- [ ] **Step 2: Verify RED, generate OpenAPI, verify GREEN**
+- [x] **Step 2: Verify RED, generate OpenAPI, verify GREEN**
 
 Run: `pnpm test test/integration/openapi.spec.ts`
 
@@ -1278,13 +1279,13 @@ Expected RED: `/docs-json` returns 404. Add explicit Swagger response models and
 generate docs only when `nodeEnv !== 'production'`. Keep the UI at `/docs` and
 JSON at `/docs-json`; do not document the private Weather client.
 
-- [ ] **Step 3: RED/GREEN — production does not expose documentation**
+- [x] **Step 3: RED/GREEN — production does not expose documentation**
 
 Create the app with `nodeEnv: 'production'` and an HTTPS upstream. Assert
 `GET /docs-json` returns the normalized 404. Observe failure before gating
 Swagger setup by environment.
 
-- [ ] **Step 4: Write operator documentation from verified commands**
+- [x] **Step 4: Write operator documentation from verified commands**
 
 README must contain:
 
@@ -1298,7 +1299,7 @@ README must contain:
 Threat-model document must record the assets, boundaries, STRIDE review,
 implemented controls, residual risks, and the date/status of package audit.
 
-- [ ] **Step 5: Verify docs behavior and commit**
+- [x] **Step 5: Verify docs behavior and commit**
 
 ```powershell
 pnpm test test/integration/openapi.spec.ts

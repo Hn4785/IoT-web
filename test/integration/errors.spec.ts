@@ -57,8 +57,11 @@ describe('HTTP errors', () => {
 
   it('hides unknown exception details from the response', async () => {
     await app.close();
+    let nodeEnvReads = 0;
     const throwingConfig: RuntimeConfig = {
       get nodeEnv(): RuntimeConfig['nodeEnv'] {
+        nodeEnvReads += 1;
+        if (nodeEnvReads === 1) return 'test';
         throw new Error('secret-stack-marker');
       },
       port: 3000,
