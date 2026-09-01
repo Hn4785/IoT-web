@@ -1,16 +1,16 @@
-import type { RuntimeConfig } from '../../config/runtime-config.js';
 import { startUpstreamServer } from '../../../test/helpers/upstream-server.js';
+import type { RuntimeConfig } from '../../config/runtime-config.js';
 import { parseLatestWeatherQuery, parseWeatherHistoryQuery } from './contracts.js';
 import { WeatherClientService } from './weather-client.service.js';
 
-const makeClient = (baseUrl: string, apiKey = 'server-only-key') => {
+const makeClient = (baseUrl: string, apiKey = 'server-only-key', timeoutMs = 1_000) => {
   const config: RuntimeConfig = {
     nodeEnv: 'test',
     port: 3000,
     logLevel: 'info',
     weatherApiBaseUrl: baseUrl,
     weatherApiKey: apiKey,
-    weatherApiTimeoutMs: 1_000,
+    weatherApiTimeoutMs: timeoutMs,
   };
 
   return new WeatherClientService(config);
@@ -144,14 +144,155 @@ describe('WeatherClientService', () => {
     }
   });
 
-  it('rejects a success-shaped payload sent with a non-success HTTP status', async () => {
+  it.each([
+    [401, 'UPSTREAM_UNAVAILABLE', 502, 'Weather service is unavailable'],
+    [403, 'UPSTREAM_UNAVAILABLE', 502, 'Weather service is unavailable'],
+    [429, 'RATE_LIMITED', 503, 'Weather service rate limit exceeded'],
+    [500, 'UPSTREAM_UNAVAILABLE', 502, 'Weather service is unavailable'],
+  ] as const)(
+    'maps upstream HTTP %i to %s without exposing its failure body',
+    async (upstreamStatus, code, statusCode, safeMessage) => {
+      const upstreamBody = {
+        success: false,
+        message: 'raw upstream failure detail must stay private',
+      };
+      const upstream = await startUpstreamServer([{ status: upstreamStatus, body: upstreamBody }]);
+      const client = makeClient(`${upstream.baseUrl}/api/v1`);
+
+      try {
+        let thrown: unknown;
+        try {
+          await client.listStations();
+        } catch (error) {
+          thrown = error;
+        }
+
+        expect(thrown).toMatchObject({ code, statusCode, safeMessage });
+        expect(JSON.stringify(thrown)).not.toContain(upstreamBody.message);
+      } finally {
+        await upstream.close();
+      }
+    },
+  );
+
+  it('maps an upstream timeout without exposing the API key', async () => {
     const upstream = await startUpstreamServer([
-      { status: 500, body: { success: true, data: ['CENTER'] } },
+      { status: 200, delayMs: 250, body: { success: true, data: [] } },
+    ]);
+    const apiKey = 'never-leak-this-key';
+    const client = makeClient(`${upstream.baseUrl}/api/v1`, apiKey, 25);
+
+    try {
+      let thrown: unknown;
+      try {
+        await client.listStations();
+      } catch (error) {
+        thrown = error;
+      }
+
+      expect(thrown).toMatchObject({
+        code: 'UPSTREAM_TIMEOUT',
+        statusCode: 504,
+        safeMessage: 'Weather service timed out',
+      });
+      expect(JSON.stringify(thrown)).not.toContain(apiKey);
+    } finally {
+      await upstream.close();
+    }
+  });
+
+  it('rejects an upstream redirect as an unavailable dependency', async () => {
+    const upstream = await startUpstreamServer([
+      {
+        status: 302,
+        headers: { location: 'https://redirect.example/stations' },
+        body: { success: false, error: { message: 'follow this redirect' } },
+      },
     ]);
     const client = makeClient(`${upstream.baseUrl}/api/v1`);
 
     try {
-      await expect(client.listStations()).rejects.toBeInstanceOf(Error);
+      await expect(client.listStations()).rejects.toMatchObject({
+        code: 'UPSTREAM_UNAVAILABLE',
+        statusCode: 502,
+        safeMessage: 'Weather service is unavailable',
+      });
+    } finally {
+      await upstream.close();
+    }
+  });
+
+  it('maps malformed upstream JSON without exposing credentials or the raw body', async () => {
+    const rawBody = '{"secret":"raw-upstream-secret"';
+    const apiKey = 'never-leak-this-key';
+    const upstream = await startUpstreamServer([{ status: 200, rawBody }]);
+    const client = makeClient(`${upstream.baseUrl}/api/v1`, apiKey);
+
+    try {
+      let thrown: unknown;
+      try {
+        await client.listStations();
+      } catch (error) {
+        thrown = error;
+      }
+
+      expect(thrown).toMatchObject({
+        code: 'UPSTREAM_UNAVAILABLE',
+        statusCode: 502,
+        safeMessage: 'Weather service is unavailable',
+      });
+      const serialized = JSON.stringify(thrown);
+      expect(serialized).not.toContain(apiKey);
+      expect(serialized).not.toContain(rawBody);
+    } finally {
+      await upstream.close();
+    }
+  });
+
+  it('maps an invalid stations schema without exposing the upstream body', async () => {
+    const body = { success: true, data: 7 };
+    const upstream = await startUpstreamServer([{ status: 200, body }]);
+    const client = makeClient(`${upstream.baseUrl}/api/v1`);
+
+    try {
+      let thrown: unknown;
+      try {
+        await client.listStations();
+      } catch (error) {
+        thrown = error;
+      }
+
+      expect(thrown).toMatchObject({
+        code: 'UPSTREAM_UNAVAILABLE',
+        statusCode: 502,
+        safeMessage: 'Weather service is unavailable',
+      });
+      expect(JSON.stringify(thrown)).not.toContain(JSON.stringify(body));
+    } finally {
+      await upstream.close();
+    }
+  });
+
+  it('maps latest data missing required timestamps as unavailable', async () => {
+    const body = {
+      success: true,
+      data: [
+        {
+          station: 'CENTER',
+          latest: { soil: { _fieldTs: {}, moisture: 42.5 } },
+        },
+      ],
+    };
+    const upstream = await startUpstreamServer([{ status: 200, body }]);
+    const client = makeClient(`${upstream.baseUrl}/api/v1`);
+    const query = parseLatestWeatherQuery({ station: ['CENTER'] });
+
+    try {
+      await expect(client.getLatest(query)).rejects.toMatchObject({
+        code: 'UPSTREAM_UNAVAILABLE',
+        statusCode: 502,
+        safeMessage: 'Weather service is unavailable',
+      });
     } finally {
       await upstream.close();
     }

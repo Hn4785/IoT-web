@@ -1148,6 +1148,7 @@ git commit -m "feat: add validated Weather API client"
 
 **Files:**
 
+- Create: `src/common/errors/app-error.spec.ts`
 - Modify: `src/integrations/weather/weather-client.service.spec.ts`
 - Modify: `src/integrations/weather/weather-client.service.ts`
 - Modify: `src/common/errors/app-error.ts`
@@ -1157,7 +1158,7 @@ git commit -m "feat: add validated Weather API client"
 - Consumes: upstream timeout, redirect, malformed body, invalid schema, and non-2xx responses.
 - Produces: safe `AppError` values using `UPSTREAM_TIMEOUT`, `UPSTREAM_UNAVAILABLE`, or `RATE_LIMITED`; no upstream body or API key in public fields.
 
-- [ ] **Step 1: RED — timeout aborts the dependency call**
+- [x] **Step 1: RED — timeout aborts the dependency call**
 
 ```ts
 it('maps an upstream timeout without exposing the API key', async () => {
@@ -1177,7 +1178,7 @@ it('maps an upstream timeout without exposing the API key', async () => {
 });
 ```
 
-- [ ] **Step 2: Verify RED, implement AbortSignal timeout, verify GREEN**
+- [x] **Step 2: Verify RED, implement AbortSignal timeout, verify GREEN**
 
 Run: `pnpm test src/integrations/weather/weather-client.service.spec.ts -t timeout`
 
@@ -1197,7 +1198,7 @@ function mapTransportError(error: unknown): AppError {
 Wrap `fetch` and JSON/schema parsing in separate `try` blocks so an HTTP status,
 timeout, malformed JSON, and invalid schema reach the deliberate mapping branch.
 
-- [ ] **Step 3: RED/GREEN — reject redirects and malformed payloads**
+- [x] **Step 3: RED/GREEN — reject redirects and malformed payloads**
 
 Add independent fixtures for HTTP 302, invalid JSON, `{ success: true, data: 7 }`,
 and a success envelope missing required timestamps. Assert every case rejects as
@@ -1207,7 +1208,7 @@ API key nor raw upstream body. Observe each failure before adding mapping.
 Use `new AppError(..., { cause: error })` only internally. Define `AppError.toJSON`
 to return `{ code, statusCode, safeMessage }`; it must omit `stack` and `cause`.
 
-- [ ] **Step 4: RED/GREEN — map upstream HTTP statuses predictably**
+- [x] **Step 4: RED/GREEN — map upstream HTTP statuses predictably**
 
 Use literal upstream failure envelopes and assert:
 
@@ -1229,7 +1230,7 @@ Capture `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `X-RateLimit-Reset` in
 an internal metadata type on successful protected calls, but never include
 headers or credentials in thrown safe messages.
 
-- [ ] **Step 5: Run the failure suite and commit**
+- [x] **Step 5: Run the failure suite and commit**
 
 ```powershell
 pnpm test src/integrations/weather/weather-client.service.spec.ts

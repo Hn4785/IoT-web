@@ -6,6 +6,12 @@ export type AppErrorCode =
   | 'UPSTREAM_UNAVAILABLE'
   | 'INTERNAL_ERROR';
 
+export interface SerializedAppError {
+  code: AppErrorCode;
+  statusCode: number;
+  safeMessage: string;
+}
+
 export class AppError extends Error {
   constructor(
     readonly code: AppErrorCode,
@@ -14,5 +20,13 @@ export class AppError extends Error {
     options?: ErrorOptions,
   ) {
     super(safeMessage, options);
+  }
+
+  toJSON(): SerializedAppError {
+    return {
+      code: this.code,
+      statusCode: this.statusCode,
+      safeMessage: this.safeMessage,
+    };
   }
 }
