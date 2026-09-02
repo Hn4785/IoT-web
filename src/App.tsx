@@ -7,6 +7,8 @@ import {
 
 import ProtectedRoute from "@/routes/ProtectedRoute";
 import RoleRoute from "@/routes/RoleRoute";
+import MainLayout from "@/components/layout/MainLayout";
+
 import {
   publicRoutes,
   protectedRoutes,
@@ -16,8 +18,10 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
+
         {/* =========================
             PUBLIC ROUTES
+            Không sử dụng MainLayout
         ========================= */}
         {publicRoutes.map((route) => (
           <Route
@@ -36,13 +40,11 @@ function App() {
               key={route.path}
               path={route.path}
               element={
-                route.roles ? (
-                  <RoleRoute allowedRoles={route.roles}>
+                <RoleRoute allowedRoles={route.roles ?? []}>
+                  <MainLayout>
                     {route.element}
-                  </RoleRoute>
-                ) : (
-                  route.element
-                )
+                  </MainLayout>
+                </RoleRoute>
               }
             />
           ))}
@@ -55,6 +57,7 @@ function App() {
           path="*"
           element={<Navigate to="/login" replace />}
         />
+
       </Routes>
     </BrowserRouter>
   );
