@@ -1322,7 +1322,7 @@ git commit -m "docs: publish integration-core contract"
 - Consumes: complete integration-core implementation.
 - Produces: reproducible verification evidence and an approved module ready for `identity-access` specification.
 
-- [ ] **Step 1: Run the complete verification suite**
+- [x] **Step 1: Run the complete verification suite**
 
 ```powershell
 pnpm format:check
@@ -1339,7 +1339,7 @@ Expected: every command exits 0 with no warnings treated as ignorable. Coverage
 must include all validation/error branches named in the spec; do not add tests
 that assert trivial framework or source-text behavior solely to raise a number.
 
-- [ ] **Step 2: Perform security evidence checks**
+- [x] **Step 2: Perform security evidence checks**
 
 ```powershell
 git grep -n -i -E "(password|secret|api[_-]?key|token)" -- . ":(exclude)pnpm-lock.yaml"
@@ -1349,10 +1349,11 @@ pnpm ignored-builds
 
 Review every match as documentation, placeholder, or real secret. If a real
 secret is found, stop, rotate it, remove it from history, and rerun the scan.
-Confirm only the reviewed `esbuild` script is allowed and audit has no
-unmitigated reachable critical/high advisory. Never use forced audit fixes.
+Confirm no unexpected build script is pending, Scarf telemetry remains explicitly
+denied, and audit has no unmitigated reachable critical/high advisory. Never use
+forced audit fixes.
 
-- [ ] **Step 3: Run an adversarial contract review**
+- [x] **Step 3: Run an adversarial contract review**
 
 Check these mutations against existing tests:
 
@@ -1367,7 +1368,7 @@ Check these mutations against existing tests:
 Each mutation must have a named test that would fail. Add a failing regression
 test before fixing any uncovered behavior.
 
-- [ ] **Step 4: Review implementation against all three requested skills**
+- [x] **Step 4: Review implementation against all three requested skills**
 
 API review: typed inputs/outputs, stable errors, consistent naming, validated
 boundaries, no public implementation leakage.
@@ -1379,7 +1380,7 @@ TDD review: every production behavior has a test that was observed failing for
 the correct missing behavior; tests exercise real HTTP behavior or the real
 local upstream boundary.
 
-- [ ] **Step 5: Mark the spec implemented and commit the completion evidence**
+- [x] **Step 5: Mark the spec implemented and commit the completion evidence**
 
 Change spec status from `Approved by user` to `Implemented and verified` only
 after Steps 1-4 pass.
@@ -1390,5 +1391,6 @@ git commit -m "docs: record integration-core verification"
 git status --short --branch
 ```
 
-Expected: clean `main` working tree. The next action is to brainstorm and approve
-`identity-access`; do not expose station data as a shortcut.
+Expected: clean `codex/integration-core` worktree. Integration into the base branch
+is a separate user decision. The next implementation action is to brainstorm and
+approve `identity-access`; do not expose station data as a shortcut.
