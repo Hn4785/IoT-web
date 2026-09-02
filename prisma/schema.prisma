@@ -6,3 +6,192 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+enum UserRole {
+  ADMIN
+  FARMER
+  CLIENT_DEVELOPER
+}
+
+enum UserStatus {
+  ACTIVE
+  DISABLED
+  PENDING_PASSWORD_CHANGE
+}
+
+enum SystemAuthorityKey {
+  SUPER_ADMIN
+}
+
+enum AuditResult {
+  SUCCESS
+  DENIED
+  FAILURE
+}
+
+model User {
+  id                  String     @id @default(uuid()) @db.Uuid
+  email               String     @unique @db.Citext
+  displayName         String     @db.VarChar(120)
+  passwordHash        String     @db.Text
+  role                UserRole
+  status              UserStatus @default(PENDING_PASSWORD_CHANGE)
+  failedLoginCount    Int        @default(0)
+  lockedUntil         DateTime?  @db.Timestamptz(3)
+  passwordChangedAt   DateTime?  @db.Timestamptz(3)
+  deletionRequestedAt DateTime?  @db.Timestamptz(3)
+  anonymizedAt        DateTime?  @db.Timestamptz(3)
+  createdAt           DateTime   @default(now()) @db.Timestamptz(3)
+  updatedAt           DateTime   @updatedAt @db.Timestamptz(3)
+
+  heldAuthority       SystemAuthority?     @relation("AuthorityHolder")
+  sessions            Session[]
+  farmMemberships     FarmMembership[]
+  clientStationGrants ClientStationGrant[]
+  apiKeys             ApiKey[]
+  auditEvents         SecurityAuditEvent[] @relation("AuditActor")
+
+  @@index([role, status])
+}
+
+model SystemAuthority {
+  authority    SystemAuthorityKey @id
+  holderUserId String             @unique @db.Uuid
+  createdAt    DateTime           @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime           @updatedAt @db.Timestamptz(3)
+
+  holder User @relation("AuthorityHolder", fields: [holderUserId], references: [id], onDelete: Restrict)
+}
+
+model Session {
+  id                  String    @id @default(uuid()) @db.Uuid
+  userId              String    @db.Uuid
+  tokenHash           String    @unique @db.VarChar(64)
+  familyId            String    @db.Uuid
+  expiresAt           DateTime  @db.Timestamptz(3)
+  lastUsedAt          DateTime? @db.Timestamptz(3)
+  revokedAt           DateTime? @db.Timestamptz(3)
+  replacedBySessionId String?   @db.Uuid
+  revokeReason        String?   @db.VarChar(80)
+  userAgent           String?   @db.VarChar(512)
+  ipAddress           String?   @db.VarChar(45)
+  createdAt           DateTime  @default(now()) @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, revokedAt])
+  @@index([familyId])
+  @@index([expiresAt])
+}
+
+model Farm {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @db.VarChar(160)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  plots       Plot[]
+  memberships FarmMembership[]
+}
+
+model Plot {
+  id        String   @id @default(uuid()) @db.Uuid
+  farmId    String   @db.Uuid
+  name      String   @db.VarChar(160)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  farm     Farm      @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  stations Station[]
+
+  @@unique([farmId, name])
+  @@index([farmId])
+}
+
+model Station {
+  id           String   @id @default(uuid()) @db.Uuid
+  plotId       String   @db.Uuid
+  upstreamCode String   @unique @db.VarChar(80)
+  name         String   @db.VarChar(160)
+  createdAt    DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime @updatedAt @db.Timestamptz(3)
+
+  plot         Plot                 @relation(fields: [plotId], references: [id], onDelete: Restrict)
+  clientGrants ClientStationGrant[]
+  apiKeyScopes ApiKeyStationScope[]
+
+  @@index([plotId])
+}
+
+model FarmMembership {
+  userId    String   @db.Uuid
+  farmId    String   @db.Uuid
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  farm Farm @relation(fields: [farmId], references: [id], onDelete: Cascade)
+
+  @@id([userId, farmId])
+  @@index([farmId])
+}
+
+model ClientStationGrant {
+  userId    String   @db.Uuid
+  stationId String   @db.Uuid
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  station Station @relation(fields: [stationId], references: [id], onDelete: Cascade)
+
+  @@id([userId, stationId])
+  @@index([stationId])
+}
+
+model ApiKey {
+  id                String    @id @default(uuid()) @db.Uuid
+  ownerUserId       String    @db.Uuid
+  name              String    @db.VarChar(120)
+  prefix            String    @unique @db.VarChar(24)
+  keyHash           String    @unique @db.VarChar(64)
+  expiresAt         DateTime  @db.Timestamptz(3)
+  requestsPerMinute Int       @default(60)
+  lastUsedAt        DateTime? @db.Timestamptz(3)
+  revokedAt         DateTime? @db.Timestamptz(3)
+  createdAt         DateTime  @default(now()) @db.Timestamptz(3)
+
+  owner  User                 @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+  scopes ApiKeyStationScope[]
+
+  @@index([ownerUserId, revokedAt])
+  @@index([expiresAt])
+}
+
+model ApiKeyStationScope {
+  apiKeyId  String   @db.Uuid
+  stationId String   @db.Uuid
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  apiKey  ApiKey  @relation(fields: [apiKeyId], references: [id], onDelete: Cascade)
+  station Station @relation(fields: [stationId], references: [id], onDelete: Cascade)
+
+  @@id([apiKeyId, stationId])
+  @@index([stationId])
+}
+
+model SecurityAuditEvent {
+  id          String      @id @default(uuid()) @db.Uuid
+  actorUserId String?     @db.Uuid
+  action      String      @db.VarChar(100)
+  targetType  String      @db.VarChar(80)
+  targetId    String?     @db.VarChar(120)
+  result      AuditResult
+  requestId   String      @db.VarChar(128)
+  metadata    Json        @default("{}")
+  createdAt   DateTime    @default(now()) @db.Timestamptz(3)
+
+  actor User? @relation("AuditActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([actorUserId, createdAt])
+  @@index([targetType, targetId, createdAt])
+  @@index([createdAt])
+}
