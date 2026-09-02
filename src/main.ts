@@ -1,4 +1,5 @@
 import 'reflect-metadata';
+import 'dotenv/config';
 
 import { createApp } from './app/create-app.js';
 import { parseRuntimeConfig } from './config/runtime-config.js';

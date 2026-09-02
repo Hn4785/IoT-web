@@ -42,6 +42,7 @@ export async function createApp(config: RuntimeConfig): Promise<NestFastifyAppli
       .setTitle('IoT Soil Monitoring API')
       .setDescription('Role 3 backend contract for the Role 2 web application')
       .setVersion('0.1.0')
+      .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT' }, 'bearer')
       .build();
     const openApiDocument = SwaggerModule.createDocument(app, openApiConfig);
     SwaggerModule.setup('/docs', app, openApiDocument, {

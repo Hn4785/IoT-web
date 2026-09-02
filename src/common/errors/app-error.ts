@@ -1,6 +1,8 @@
 export type AppErrorCode =
   | 'VALIDATION_ERROR'
   | 'CONFLICT'
+  | 'UNAUTHENTICATED'
+  | 'FORBIDDEN'
   | 'NOT_FOUND'
   | 'RATE_LIMITED'
   | 'UPSTREAM_TIMEOUT'

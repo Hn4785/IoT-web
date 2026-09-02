@@ -11,7 +11,7 @@ describe('OpenAPI contract', () => {
     await app?.close();
   });
 
-  it('documents only the health contract without Weather credentials', async () => {
+  it('documents health and administrator provisioning without credentials or login', async () => {
     app = await createApp(
       makeTestRuntimeConfig({
         weatherApiKey: 'must-not-appear',
@@ -22,7 +22,13 @@ describe('OpenAPI contract', () => {
 
     expect(response.statusCode).toBe(200);
     const document = response.json<{ paths: Record<string, unknown> }>();
-    expect(Object.keys(document.paths)).toEqual(['/api/v1/health']);
+    expect(Object.keys(document.paths)).toEqual([
+      '/api/v1/health',
+      '/api/v1/admin/users',
+      '/api/v1/admin/users/{userId}',
+      '/api/v1/admin/users/{userId}/reset-password',
+    ]);
+    expect(document.paths).not.toHaveProperty('/api/v1/auth/login');
     expect(response.body).not.toContain('WEATHER_API_KEY');
     expect(response.body).not.toContain('X-API-Key');
     expect(response.body).not.toContain('must-not-appear');
