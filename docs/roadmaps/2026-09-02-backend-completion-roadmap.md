@@ -97,19 +97,19 @@ Checkpoint B: frontend can replace `src/data/farms`, `plots`, `stations` and
 `soilData`; dashboards, history reports, developer explorer and docs use live API
 contracts.
 
-### Phase C: Alerts and IoT configuration
+### Phase C: Alerts and in-app notifications
 
-| ID   | Package                     | Acceptance criteria                                                                                    | Verification                        | Depends on | Scope |
-| ---- | --------------------------- | ------------------------------------------------------------------------------------------------------ | ----------------------------------- | ---------- | ----- |
-| AC-1 | Approve alert/config design | Rule model, lifecycle, delivery channels and publish permissions approved                              | User reviews committed spec         | SD-4       | S     |
-| AC-2 | Alert rules                 | Authorized users create/update bounded threshold rules for their station scope                         | CRUD and cross-scope tests          | AC-1       | M     |
-| AC-3 | Alert lifecycle             | Triggered alerts have deterministic open, acknowledge and resolve transitions with actor/time evidence | State-machine and idempotency tests | AC-2       | M     |
-| C1   | Lifecycle review gate       | Alert transitions, idempotency and actor evidence are accepted before external providers are connected | Review checklist and state tests    | AC-3       | S     |
-| AC-4 | Notification delivery       | Channel preferences, retries, provider failures and duplicate prevention are explicit and observable   | Fake-provider integration tests     | C1         | M     |
-| AC-5 | Versioned IoT configuration | Draft, publish, rollback and device acknowledgement are audited; only Admin permission can publish     | Concurrency and rollback tests      | AC-1, SD-2 | M     |
+| ID   | Package                   | Acceptance criteria                                                                                     | Verification                        | Depends on | Scope |
+| ---- | ------------------------- | ------------------------------------------------------------------------------------------------------- | ----------------------------------- | ---------- | ----- |
+| AC-1 | Approve alert design      | Rule model, lifecycle, in-app notifications and device-config deferral approved                         | User reviews committed spec         | SD-4       | S     |
+| AC-2 | Alert rules               | Authorized users create/update bounded threshold rules for their station scope                          | CRUD and cross-scope tests          | AC-1       | M     |
+| AC-3 | Alert lifecycle           | Triggered alerts have deterministic open, acknowledge and resolve transitions with actor/time evidence  | State-machine and idempotency tests | AC-2       | M     |
+| C1   | Lifecycle review gate     | Alert transitions, idempotency and actor evidence are accepted before external providers are connected  | Review checklist and state tests    | AC-3       | S     |
+| AC-4 | In-app notification inbox | Scoped open/acknowledge/resolve notifications are durable, unread-aware and duplicate-safe              | Scope and concurrency tests         | C1         | M     |
+| CDEV | Device-configuration gate | No payload or publish API exists until hardware schema, units and transport receive a separate approval | Contract review                     | B-device   | S     |
 
-Checkpoint C: frontend alert action center, notification settings and IoT
-configuration pages can replace mock state.
+Checkpoint C-core: frontend alert action center and in-app inbox can replace
+mock state; the device-configuration page reports the capability unavailable.
 
 ### Phase D: Operations and production readiness
 

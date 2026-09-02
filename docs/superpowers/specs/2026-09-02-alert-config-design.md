@@ -1,7 +1,7 @@
 # Alert and In-App Notification Design
 
 Date: 2026-09-02
-Status: Draft for written-spec review
+Status: Approved for planning after station-data B-core locks its internal interfaces
 Module: `alert-config`
 Depends on: verified `station-data` B-core for implementation and B-device field
 metadata for production activation

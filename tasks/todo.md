@@ -36,15 +36,15 @@
 - [ ] SD-5: Expose scoped Client Developer data access
 - [ ] Checkpoint B: Frontend replaces station and soil mocks
 
-## Phase C: Alerts and configuration
+## Phase C: Alerts and in-app notifications
 
-- [ ] AC-1: Approve the `alert-config` design spec
+- [x] AC-1: Approve the `alert-config` design spec
 - [ ] AC-2: Implement scoped alert rules
 - [ ] AC-3: Implement acknowledge/resolve lifecycle
 - [ ] Checkpoint C1: Review alert state transitions and idempotency
-- [ ] AC-4: Implement notification delivery controls
-- [ ] AC-5: Implement versioned IoT configuration publishing
-- [ ] Checkpoint C: Frontend replaces alert/configuration mocks
+- [ ] AC-4: Implement the scoped in-app notification inbox
+- [ ] C-device design gate: Approve hardware schema and transport before configuration work
+- [ ] Checkpoint C-core: Frontend replaces alert and notification mocks
 
 ## Phase D: Operations
 
