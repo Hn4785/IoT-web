@@ -75,6 +75,7 @@ trúc envelope còn lại đúng như ví dụ trên.
 ## Tài liệu kiến trúc và bảo mật
 
 - [Integration-core design spec](./docs/superpowers/specs/2026-08-30-integration-core-design.md)
+- [Identity-access design spec](./docs/superpowers/specs/2026-09-02-identity-access-design.md)
 - [Backend capability map](./CAPABILITY-MAP.md)
 - [Integration-core threat model](./docs/security/integration-core-threat-model.md)
 - [Project status report](./docs/project/2026-09-02-project-status-report.md)
