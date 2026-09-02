@@ -1,5 +1,6 @@
 import { DynamicModule, Module } from '@nestjs/common';
 
+import { AuthModule } from '../auth/auth.module.js';
 import { RuntimeConfigModule } from '../config/runtime-config.module.js';
 import type { RuntimeConfig } from '../config/runtime-config.js';
 import { DatabaseModule } from '../database/database.module.js';
@@ -11,7 +12,13 @@ export class AppModule {
   static register(config: RuntimeConfig): DynamicModule {
     return {
       module: AppModule,
-      imports: [RuntimeConfigModule.register(config), DatabaseModule, HealthModule, IdentityModule],
+      imports: [
+        RuntimeConfigModule.register(config),
+        DatabaseModule,
+        AuthModule,
+        HealthModule,
+        IdentityModule,
+      ],
     };
   }
 }

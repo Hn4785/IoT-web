@@ -22,7 +22,11 @@ import {
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
 import { AdminAccessGuard } from '../auth/admin-access.guard.js';
-import { CurrentPrincipal, type CurrentPrincipalValue } from '../auth/current-principal.js';
+import { AccessTokenGuard } from '../authorization/access-token.guard.js';
+import {
+  CurrentPrincipal,
+  type CurrentPrincipalValue,
+} from '../authorization/current-principal.js';
 import {
   createUserOpenApiSchema,
   parseCreateUser,
@@ -37,7 +41,7 @@ import { IdentityService } from './identity.service.js';
 
 @ApiTags('admin-users')
 @ApiBearerAuth()
-@UseGuards(AdminAccessGuard)
+@UseGuards(AccessTokenGuard, AdminAccessGuard)
 @Controller('admin/users')
 export class IdentityController {
   constructor(private readonly identities: IdentityService) {}

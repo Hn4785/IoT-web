@@ -1,4 +1,5 @@
 import { SignJWT } from 'jose';
+import { randomBytes, randomUUID } from 'node:crypto';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
@@ -27,7 +28,15 @@ type OpenApiResponse = {
 };
 
 async function accessToken(userId: string): Promise<string> {
-  return new SignJWT({ tokenType: 'access' })
+  const session = await prisma.session.create({
+    data: {
+      userId,
+      tokenHash: randomBytes(32).toString('hex'),
+      familyId: randomUUID(),
+      expiresAt: new Date(Date.now() + 15 * 60_000),
+    },
+  });
+  return new SignJWT({ sessionId: session.id })
     .setProtectedHeader({ alg: 'HS256' })
     .setSubject(userId)
     .setIssuer('iot-api')
@@ -249,14 +258,16 @@ describe('administrator user provisioning', () => {
     expect(reset.body).not.toContain('passwordHash');
   });
 
-  it('publishes the provisioning contract without exposing login or password hashes', async () => {
+  it('publishes provisioning and authentication contracts without password hashes', async () => {
     const response = await app.inject({ method: 'GET', url: '/docs-json' });
     const document = response.json<OpenApiResponse>();
 
     expect(document.paths).toHaveProperty('/api/v1/admin/users');
     expect(document.paths).toHaveProperty('/api/v1/admin/users/{userId}');
     expect(document.paths).toHaveProperty('/api/v1/admin/users/{userId}/reset-password');
-    expect(document.paths).not.toHaveProperty('/api/v1/auth/login');
+    expect(document.paths).toHaveProperty('/api/v1/auth/login');
+    expect(document.paths).toHaveProperty('/api/v1/auth/me');
+    expect(document.paths).toHaveProperty('/api/v1/auth/change-password');
     expect(document.components?.securitySchemes).toHaveProperty('bearer');
     expect(response.body).not.toContain('passwordHash');
   });

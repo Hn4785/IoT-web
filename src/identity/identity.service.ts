@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { randomInt } from 'node:crypto';
 
-import type { CurrentPrincipalValue } from '../auth/current-principal.js';
 import { PasswordService } from '../auth/password.service.js';
+import type { CurrentPrincipalValue } from '../authorization/current-principal.js';
 import { AppError } from '../common/errors/app-error.js';
 import { Prisma } from '../generated/prisma/client.js';
 import { SecurityAuditService } from '../security-audit/security-audit.service.js';
@@ -13,29 +13,15 @@ import type {
   UserDto,
 } from './identity.contracts.js';
 import { IdentityRepository, safeUserSelect } from './identity.repository.js';
+import { toUserDto } from './user-dto.js';
 
 const TEMPORARY_PASSWORD_ALPHABET =
   'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%';
-
-type SafeUserRecord = Prisma.UserGetPayload<{ select: typeof safeUserSelect }>;
 
 function temporaryPassword(): string {
   return Array.from({ length: 20 }, () =>
     TEMPORARY_PASSWORD_ALPHABET.charAt(randomInt(TEMPORARY_PASSWORD_ALPHABET.length)),
   ).join('');
-}
-
-function toUserDto(user: SafeUserRecord): UserDto {
-  return {
-    id: user.id,
-    email: user.email,
-    displayName: user.displayName,
-    role: user.role,
-    status: user.status,
-    isSuperAdmin: user.heldAuthority?.authority === 'SUPER_ADMIN',
-    createdAt: user.createdAt.toISOString(),
-    updatedAt: user.updatedAt.toISOString(),
-  };
 }
 
 @Injectable()
