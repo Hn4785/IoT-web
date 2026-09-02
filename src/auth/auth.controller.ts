@@ -10,7 +10,7 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiCookieAuth, ApiTags } from '@nestjs/swagger';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { RouteConfig } from '@nestjs/platform-fastify';
 
@@ -23,7 +23,12 @@ import {
 import { AppError } from '../common/errors/app-error.js';
 import type { RuntimeConfig } from '../config/runtime-config.js';
 import { RUNTIME_CONFIG } from '../config/runtime-config.module.js';
-import { parseChangePassword, parseLogin } from './auth.contracts.js';
+import {
+  changePasswordOpenApiSchema,
+  loginOpenApiSchema,
+  parseChangePassword,
+  parseLogin,
+} from './auth.contracts.js';
 import { AuthService } from './auth.service.js';
 import { SessionService } from './session.service.js';
 
@@ -40,6 +45,7 @@ export class AuthController {
   ) {}
 
   @Post('login')
+  @ApiBody({ schema: loginOpenApiSchema })
   @HttpCode(200)
   @RouteConfig({ rateLimit: { max: 20, timeWindow: 60_000 } })
   @Header('Cache-Control', 'no-store')
@@ -61,6 +67,7 @@ export class AuthController {
   }
 
   @Post('refresh')
+  @ApiCookieAuth('refreshCookie')
   @HttpCode(200)
   @RouteConfig({ rateLimit: { max: 20, timeWindow: 60_000 } })
   @AllowPendingPasswordChange()
@@ -78,6 +85,7 @@ export class AuthController {
   }
 
   @Post('logout')
+  @ApiCookieAuth('refreshCookie')
   @HttpCode(200)
   @AllowPendingPasswordChange()
   @Header('Cache-Control', 'no-store')
@@ -98,6 +106,7 @@ export class AuthController {
   }
 
   @Post('change-password')
+  @ApiBody({ schema: changePasswordOpenApiSchema })
   @HttpCode(200)
   @ApiBearerAuth()
   @UseGuards(AccessTokenGuard)

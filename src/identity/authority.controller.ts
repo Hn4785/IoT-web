@@ -1,5 +1,5 @@
 import { Body, Controller, Header, HttpCode, Post, Req, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiTags } from '@nestjs/swagger';
 import { RouteConfig } from '@nestjs/platform-fastify';
 import type { FastifyRequest } from 'fastify';
 
@@ -9,7 +9,7 @@ import {
   CurrentPrincipal,
   type CurrentPrincipalValue,
 } from '../authorization/current-principal.js';
-import { parseTransferSuperAdmin } from './authority.contracts.js';
+import { parseTransferSuperAdmin, transferSuperAdminOpenApiSchema } from './authority.contracts.js';
 import { AuthorityService } from './authority.service.js';
 
 @ApiTags('super-admin')
@@ -20,6 +20,7 @@ export class AuthorityController {
   constructor(private readonly authority: AuthorityService) {}
 
   @Post('transfer')
+  @ApiBody({ schema: transferSuperAdminOpenApiSchema })
   @HttpCode(200)
   @RouteConfig({ rateLimit: { max: 10, timeWindow: 60_000 } })
   @Header('Cache-Control', 'no-store')

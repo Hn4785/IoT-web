@@ -40,7 +40,7 @@ describe('OpenAPI contract', () => {
       '/api/v1/admin/users/{userId}/station-grants/{stationId}',
     ]);
     expect(response.body).not.toContain('WEATHER_API_KEY');
-    expect(response.body).not.toContain('X-API-Key');
+    expect(response.body).toContain('X-API-Key');
     expect(response.body).not.toContain('must-not-appear');
   });
 

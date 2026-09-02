@@ -21,7 +21,8 @@
     "db:migrate:dev": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
     "db:status": "prisma migrate status",
-    "db:bootstrap-super-admin": "tsx src/identity/bootstrap-super-admin.ts"
+    "db:bootstrap-super-admin": "tsx src/identity/bootstrap-super-admin.ts",
+    "retention:run": "tsx src/identity/retention.command.ts"
   },
   "dependencies": {
     "@fastify/cookie": "11.1.2",

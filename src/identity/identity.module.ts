@@ -8,10 +8,12 @@ import { AuthorityController } from './authority.controller.js';
 import { AuthorityService } from './authority.service.js';
 import { IdentityRepository } from './identity.repository.js';
 import { IdentityService } from './identity.service.js';
+import { RetentionService } from './retention.service.js';
 
 @Module({
   imports: [AuthModule, AuthorizationModule, SecurityAuditModule],
   controllers: [AuthorityController, IdentityController],
-  providers: [AuthorityService, IdentityRepository, IdentityService],
+  providers: [AuthorityService, IdentityRepository, IdentityService, RetentionService],
+  exports: [RetentionService],
 })
 export class IdentityModule {}

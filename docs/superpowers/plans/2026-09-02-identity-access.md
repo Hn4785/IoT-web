@@ -720,7 +720,7 @@ git commit -m "feat: manage scoped client API keys"
 
 - Produces: reviewed Phase A OpenAPI; explicit maintenance command for 30/90/365-day policies; updated threat evidence.
 
-- [ ] **Step 1: RED — specify retention boundaries with an injected clock**
+- [x] **Step 1: RED — specify retention boundaries with an injected clock**
 
 Tests create records immediately before/after each cutoff and assert only expired/revoked sessions older than 30 days, anonymization requests older than 90 days and API-key evidence older than 90 days are purged/anonymized. Audit events younger than 365 days remain; Super Admin is never anonymized.
 
@@ -732,19 +732,19 @@ expect(await prisma.user.findUniqueOrThrow({ where: { id: superAdmin.id } })).to
 });
 ```
 
-- [ ] **Step 2: GREEN — implement an explicit maintenance transaction**
+- [x] **Step 2: GREEN — implement an explicit maintenance transaction**
 
 `RetentionService.run(now)` returns counts by category, performs bounded batches, replaces personal fields with non-reversible anonymous values, preserves audit-linked user IDs, and records one sanitized maintenance audit event. The CLI requires an explicit confirmation flag and never runs at app startup.
 
-- [ ] **Step 3: RED/GREEN — lock the public contract**
+- [x] **Step 3: RED/GREEN — lock the public contract**
 
 OpenAPI tests assert the exact Phase A path set, bearer/cookie/API-key security schemes, stable safe DTOs/error codes and absence of hashes, database URLs, JWT secret, pepper and example credentials. Production still returns normalized 404 for docs.
 
-- [ ] **Step 4: Update operator evidence**
+- [x] **Step 4: Update operator evidence**
 
 Document Docker startup, ignored local env creation, migrations, bootstrap, DBeaver host/port/database names, test database safety, retention command and credential rotation. Extend the threat model for browser/session, database, administrator and client-key trust boundaries.
 
-- [ ] **Step 5: Verify and commit**
+- [x] **Step 5: Verify and commit**
 
 ```powershell
 pnpm test test/integration/identity/retention.spec.ts test/integration/identity/openapi.spec.ts

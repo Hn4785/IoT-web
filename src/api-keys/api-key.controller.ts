@@ -9,7 +9,7 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiParam, ApiTags } from '@nestjs/swagger';
 import type { FastifyRequest } from 'fastify';
 
 import { AccessTokenGuard } from '../authorization/access-token.guard.js';
@@ -17,7 +17,11 @@ import {
   CurrentPrincipal,
   type CurrentPrincipalValue,
 } from '../authorization/current-principal.js';
-import { parseApiKeyId, parseCreateApiKey } from './api-key.contracts.js';
+import {
+  createApiKeyOpenApiSchema,
+  parseApiKeyId,
+  parseCreateApiKey,
+} from './api-key.contracts.js';
 import { ApiKeyService } from './api-key.service.js';
 
 @ApiTags('developer-api-keys')
@@ -34,6 +38,7 @@ export class ApiKeyController {
   }
 
   @Post()
+  @ApiBody({ schema: createApiKeyOpenApiSchema })
   @Header('Cache-Control', 'no-store')
   async create(
     @CurrentPrincipal() principal: CurrentPrincipalValue,
@@ -47,6 +52,7 @@ export class ApiKeyController {
   }
 
   @Post(':apiKeyId/rotate')
+  @ApiParam({ name: 'apiKeyId', format: 'uuid' })
   @Header('Cache-Control', 'no-store')
   async rotate(
     @CurrentPrincipal() principal: CurrentPrincipalValue,
@@ -60,6 +66,7 @@ export class ApiKeyController {
   }
 
   @Post(':apiKeyId/revoke')
+  @ApiParam({ name: 'apiKeyId', format: 'uuid' })
   @HttpCode(200)
   @Header('Cache-Control', 'no-store')
   async revoke(

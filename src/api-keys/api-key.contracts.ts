@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { SchemaObject } from '@nestjs/swagger';
 
 import { AppError } from '../common/errors/app-error.js';
 
@@ -20,6 +21,22 @@ export type ApiKeyDto = Readonly<{
   createdAt: string;
   stationIds: readonly string[];
 }>;
+
+export const createApiKeyOpenApiSchema: SchemaObject = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['name'],
+  properties: {
+    name: { type: 'string', minLength: 1, maxLength: 120 },
+    stationIds: {
+      type: 'array',
+      maxItems: 100,
+      uniqueItems: true,
+      items: { type: 'string', format: 'uuid' },
+      default: [],
+    },
+  },
+};
 
 function parse<T>(schema: z.ZodType<T>, value: unknown): T {
   const parsed = schema.safeParse(value);

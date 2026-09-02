@@ -50,6 +50,12 @@ export async function createApp(config: RuntimeConfig): Promise<NestFastifyAppli
       .setDescription('Role 3 backend contract for the Role 2 web application')
       .setVersion('0.1.0')
       .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT' }, 'bearer')
+      .addCookieAuth(
+        'refreshToken',
+        { type: 'apiKey', in: 'cookie', name: 'refreshToken' },
+        'refreshCookie',
+      )
+      .addApiKey({ type: 'apiKey', in: 'header', name: 'X-API-Key' }, 'apiKey')
       .build();
     const openApiDocument = SwaggerModule.createDocument(app, openApiConfig);
     SwaggerModule.setup('/docs', app, openApiDocument, {

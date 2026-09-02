@@ -18,6 +18,7 @@ import {
   ApiBody,
   ApiCreatedResponse,
   ApiOkResponse,
+  ApiParam,
   ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
@@ -88,6 +89,7 @@ export class IdentityController {
   }
 
   @Get(':userId')
+  @ApiParam({ name: 'userId', format: 'uuid' })
   @Header('Cache-Control', 'no-store')
   @ApiOkResponse({
     schema: {
@@ -100,6 +102,7 @@ export class IdentityController {
   }
 
   @Patch(':userId')
+  @ApiParam({ name: 'userId', format: 'uuid' })
   @Header('Cache-Control', 'no-store')
   @ApiBody({ schema: updateUserOpenApiSchema })
   @ApiOkResponse({
@@ -126,6 +129,7 @@ export class IdentityController {
   }
 
   @Post(':userId/reset-password')
+  @ApiParam({ name: 'userId', format: 'uuid' })
   @ApiCreatedResponse({ schema: provisionUserOpenApiSchema })
   async resetPassword(
     @CurrentPrincipal() actor: CurrentPrincipalValue,
@@ -141,6 +145,8 @@ export class IdentityController {
   }
 
   @Put(':userId/farm-memberships/:farmId')
+  @ApiParam({ name: 'userId', format: 'uuid' })
+  @ApiParam({ name: 'farmId', format: 'uuid' })
   async assignFarmMembership(
     @CurrentPrincipal() actor: CurrentPrincipalValue,
     @Param('userId') userId: string,
@@ -160,6 +166,8 @@ export class IdentityController {
   }
 
   @Delete(':userId/farm-memberships/:farmId')
+  @ApiParam({ name: 'userId', format: 'uuid' })
+  @ApiParam({ name: 'farmId', format: 'uuid' })
   async removeFarmMembership(
     @CurrentPrincipal() actor: CurrentPrincipalValue,
     @Param('userId') userId: string,
@@ -179,6 +187,8 @@ export class IdentityController {
   }
 
   @Put(':userId/station-grants/:stationId')
+  @ApiParam({ name: 'userId', format: 'uuid' })
+  @ApiParam({ name: 'stationId', format: 'uuid' })
   async assignStationGrant(
     @CurrentPrincipal() actor: CurrentPrincipalValue,
     @Param('userId') userId: string,
@@ -198,6 +208,8 @@ export class IdentityController {
   }
 
   @Delete(':userId/station-grants/:stationId')
+  @ApiParam({ name: 'userId', format: 'uuid' })
+  @ApiParam({ name: 'stationId', format: 'uuid' })
   async removeStationGrant(
     @CurrentPrincipal() actor: CurrentPrincipalValue,
     @Param('userId') userId: string,
