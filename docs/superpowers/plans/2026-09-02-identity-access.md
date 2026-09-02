@@ -662,7 +662,7 @@ git commit -m "feat: enforce authority and resource scope"
 
 - Produces: list/create/rotate/revoke endpoints; internal `ApiKeyPrincipal`; exact station-scope authentication for Phase B.
 
-- [ ] **Step 1: RED — specify one-time key creation**
+- [x] **Step 1: RED — specify one-time key creation**
 
 Tests prove only Client Developer can create a key, the response shows plaintext once with no-store headers, storage contains only keyed hash/prefix, expiry defaults to 90 days, rate is 60/minute, and requested stations must be a subset of current `ClientStationGrant` rows.
 
@@ -679,19 +679,19 @@ expect(created.json().data.key).toMatch(/^iot_live_[A-Za-z0-9_-]+$/);
 expect(await prisma.apiKey.findFirstOrThrow()).not.toHaveProperty('key');
 ```
 
-- [ ] **Step 2: GREEN — create bounded opaque credentials**
+- [x] **Step 2: GREEN — create bounded opaque credentials**
 
 Generate 32 random bytes and encode `iot_live_<prefix>_<secret>`. Persist only prefix plus `TokenHashService.hash(fullKey)`. Return `ApiKeyDto` without hash and a separate `key` field only from creation/rotation responses.
 
-- [ ] **Step 3: RED/GREEN — rotate, revoke and retain safe metadata**
+- [x] **Step 3: RED/GREEN — rotate, revoke and retain safe metadata**
 
 Rotation creates the replacement and revokes the old key atomically. Revocation is idempotent. Owner/Admin permissions follow the spec; owner status/role changes and removed account grants immediately invalidate matching keys/scopes.
 
-- [ ] **Step 4: RED/GREEN — authenticate with fixed cost and scope**
+- [x] **Step 4: RED/GREEN — authenticate with fixed cost and scope**
 
 The guard parses only the accepted key format, finds by prefix, verifies keyed hash with timing-safe comparison, checks owner/status/role/expiry/revocation and returns an `ApiKeyPrincipal`. Wrong, expired, revoked and cross-station keys share a safe denial; rate limiting keys on the API-key ID, never the plaintext.
 
-- [ ] **Step 5: Verify and commit**
+- [x] **Step 5: Verify and commit**
 
 ```powershell
 pnpm test test/integration/api-keys

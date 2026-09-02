@@ -11,7 +11,7 @@ describe('OpenAPI contract', () => {
     await app?.close();
   });
 
-  it('documents health, authentication and administrator provisioning without credentials', async () => {
+  it('documents Phase A HTTP contracts without credential material', async () => {
     app = await createApp(
       makeTestRuntimeConfig({
         weatherApiKey: 'must-not-appear',
@@ -23,6 +23,9 @@ describe('OpenAPI contract', () => {
     expect(response.statusCode).toBe(200);
     const document = response.json<{ paths: Record<string, unknown> }>();
     expect(Object.keys(document.paths)).toEqual([
+      '/api/v1/developer/api-keys',
+      '/api/v1/developer/api-keys/{apiKeyId}/rotate',
+      '/api/v1/developer/api-keys/{apiKeyId}/revoke',
       '/api/v1/auth/login',
       '/api/v1/auth/refresh',
       '/api/v1/auth/logout',

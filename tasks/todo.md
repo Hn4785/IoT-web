@@ -23,7 +23,7 @@
 - [x] IA-5: Implement refresh rotation, logout and revocation
 - [x] Checkpoint A2: Review session security and replay resistance
 - [x] IA-6: Enforce farm/plot/station resource scope
-- [ ] IA-7: Implement Client Developer API-key lifecycle
+- [x] IA-7: Implement Client Developer API-key lifecycle
 - [ ] Checkpoint A: Frontend replaces mock authentication
 
 ## Phase B: Authorized station data
