@@ -19,9 +19,9 @@
 - [x] IA-2: Establish PostgreSQL/Prisma identity persistence
 - [x] IA-3: Implement Admin user provisioning and three-role assignment
 - [x] Checkpoint A1: Review persistence and provisioning contract
-- [ ] IA-4: Implement login and current-session contract
-- [ ] IA-5: Implement refresh rotation, logout and revocation
-- [ ] Checkpoint A2: Review session security and replay resistance
+- [x] IA-4: Implement login and current-session contract
+- [x] IA-5: Implement refresh rotation, logout and revocation
+- [x] Checkpoint A2: Review session security and replay resistance
 - [ ] IA-6: Enforce farm/plot/station resource scope
 - [ ] IA-7: Implement Client Developer API-key lifecycle
 - [ ] Checkpoint A: Frontend replaces mock authentication

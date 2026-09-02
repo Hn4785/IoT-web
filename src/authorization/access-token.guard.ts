@@ -4,10 +4,7 @@ import { Reflector } from '@nestjs/core';
 import { JwtService } from '../auth/jwt.service.js';
 import { AppError } from '../common/errors/app-error.js';
 import { PrismaService } from '../database/prisma.service.js';
-import {
-  ALLOW_PENDING_PASSWORD_CHANGE,
-  type RequestWithPrincipal,
-} from './current-principal.js';
+import { ALLOW_PENDING_PASSWORD_CHANGE, type RequestWithPrincipal } from './current-principal.js';
 
 @Injectable()
 export class AccessTokenGuard implements CanActivate {
@@ -52,10 +49,10 @@ export class AccessTokenGuard implements CanActivate {
     if (session.user.status === 'DISABLED') {
       throw new AppError('ACCOUNT_DISABLED', 403, 'Account is disabled');
     }
-    const allowPending = this.reflector.getAllAndOverride<boolean>(
-      ALLOW_PENDING_PASSWORD_CHANGE,
-      [context.getHandler(), context.getClass()],
-    );
+    const allowPending = this.reflector.getAllAndOverride<boolean>(ALLOW_PENDING_PASSWORD_CHANGE, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
     if (session.user.status === 'PENDING_PASSWORD_CHANGE' && !allowPending) {
       throw new AppError('PASSWORD_CHANGE_REQUIRED', 403, 'Password change is required');
     }

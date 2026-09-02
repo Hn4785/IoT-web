@@ -483,7 +483,7 @@ git commit -m "feat: provision users within administrator authority"
 
 - Produces: `POST /auth/login`, `GET /auth/me`, `POST /auth/change-password`; `CurrentPrincipal { userId, sessionId, role, isSuperAdmin }`.
 
-- [ ] **Step 1: RED — specify login without account enumeration**
+- [x] **Step 1: RED — specify login without account enumeration**
 
 HTTP tests cover success, wrong password, unknown email, disabled account, five failures/15-minute lockout, and uniform `INVALID_CREDENTIALS` bodies. Success returns a 15-minute access token, safe user DTO and an HttpOnly refresh cookie; no token/hash appears in logs.
 
@@ -508,19 +508,19 @@ for (const email of ['missing@example.test', 'farmer@example.test']) {
 }
 ```
 
-- [ ] **Step 2: GREEN — implement session creation and JWT signing**
+- [x] **Step 2: GREEN — implement session creation and JWT signing**
 
 Use JOSE `SignJWT`/`jwtVerify` with issuer `iot-api`, audience `iot-web`, `sub`, `sessionId`, 15-minute expiry and the validated signing secret. Generate a 32-byte opaque refresh token, store only its hash with seven-day expiry, and set the cookie under `/api/v1/auth`.
 
-- [ ] **Step 3: RED/GREEN — resolve authority from database per request**
+- [x] **Step 3: RED/GREEN — resolve authority from database per request**
 
 Tests prove a disabled user or revoked session cannot use an unexpired JWT and changing role changes the next request's principal. The guard verifies JWT cryptography, then loads current user/session/authority; it never authorizes from a JWT role claim.
 
-- [ ] **Step 4: RED/GREEN — force first password change**
+- [x] **Step 4: RED/GREEN — force first password change**
 
 A pending-change user may call only `/auth/me`, `/auth/change-password`, refresh and logout. Password change verifies the temporary password, writes a new Argon2id hash, changes status from `PENDING_PASSWORD_CHANGE` to `ACTIVE`, revokes other sessions and records audit evidence.
 
-- [ ] **Step 5: Verify and commit**
+- [x] **Step 5: Verify and commit**
 
 ```powershell
 pnpm test test/integration/auth/login.spec.ts
@@ -547,7 +547,7 @@ git commit -m "feat: authenticate database-backed users"
 
 - Produces: `POST /auth/refresh`, `POST /auth/logout`; single-use conditional rotation and family revocation.
 
-- [ ] **Step 1: RED — specify cookie, Origin and rotation behavior**
+- [x] **Step 1: RED — specify cookie, Origin and rotation behavior**
 
 Tests assert missing/wrong Origin fails, valid refresh replaces both access/refresh tokens, old token becomes unusable, production cookies are Secure/HttpOnly/SameSite Strict, and auth responses use `Cache-Control: no-store`.
 
@@ -560,19 +560,19 @@ expect([first.statusCode, second.statusCode].sort()).toEqual([200, 401]);
 expect(first.headers['cache-control']).toBe('no-store');
 ```
 
-- [ ] **Step 2: GREEN — register cookie/CORS and rotate conditionally**
+- [x] **Step 2: GREEN — register cookie/CORS and rotate conditionally**
 
 Register `@fastify/cookie` and exact-origin `@fastify/cors` in `createApp`. Rotation uses one transaction with a conditional update `revokedAt=null AND expiresAt>now`; insert the replacement with the same `familyId` and link `replacedBySessionId`.
 
-- [ ] **Step 3: RED/GREEN — detect replay and concurrency**
+- [x] **Step 3: RED/GREEN — detect replay and concurrency**
 
 Run two concurrent refresh requests with the same cookie: exactly one succeeds. Reusing a replaced token revokes every active session in that family, returns `SESSION_REUSED`, and creates no new access token.
 
-- [ ] **Step 4: RED/GREEN — logout is idempotent and safe**
+- [x] **Step 4: RED/GREEN — logout is idempotent and safe**
 
 Logout revokes the current session, clears the refresh cookie with matching attributes and returns success even if already revoked. An unrelated session remains valid; logout-all remains an internal service operation used by role/password changes.
 
-- [ ] **Step 5: Checkpoint A2 and commit**
+- [x] **Step 5: Checkpoint A2 and commit**
 
 ```powershell
 pnpm test test/integration/auth

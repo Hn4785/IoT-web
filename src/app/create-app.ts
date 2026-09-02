@@ -1,4 +1,5 @@
 import cookie from '@fastify/cookie';
+import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
 import type { IncomingMessage } from 'node:http';
@@ -29,6 +30,10 @@ export async function createApp(config: RuntimeConfig): Promise<NestFastifyAppli
   app.useGlobalFilters(new HttpErrorFilter());
   const fastify = app.getHttpAdapter().getInstance();
   await fastify.register(cookie);
+  await fastify.register(cors, {
+    origin: config.frontendOrigin,
+    credentials: true,
+  });
   await fastify.register(helmet);
   await fastify.register(rateLimit, {
     max: GLOBAL_RATE_LIMIT_MAX,

@@ -11,15 +11,14 @@ import { SecurityAuditService } from '../security-audit/security-audit.service.j
 import type { ChangePasswordInput, LoginInput } from './auth.contracts.js';
 import { JwtService } from './jwt.service.js';
 import { PasswordService } from './password.service.js';
-import { TokenHashService } from './token-hash.service.js';
+import { SessionService } from './session.service.js';
+import { TOKEN_HASH_SERVICE, TokenHashService } from './token-hash.service.js';
 
 const ACCESS_TOKEN_EXPIRES_IN_SECONDS = 900;
 const REFRESH_TOKEN_LIFETIME_MS = 7 * 24 * 60 * 60 * 1000;
 const LOCKOUT_DURATION_MS = 15 * 60 * 1000;
 const MAX_FAILED_LOGINS = 5;
 const DUMMY_PASSWORD = 'not-a-real-password-value';
-
-export const TOKEN_HASH_SERVICE = Symbol('TOKEN_HASH_SERVICE');
 
 export type LoginResult = Readonly<{
   accessToken: string;
@@ -37,6 +36,7 @@ export class AuthService implements OnModuleInit {
     private readonly passwords: PasswordService,
     private readonly jwt: JwtService,
     private readonly audits: SecurityAuditService,
+    private readonly sessions: SessionService,
     @Inject(TOKEN_HASH_SERVICE) private readonly tokenHashes: TokenHashService,
   ) {}
 
@@ -134,10 +134,7 @@ export class AuthService implements OnModuleInit {
         },
         select: safeUserSelect,
       });
-      await transaction.session.updateMany({
-        where: { userId: user.id, id: { not: principal.sessionId }, revokedAt: null },
-        data: { revokedAt: new Date(), revokeReason: 'PASSWORD_CHANGED' },
-      });
+      await this.sessions.revokeAll(transaction, user.id, 'PASSWORD_CHANGED', principal.sessionId);
       await this.audits.record(transaction, {
         actorUserId: user.id,
         action: 'PASSWORD_CHANGED',
@@ -157,16 +154,17 @@ export class AuthService implements OnModuleInit {
   ): Promise<void> {
     await this.prisma.$transaction(async (transaction) => {
       if (user && incrementFailure) {
-        const nextCount = user.failedLoginCount + 1;
-        await transaction.user.update({
+        const updated = await transaction.user.update({
           where: { id: user.id },
-          data: {
-            failedLoginCount: { increment: 1 },
-            ...(nextCount >= MAX_FAILED_LOGINS
-              ? { lockedUntil: new Date(Date.now() + LOCKOUT_DURATION_MS) }
-              : {}),
-          },
+          data: { failedLoginCount: { increment: 1 } },
+          select: { failedLoginCount: true },
         });
+        if (updated.failedLoginCount >= MAX_FAILED_LOGINS) {
+          await transaction.user.update({
+            where: { id: user.id },
+            data: { lockedUntil: new Date(Date.now() + LOCKOUT_DURATION_MS) },
+          });
+        }
       }
       await transaction.securityAuditEvent.create({
         data: {

@@ -1,5 +1,7 @@
 import { createHmac } from 'node:crypto';
 
+export const TOKEN_HASH_SERVICE = Symbol('TOKEN_HASH_SERVICE');
+
 const MIN_PEPPER_LENGTH = 32;
 const MAX_TOKEN_LENGTH = 4096;
 

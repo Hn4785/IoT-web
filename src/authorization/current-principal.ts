@@ -3,8 +3,7 @@ import { createParamDecorator, type ExecutionContext, SetMetadata } from '@nestj
 import type { UserRole, UserStatus } from '../generated/prisma/enums.js';
 
 export const ALLOW_PENDING_PASSWORD_CHANGE = Symbol('ALLOW_PENDING_PASSWORD_CHANGE');
-export const AllowPendingPasswordChange = () =>
-  SetMetadata(ALLOW_PENDING_PASSWORD_CHANGE, true);
+export const AllowPendingPasswordChange = () => SetMetadata(ALLOW_PENDING_PASSWORD_CHANGE, true);
 
 export type CurrentPrincipalValue = Readonly<{
   userId: string;

@@ -53,6 +53,7 @@ describe('database-backed authentication', () => {
       createUser({ email: 'farmer@example.test' }),
       createUser({ email: 'disabled@example.test', status: 'DISABLED' }),
       createUser({ email: 'lock@example.test' }),
+      createUser({ email: 'parallel-lock@example.test' }),
       createUser({ email: 'mutable@example.test' }),
       createUser({
         email: 'pending-admin@example.test',
@@ -98,11 +99,7 @@ describe('database-backed authentication', () => {
   });
 
   it('uses one public error for wrong, unknown and disabled accounts', async () => {
-    for (const email of [
-      'farmer@example.test',
-      'missing@example.test',
-      'disabled@example.test',
-    ]) {
+    for (const email of ['farmer@example.test', 'missing@example.test', 'disabled@example.test']) {
       const response = await app.inject({
         method: 'POST',
         url: '/api/v1/auth/login',
@@ -138,6 +135,25 @@ describe('database-backed authentication', () => {
     });
     expect(denied.statusCode).toBe(401);
     expect(denied.json<ErrorResponse>().error.code).toBe('INVALID_CREDENTIALS');
+  });
+
+  it('locks an account after five concurrent failures', async () => {
+    const responses = await Promise.all(
+      Array.from({ length: 5 }, () =>
+        app.inject({
+          method: 'POST',
+          url: '/api/v1/auth/login',
+          payload: { email: 'parallel-lock@example.test', password: invalidPassword },
+        }),
+      ),
+    );
+    expect(responses.every((response) => response.statusCode === 401)).toBe(true);
+
+    const user = await prisma.user.findUniqueOrThrow({
+      where: { email: 'parallel-lock@example.test' },
+    });
+    expect(user.failedLoginCount).toBe(5);
+    expect(user.lockedUntil?.getTime()).toBeGreaterThan(Date.now() + 14 * 60_000);
   });
 
   it('reloads role and session state instead of trusting an unexpired JWT', async () => {

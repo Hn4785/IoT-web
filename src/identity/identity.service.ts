@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { randomInt } from 'node:crypto';
 
 import { PasswordService } from '../auth/password.service.js';
+import { SessionService } from '../auth/session.service.js';
 import type { CurrentPrincipalValue } from '../authorization/current-principal.js';
 import { AppError } from '../common/errors/app-error.js';
 import { Prisma } from '../generated/prisma/client.js';
@@ -30,6 +31,7 @@ export class IdentityService {
     private readonly repository: IdentityRepository,
     private readonly passwords: PasswordService,
     private readonly audits: SecurityAuditService,
+    private readonly sessions: SessionService,
   ) {}
 
   async listUsers(
@@ -138,10 +140,7 @@ export class IdentityService {
       const now = new Date();
       if (credentialsChanged) {
         await Promise.all([
-          transaction.session.updateMany({
-            where: { userId, revokedAt: null },
-            data: { revokedAt: now, revokeReason: 'ACCOUNT_CHANGED' },
-          }),
+          this.sessions.revokeAll(transaction, userId, 'ACCOUNT_CHANGED'),
           transaction.apiKey.updateMany({
             where: { ownerUserId: userId, revokedAt: null },
             data: { revokedAt: now },
@@ -199,11 +198,7 @@ export class IdentityService {
       if (!actorIsSuperAdmin && (target.id === actor.userId || target.role === 'ADMIN')) {
         throw new AppError('FORBIDDEN', 403, 'This password cannot be reset by an Admin');
       }
-      const now = new Date();
-      await transaction.session.updateMany({
-        where: { userId, revokedAt: null },
-        data: { revokedAt: now, revokeReason: 'PASSWORD_RESET' },
-      });
+      await this.sessions.revokeAll(transaction, userId, 'PASSWORD_RESET');
       const changed = await transaction.user.update({
         where: { id: userId },
         data: { passwordHash, status: 'PENDING_PASSWORD_CHANGE', passwordChangedAt: null },
