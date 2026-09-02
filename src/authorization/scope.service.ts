@@ -12,6 +12,7 @@ export class ScopeService {
   ) {}
 
   async canReadStation(principal: CurrentPrincipalValue, stationId: string): Promise<boolean> {
+    if (principal.status !== 'ACTIVE') return false;
     if (!this.policy.canUseBrowserStationData(principal.role)) return false;
     if (principal.role === 'ADMIN') return this.scopes.stationExists(stationId);
     return this.scopes.farmerCanReadStation(principal.userId, stationId);

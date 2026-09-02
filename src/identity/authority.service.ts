@@ -25,13 +25,10 @@ export class AuthorityService {
   ): Promise<{ holderUserId: string }> {
     const authority = await this.prisma.systemAuthority.findUnique({
       where: { authority: 'SUPER_ADMIN' },
-      select: { holderUserId: true, holder: { select: { passwordHash: true } } },
+      select: { holderUserId: true },
     });
     if (!authority || authority.holderUserId !== actor.userId) {
       throw new AppError('FORBIDDEN', 403, 'Only the current Super Admin can transfer authority');
-    }
-    if (!(await this.passwords.verify(authority.holder.passwordHash, input.currentPassword))) {
-      throw new AppError('INVALID_CREDENTIALS', 401, 'Invalid credentials');
     }
     if (input.successorUserId === actor.userId) {
       throw new AppError('CONFLICT', 409, 'The successor must be a different Admin');
@@ -43,7 +40,7 @@ export class AuthorityService {
           const [current, successor] = await Promise.all([
             transaction.systemAuthority.findUnique({
               where: { authority: 'SUPER_ADMIN' },
-              select: { holderUserId: true },
+              select: { holderUserId: true, holder: { select: { passwordHash: true } } },
             }),
             transaction.user.findUnique({
               where: { id: input.successorUserId },
@@ -52,6 +49,9 @@ export class AuthorityService {
           ]);
           if (current?.holderUserId !== actor.userId) {
             throw new AppError('CONFLICT', 409, 'Super Admin authority has already changed');
+          }
+          if (!(await this.passwords.verify(current.holder.passwordHash, input.currentPassword))) {
+            throw new AppError('INVALID_CREDENTIALS', 401, 'Invalid credentials');
           }
           if (!successor || successor.role !== 'ADMIN' || successor.status !== 'ACTIVE') {
             throw new AppError('CONFLICT', 409, 'Successor must be an active Admin');

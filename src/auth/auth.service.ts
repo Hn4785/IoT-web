@@ -68,12 +68,32 @@ export class AuthService implements OnModuleInit {
 
     const refreshToken = randomBytes(32).toString('base64url');
     const familyId = randomUUID();
-    const expiresAt = new Date(Date.now() + REFRESH_TOKEN_LIFETIME_MS);
+    const loginAt = new Date();
+    const expiresAt = new Date(loginAt.getTime() + REFRESH_TOKEN_LIFETIME_MS);
     const session = await this.prisma.$transaction(async (transaction) => {
-      await transaction.user.update({
-        where: { id: user.id },
+      const reset = await transaction.user.updateMany({
+        where: {
+          id: user.id,
+          passwordHash: user.passwordHash,
+          status: { not: 'DISABLED' },
+          OR: [{ lockedUntil: null }, { lockedUntil: { lt: loginAt } }],
+        },
         data: { failedLoginCount: 0, lockedUntil: null },
       });
+      if (reset.count !== 1) {
+        await transaction.securityAuditEvent.create({
+          data: {
+            actorUserId: user.id,
+            action: 'LOGIN_FAILED',
+            targetType: 'Authentication',
+            targetId: user.id,
+            result: 'DENIED',
+            requestId,
+            metadata: {},
+          },
+        });
+        return null;
+      }
       const created = await transaction.session.create({
         data: {
           userId: user.id,
@@ -91,6 +111,7 @@ export class AuthService implements OnModuleInit {
       });
       return created;
     });
+    if (!session) throw new AppError('INVALID_CREDENTIALS', 401, 'Invalid email or password');
     const accessToken = await this.jwt.sign({ userId: user.id, sessionId: session.id });
     return {
       accessToken,
@@ -123,8 +144,12 @@ export class AuthService implements OnModuleInit {
     }
     const passwordHash = await this.passwords.hash(input.newPassword);
     const updated = await this.prisma.$transaction(async (transaction) => {
-      const changed = await transaction.user.update({
-        where: { id: user.id },
+      const changed = await transaction.user.updateMany({
+        where: {
+          id: user.id,
+          passwordHash: user.passwordHash,
+          status: { not: 'DISABLED' },
+        },
         data: {
           passwordHash,
           passwordChangedAt: new Date(),
@@ -132,8 +157,8 @@ export class AuthService implements OnModuleInit {
           failedLoginCount: 0,
           lockedUntil: null,
         },
-        select: safeUserSelect,
       });
+      if (changed.count !== 1) return null;
       await this.sessions.revokeAll(transaction, user.id, 'PASSWORD_CHANGED', principal.sessionId);
       await this.audits.record(transaction, {
         actorUserId: user.id,
@@ -142,8 +167,12 @@ export class AuthService implements OnModuleInit {
         targetId: user.id,
         requestId,
       });
-      return changed;
+      return transaction.user.findUniqueOrThrow({
+        where: { id: user.id },
+        select: safeUserSelect,
+      });
     });
+    if (!updated) throw new AppError('INVALID_CREDENTIALS', 401, 'Invalid credentials');
     return toUserDto(updated);
   }
 

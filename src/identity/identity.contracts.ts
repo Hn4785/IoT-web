@@ -104,7 +104,7 @@ export const provisionUserOpenApiSchema: SchemaObject = {
       required: ['user', 'temporaryPassword'],
       properties: {
         user: userOpenApiSchema,
-        temporaryPassword: { type: 'string', minLength: 20, maxLength: 20, writeOnly: true },
+        temporaryPassword: { type: 'string', minLength: 20, maxLength: 20, readOnly: true },
       },
     },
   },

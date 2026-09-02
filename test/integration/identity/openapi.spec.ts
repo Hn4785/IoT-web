@@ -53,6 +53,10 @@ describe('Phase A OpenAPI boundary', () => {
         '/api/v1/admin/users/{userId}/farm-memberships/{farmId}'
       ]?.put?.parameters?.map((parameter) => parameter.schema?.format),
     ).toEqual(['uuid', 'uuid']);
+    const provisioningContract = JSON.stringify(document.paths['/api/v1/admin/users']?.post);
+    expect(provisioningContract).toContain('"temporaryPassword"');
+    expect(provisioningContract).toContain('"readOnly":true');
+    expect(provisioningContract).not.toContain('"writeOnly":true');
     expect(response.body).not.toMatch(
       /passwordHash|tokenHash|keyHash|DATABASE_URL|JWT_SECRET|CREDENTIAL_PEPPER/,
     );

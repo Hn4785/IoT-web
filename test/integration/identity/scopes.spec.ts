@@ -173,6 +173,12 @@ describe('resource scope administration', () => {
       scopes.canReadStation(principal(admin.id, 'ADMIN'), firstStation.id),
     ).resolves.toBe(true);
     await expect(
+      scopes.canReadStation(
+        { ...principal(admin.id, 'ADMIN'), status: 'DISABLED' },
+        firstStation.id,
+      ),
+    ).resolves.toBe(false);
+    await expect(
       scopes.canReadStation(principal(farmer.id, 'FARMER'), firstStation.id),
     ).resolves.toBe(true);
     await expect(

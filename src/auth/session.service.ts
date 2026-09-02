@@ -73,8 +73,12 @@ export class SessionService {
     });
 
     if (!outcome) {
-      await this.revokeReusedFamily(current.familyId, current.userId, current.id, requestId);
-      throw new AppError('SESSION_REUSED', 401, 'Refresh session reuse was detected');
+      const latest = await this.sessions.findByTokenHash(tokenHash);
+      if (latest?.replacedBySessionId || latest?.revokeReason === 'ROTATED') {
+        await this.revokeReusedFamily(current.familyId, current.userId, current.id, requestId);
+        throw new AppError('SESSION_REUSED', 401, 'Refresh session reuse was detected');
+      }
+      this.invalidSession();
     }
     return {
       accessToken: await this.jwt.sign({ userId: current.userId, sessionId: replacementId }),
