@@ -93,9 +93,10 @@ Checkpoint A: frontend can replace mock `useAuth`, remove extra roles and consum
 | SD-4 | Historical measurements     | UTC range, limit/order/interval/aggregate are bounded; response supports charts and reports                      | Boundary, pagination and upstream failure tests | SD-3       | M     |
 | SD-5 | Client Developer access     | API-key caller receives only granted station fields and rate-limit metadata through the approved public contract | API-key scope and rate-limit tests              | SD-3, IA-7 | M     |
 
-Checkpoint B: frontend can replace `src/data/farms`, `plots`, `stations` and
-`soilData`; dashboards, history reports, developer explorer and docs use live API
-contracts.
+Checkpoint B-core: frontend can replace `src/data/farms`, `plots`, `stations` and
+`soilData`; dashboards, history reports, developer explorer and docs use verified
+fake-upstream contracts. Checkpoint B-device remains open until hardware metadata
+and one real station validate the physical-data assumptions.
 
 ### Phase C: Alerts and in-app notifications
 

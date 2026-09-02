@@ -28,13 +28,14 @@
 
 ## Phase B: Authorized station data
 
-- [ ] SD-1: Approve the `station-data` design spec
+- [x] SD-1: Approve the `station-data` design spec
 - [ ] SD-2: Expose authorized farm/plot/station hierarchy
 - [ ] Checkpoint B1: Review hierarchy ownership and scope denials
 - [ ] SD-3: Expose validated latest measurements
 - [ ] SD-4: Expose bounded historical measurements
 - [ ] SD-5: Expose scoped Client Developer data access
-- [ ] Checkpoint B: Frontend replaces station and soil mocks
+- [ ] Checkpoint B-core: Frontend replaces station and soil mocks against verified fake upstream data
+- [ ] Checkpoint B-device: Hardware metadata and one real station validate physical assumptions
 
 ## Phase C: Alerts and in-app notifications
 

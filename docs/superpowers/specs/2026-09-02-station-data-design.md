@@ -1,7 +1,7 @@
 # Station Data Design
 
 Date: 2026-09-02
-Status: Draft for written-spec review
+Status: Approved for implementation planning
 Module: `station-data`
 Depends on: `integration-core`, `identity-access`
 
@@ -267,7 +267,8 @@ One data request addresses exactly one station. Station is the public station
 code and is resolved to the current registry before the existing API-key scope
 check. Client data responses use the same DTOs as browser data responses.
 
-Every non-health Client response includes:
+Every successfully API-key-authenticated non-health Client response, including a
+per-key `429`, includes:
 
 ```text
 X-RateLimit-Limit
