@@ -3,6 +3,7 @@ import { randomInt } from 'node:crypto';
 
 import { PasswordService } from '../auth/password.service.js';
 import { SessionService } from '../auth/session.service.js';
+import { AuthorizationPolicy } from '../authorization/authorization.policy.js';
 import type { CurrentPrincipalValue } from '../authorization/current-principal.js';
 import { AppError } from '../common/errors/app-error.js';
 import { Prisma } from '../generated/prisma/client.js';
@@ -32,6 +33,7 @@ export class IdentityService {
     private readonly passwords: PasswordService,
     private readonly audits: SecurityAuditService,
     private readonly sessions: SessionService,
+    private readonly policy: AuthorizationPolicy,
   ) {}
 
   async listUsers(
@@ -214,5 +216,84 @@ export class IdentityService {
       return changed;
     });
     return { user: toUserDto(user), temporaryPassword: plaintext };
+  }
+
+  async setFarmMembership(
+    actor: CurrentPrincipalValue,
+    userId: string,
+    farmId: string,
+    assigned: boolean,
+    requestId: string,
+  ): Promise<{ assigned: boolean }> {
+    return this.repository.transaction(async (transaction) => {
+      const [target, farm] = await Promise.all([
+        transaction.user.findUnique({ where: { id: userId }, select: { role: true } }),
+        transaction.farm.findUnique({ where: { id: farmId }, select: { id: true } }),
+      ]);
+      if (!target || !farm) throw new AppError('NOT_FOUND', 404, 'Resource not found');
+      if (!this.policy.canReceiveFarmMembership(target.role)) {
+        throw new AppError('CONFLICT', 409, 'Only Farmer accounts can receive farm memberships');
+      }
+      if (assigned) {
+        await transaction.farmMembership.upsert({
+          where: { userId_farmId: { userId, farmId } },
+          create: { userId, farmId },
+          update: {},
+        });
+      } else {
+        await transaction.farmMembership.deleteMany({ where: { userId, farmId } });
+      }
+      await this.audits.record(transaction, {
+        actorUserId: actor.userId,
+        action: assigned ? 'FARM_MEMBERSHIP_ASSIGNED' : 'FARM_MEMBERSHIP_REMOVED',
+        targetType: 'FarmMembership',
+        targetId: `${userId}:${farmId}`,
+        requestId,
+      });
+      return { assigned };
+    });
+  }
+
+  async setStationGrant(
+    actor: CurrentPrincipalValue,
+    userId: string,
+    stationId: string,
+    assigned: boolean,
+    requestId: string,
+  ): Promise<{ assigned: boolean }> {
+    return this.repository.transaction(async (transaction) => {
+      const [target, station] = await Promise.all([
+        transaction.user.findUnique({ where: { id: userId }, select: { role: true } }),
+        transaction.station.findUnique({ where: { id: stationId }, select: { id: true } }),
+      ]);
+      if (!target || !station) throw new AppError('NOT_FOUND', 404, 'Resource not found');
+      if (!this.policy.canReceiveStationGrant(target.role)) {
+        throw new AppError(
+          'CONFLICT',
+          409,
+          'Only Client Developer accounts can receive station grants',
+        );
+      }
+      if (assigned) {
+        await transaction.clientStationGrant.upsert({
+          where: { userId_stationId: { userId, stationId } },
+          create: { userId, stationId },
+          update: {},
+        });
+      } else {
+        await transaction.apiKeyStationScope.deleteMany({
+          where: { stationId, apiKey: { ownerUserId: userId } },
+        });
+        await transaction.clientStationGrant.deleteMany({ where: { userId, stationId } });
+      }
+      await this.audits.record(transaction, {
+        actorUserId: actor.userId,
+        action: assigned ? 'STATION_GRANT_ASSIGNED' : 'STATION_GRANT_REMOVED',
+        targetType: 'ClientStationGrant',
+        targetId: `${userId}:${stationId}`,
+        requestId,
+      });
+      return { assigned };
+    });
   }
 }

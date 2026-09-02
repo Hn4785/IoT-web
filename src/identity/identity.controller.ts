@@ -1,11 +1,13 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Header,
   Param,
   Patch,
   Post,
+  Put,
   Query,
   Req,
   Res,
@@ -135,6 +137,82 @@ export class IdentityController {
     return {
       success: true,
       data: await this.identities.resetPassword(actor, parseUserId(userId), request.id),
+    };
+  }
+
+  @Put(':userId/farm-memberships/:farmId')
+  async assignFarmMembership(
+    @CurrentPrincipal() actor: CurrentPrincipalValue,
+    @Param('userId') userId: string,
+    @Param('farmId') farmId: string,
+    @Req() request: FastifyRequest,
+  ) {
+    return {
+      success: true,
+      data: await this.identities.setFarmMembership(
+        actor,
+        parseUserId(userId),
+        parseUserId(farmId),
+        true,
+        request.id,
+      ),
+    };
+  }
+
+  @Delete(':userId/farm-memberships/:farmId')
+  async removeFarmMembership(
+    @CurrentPrincipal() actor: CurrentPrincipalValue,
+    @Param('userId') userId: string,
+    @Param('farmId') farmId: string,
+    @Req() request: FastifyRequest,
+  ) {
+    return {
+      success: true,
+      data: await this.identities.setFarmMembership(
+        actor,
+        parseUserId(userId),
+        parseUserId(farmId),
+        false,
+        request.id,
+      ),
+    };
+  }
+
+  @Put(':userId/station-grants/:stationId')
+  async assignStationGrant(
+    @CurrentPrincipal() actor: CurrentPrincipalValue,
+    @Param('userId') userId: string,
+    @Param('stationId') stationId: string,
+    @Req() request: FastifyRequest,
+  ) {
+    return {
+      success: true,
+      data: await this.identities.setStationGrant(
+        actor,
+        parseUserId(userId),
+        parseUserId(stationId),
+        true,
+        request.id,
+      ),
+    };
+  }
+
+  @Delete(':userId/station-grants/:stationId')
+  async removeStationGrant(
+    @CurrentPrincipal() actor: CurrentPrincipalValue,
+    @Param('userId') userId: string,
+    @Param('stationId') stationId: string,
+    @Req() request: FastifyRequest,
+  ) {
+    return {
+      success: true,
+      data: await this.identities.setStationGrant(
+        actor,
+        parseUserId(userId),
+        parseUserId(stationId),
+        false,
+        request.id,
+      ),
     };
   }
 }

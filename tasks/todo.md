@@ -22,7 +22,7 @@
 - [x] IA-4: Implement login and current-session contract
 - [x] IA-5: Implement refresh rotation, logout and revocation
 - [x] Checkpoint A2: Review session security and replay resistance
-- [ ] IA-6: Enforce farm/plot/station resource scope
+- [x] IA-6: Enforce farm/plot/station resource scope
 - [ ] IA-7: Implement Client Developer API-key lifecycle
 - [ ] Checkpoint A: Frontend replaces mock authentication
 

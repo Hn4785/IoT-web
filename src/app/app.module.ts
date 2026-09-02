@@ -1,6 +1,7 @@
 import { DynamicModule, Module } from '@nestjs/common';
 
 import { AuthModule } from '../auth/auth.module.js';
+import { AuthorizationModule } from '../authorization/authorization.module.js';
 import { RuntimeConfigModule } from '../config/runtime-config.module.js';
 import type { RuntimeConfig } from '../config/runtime-config.js';
 import { DatabaseModule } from '../database/database.module.js';
@@ -16,6 +17,7 @@ export class AppModule {
         RuntimeConfigModule.register(config),
         DatabaseModule,
         AuthModule,
+        AuthorizationModule,
         HealthModule,
         IdentityModule,
       ],

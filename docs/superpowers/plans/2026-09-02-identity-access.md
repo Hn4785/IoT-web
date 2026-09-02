@@ -605,7 +605,7 @@ Review cookie headers, replay evidence, logs and staged secrets before proceedin
 
 - Produces: atomic Super Admin transfer; Farmer farm membership and Client station-grant admin APIs; `canReadStation(principal, stationId): Promise<boolean>`.
 
-- [ ] **Step 1: RED — specify atomic authority transfer**
+- [x] **Step 1: RED — specify atomic authority transfer**
 
 Tests require current-password recheck, active Admin successor, session revocation for both actors, audit evidence and exactly one holder under concurrent transfer attempts. The holder cannot transfer to itself, Farmer or Client Developer.
 
@@ -621,19 +621,19 @@ expect(await prisma.systemAuthority.count()).toBe(1);
 expect(await activeSessionCount(currentHolder.id)).toBe(0);
 ```
 
-- [ ] **Step 2: GREEN — transfer with serialized durable state**
+- [x] **Step 2: GREEN — transfer with serialized durable state**
 
 Lock/read the singleton authority inside a serializable Prisma transaction, verify the actor still holds it, verify password and successor, update the holder, revoke affected sessions, append audit, then commit.
 
-- [ ] **Step 3: RED/GREEN — administer grants with role invariants**
+- [x] **Step 3: RED/GREEN — administer grants with role invariants**
 
 Real HTTP tests cover idempotent `PUT/DELETE` farm memberships for Farmer targets and station grants for Client Developer targets. Reject incompatible target roles and revoke/remove stale grants during role changes.
 
-- [ ] **Step 4: RED/GREEN — centralize scope decisions**
+- [x] **Step 4: RED/GREEN — centralize scope decisions**
 
 Table-driven tests prove Admin reads managed resources, Farmer inherits farm to plot/station, moving a station changes access immediately, Client Developer browser principals cannot read business data, and nonexistent/cross-scope resources both return the same non-leaking denial.
 
-- [ ] **Step 5: Verify and commit**
+- [x] **Step 5: Verify and commit**
 
 ```powershell
 pnpm test src/authorization test/integration/identity/super-admin.spec.ts test/integration/identity/scopes.spec.ts

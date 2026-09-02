@@ -29,9 +29,12 @@ describe('OpenAPI contract', () => {
       '/api/v1/auth/me',
       '/api/v1/auth/change-password',
       '/api/v1/health',
+      '/api/v1/admin/super-admin/transfer',
       '/api/v1/admin/users',
       '/api/v1/admin/users/{userId}',
       '/api/v1/admin/users/{userId}/reset-password',
+      '/api/v1/admin/users/{userId}/farm-memberships/{farmId}',
+      '/api/v1/admin/users/{userId}/station-grants/{stationId}',
     ]);
     expect(response.body).not.toContain('WEATHER_API_KEY');
     expect(response.body).not.toContain('X-API-Key');
