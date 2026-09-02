@@ -1,9 +1,17 @@
-# Active implementation plan
+# Backend expansion plan
 
-Canonical plan: [`docs/superpowers/plans/2026-08-30-integration-core.md`](../docs/superpowers/plans/2026-08-30-integration-core.md)
+Canonical roadmap: [`docs/roadmaps/2026-09-02-backend-completion-roadmap.md`](../docs/roadmaps/2026-09-02-backend-completion-roadmap.md)
 
 Completed module: `integration-core`
 
-All ten tasks and the completion gate are verified. The next module is
-`identity-access`, but its specification and implementation plan require user
-review and approval before production code begins.
+Next proposed module: `identity-access`
+
+The immediate active task is roadmap review and an `identity-access` brainstorming
+session. No production identity code is authorized until its design spec and
+module implementation plan are approved.
+
+Dependencies remain sequential:
+
+```text
+integration-core -> identity-access -> station-data -> alert-config -> operations
+```

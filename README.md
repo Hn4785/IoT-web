@@ -77,3 +77,5 @@ trúc envelope còn lại đúng như ví dụ trên.
 - [Integration-core design spec](./docs/superpowers/specs/2026-08-30-integration-core-design.md)
 - [Backend capability map](./CAPABILITY-MAP.md)
 - [Integration-core threat model](./docs/security/integration-core-threat-model.md)
+- [Project status report](./docs/project/2026-09-02-project-status-report.md)
+- [Backend completion roadmap](./docs/roadmaps/2026-09-02-backend-completion-roadmap.md)

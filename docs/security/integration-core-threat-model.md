@@ -1,6 +1,6 @@
 # Integration Core Threat Model
 
-Status: Implemented controls under verification
+Status: Implemented and verified
 
 Reviewed: 2026-09-01
 
@@ -72,6 +72,7 @@ No user PII or business database is introduced by this module.
 
 ## Verification evidence
 
-On 2026-09-01, `pnpm audit` reported no known vulnerabilities. The Task 9 and
-Task 10 completion gates re-run audit, tests, type checking, lint, build, format
-and secret scans before the module can be merged.
+On 2026-09-02, Task 10 completed: `pnpm audit` reported no known vulnerabilities;
+61 tests passed; format, lint, type checking, build, coverage and secret scans
+passed. The module remains on its local feature branch until the user chooses an
+integration action.
