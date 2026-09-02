@@ -132,7 +132,14 @@ Add scripts:
 }
 ```
 
-Allow install scripts only for `argon2`, `prisma`, and `@prisma/engines`; retain the explicit Scarf denial. Run `pnpm ignored-builds` and stop if any other package requests execution.
+Allow install scripts only for `argon2`, `prisma`, `@prisma/engines`, and the
+`esbuild` binary required by the approved `tsx`/Vitest toolchain; retain the
+explicit Scarf denial. Run `pnpm ignored-builds` and stop if any other package
+requests execution.
+
+Pin pnpm overrides `deepmerge-ts@8.0.0` and `mysql2@3.22.0` because Prisma 7.10
+pins vulnerable transitive versions. Retain the overrides only if Prisma
+validate/generate, full tests and `pnpm audit` all pass.
 
 - [ ] **Step 4: Define local PostgreSQL without committing secrets**
 
