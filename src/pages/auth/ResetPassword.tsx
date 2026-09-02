@@ -1,4 +1,4 @@
-import { FormEvent, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Check, Eye, EyeOff, LockKeyhole } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -75,7 +75,7 @@ export default function ResetPassword() {
     },
   ];
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError("");
 

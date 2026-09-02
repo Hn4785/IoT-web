@@ -74,12 +74,12 @@ export const protectedRoutes: AppRoute[] = [
   // FARM OWNER
   // =========================
   {
-    path: "/farm-owner",
+    path: "/farm-owner/dashboard",
     roles: ["farm_owner"],
     element: <FarmDashboard />,
   },
   {
-    path: "/farm-owner/reports",
+    path: "/farm-owner/history-reports",
     roles: ["farm_owner"],
     element: <HistoryReport />,
   },
@@ -89,7 +89,7 @@ export const protectedRoutes: AppRoute[] = [
     element: <NotificationSettings />,
   },
   {
-    path: "/farm-owner/alerts",
+    path: "/farm-owner/alert-center",
     roles: ["farm_owner"],
     element: <AlertActionCenter />,
   },
@@ -98,7 +98,7 @@ export const protectedRoutes: AppRoute[] = [
   // CLIENT DEVELOPER
   // =========================
   {
-    path: "/developer",
+    path: "/developer/dashboard",
     roles: ["client_developer"],
     element: <DeveloperDashboard />,
   },
@@ -108,22 +108,22 @@ export const protectedRoutes: AppRoute[] = [
     element: <ApiKeys />,
   },
   {
-    path: "/developer/permissions",
+    path: "/developer/api-permissions",
     roles: ["client_developer"],
     element: <ApiPermissions />,
   },
   {
-    path: "/developer/docs",
+    path: "/developer/api-docs",
     roles: ["client_developer"],
     element: <ApiDocs />,
   },
   {
-    path: "/developer/explorer",
+    path: "/developer/api-explorer",
     roles: ["client_developer"],
     element: <ApiExplorer />,
   },
   {
-    path: "/developer/metrics",
+    path: "/developer/api-metrics",
     roles: ["client_developer"],
     element: <ApiMetrics />,
   },
@@ -134,17 +134,11 @@ export const getDefaultRouteByRole = (role: UserRole): string => {
     case "admin":
       return "/admin";
 
-    case "technician":
-      return "/technician";
-
-    case "operator":
-      return "/operator";
-
     case "farm_owner":
-      return "/farm-owner";
+      return "/farm-owner/dashboard";
 
     case "client_developer":
-      return "/developer";
+      return "/developer/dashboard";
 
     default:
       return "/login";

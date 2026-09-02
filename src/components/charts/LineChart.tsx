@@ -11,19 +11,39 @@ export interface LineChartPoint {
 
 export interface LineChartProps {
   data: LineChartPoint[];
+
   width?: number;
   height?: number;
+
   min?: number;
   max?: number;
+
   unit?: string;
+
   showGrid?: boolean;
   showLabels?: boolean;
   showTooltip?: boolean;
   showDots?: boolean;
   showArea?: boolean;
+
+  /**
+   * Hiển thị quality của điểm dữ liệu
+   * trong tooltip.
+   */
+  showQuality?: boolean;
+
+  /**
+   * Hiển thị timestamp của điểm dữ liệu
+   * trong tooltip.
+   */
+  showTimestamp?: boolean;
+
   lineWidth?: number;
+
   emptyMessage?: string;
+
   className?: string;
+
   ariaLabel?: string;
 }
 
@@ -81,6 +101,8 @@ export default function LineChart({
   showTooltip = true,
   showDots = true,
   showArea = false,
+  showQuality = true,
+  showTimestamp = true,
   lineWidth = 2,
   emptyMessage = "No data available",
   className,
@@ -101,7 +123,10 @@ export default function LineChart({
 
   const domain = useMemo(() => {
     if (validValues.length === 0) {
-      return { min: 0, max: 100 };
+      return {
+        min: 0,
+        max: 100,
+      };
     }
 
     const dataMin = min ?? Math.min(...validValues);
@@ -133,7 +158,8 @@ export default function LineChart({
       const x =
         data.length === 1
           ? PADDING.left + chartWidth / 2
-          : PADDING.left + (index / (data.length - 1)) * chartWidth;
+          : PADDING.left +
+            (index / (data.length - 1)) * chartWidth;
 
       if (point.value === null) {
         return {
@@ -144,7 +170,8 @@ export default function LineChart({
       }
 
       const ratio =
-        (point.value - domain.min) / (domain.max - domain.min);
+        (point.value - domain.min) /
+        (domain.max - domain.min);
 
       const y =
         PADDING.top +
@@ -210,14 +237,17 @@ export default function LineChart({
     const count = 5;
     const range = domain.max - domain.min;
 
-    return Array.from({ length: count }, (_, index) => {
-      const ratio = index / (count - 1);
+    return Array.from(
+      { length: count },
+      (_, index) => {
+        const ratio = index / (count - 1);
 
-      return {
-        value: domain.max - ratio * range,
-        y: PADDING.top + ratio * chartHeight,
-      };
-    });
+        return {
+          value: domain.max - ratio * range,
+          y: PADDING.top + ratio * chartHeight,
+        };
+      },
+    );
   }, [domain, chartHeight]);
 
   const handlePointMouseEnter = (
@@ -228,7 +258,8 @@ export default function LineChart({
       return;
     }
 
-    const rect = event.currentTarget.ownerSVGElement?.getBoundingClientRect();
+    const rect =
+      event.currentTarget.ownerSVGElement?.getBoundingClientRect();
 
     if (!rect) {
       return;
@@ -376,17 +407,21 @@ export default function LineChart({
             )}
           </strong>
 
-          {data[tooltip.index].timestamp && (
-            <span>
-              {formatTimestamp(data[tooltip.index].timestamp)}
-            </span>
-          )}
+          {showTimestamp &&
+            data[tooltip.index].timestamp && (
+              <span>
+                {formatTimestamp(
+                  data[tooltip.index].timestamp,
+                )}
+              </span>
+            )}
 
-          {data[tooltip.index].quality && (
-            <span>
-              Quality: {data[tooltip.index].quality}
-            </span>
-          )}
+          {showQuality &&
+            data[tooltip.index].quality && (
+              <span>
+                Quality: {data[tooltip.index].quality}
+              </span>
+            )}
         </div>
       )}
     </div>

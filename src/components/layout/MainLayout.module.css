@@ -1,20 +1,57 @@
+/* ============================================================
+   MAIN APPLICATION LAYOUT
+   ============================================================ */
+
 .layout {
-  display: flex;
+  width: 100%;
   min-height: 100vh;
-  background-color: var(--color-bg-page, #f8fafc);
+
+  display: flex;
+
+  background-color: var(--color-bg-page);
 }
+
+/* ============================================================
+   MAIN AREA
+   ============================================================ */
 
 .main {
   flex: 1;
+
   min-width: 0;
+  min-height: 100vh;
+
   display: flex;
   flex-direction: column;
+
+  background-color: var(--color-bg-page);
 }
+
+/* ============================================================
+   PAGE CONTENT
+   ============================================================ */
 
 .content {
   flex: 1;
-  padding: 24px;
-  max-width: 1440px;
-  width: 100%;
-  margin: 0 auto;
+
+  min-width: 0;
+
+  overflow-x: hidden;
+  overflow-y: auto;
+
+  background-color: var(--color-bg-page);
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
+@media (max-width: 768px) {
+  .layout {
+    display: block;
+  }
+
+  .main {
+    min-height: 100vh;
+  }
 }

@@ -13,10 +13,19 @@ export default function RoleRoute({
   allowedRoles,
   children,
 }: RoleRouteProps) {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) {
+    return null;
+  }
 
   if (!user) {
-    return <Navigate to="/login" replace />;
+    return (
+      <Navigate
+        to="/login"
+        replace
+      />
+    );
   }
 
   const hasAccess = allowedRoles.includes(user.role);

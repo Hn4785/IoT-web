@@ -1,27 +1,43 @@
-import type { ReactNode } from "react";
-import { Navigate, Outlet, useLocation } from "react-router-dom";
+import {
+  Navigate,
+  Outlet,
+  useLocation,
+} from "react-router-dom";
 
 import { useAuth } from "@/hooks/useAuth";
 
-interface ProtectedRouteProps {
-  children?: ReactNode;
-}
+export default function ProtectedRoute() {
+  const {
+    user,
+    isLoading,
+  } = useAuth();
 
-export default function ProtectedRoute({
-  children,
-}: ProtectedRouteProps) {
-  const { user } = useAuth();
   const location = useLocation();
 
+  /**
+   * Đang đọc User từ LocalStorage.
+   */
+  if (isLoading) {
+    return null;
+  }
+
+  /**
+   * Chưa đăng nhập.
+   */
   if (!user) {
     return (
       <Navigate
         to="/login"
         replace
-        state={{ from: location }}
+        state={{
+          from: location,
+        }}
       />
     );
   }
 
-  return children ? <>{children}</> : <Outlet />;
+  /**
+   * Đã đăng nhập.
+   */
+  return <Outlet />;
 }

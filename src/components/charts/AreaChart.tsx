@@ -1,3 +1,5 @@
+import type { CSSProperties } from "react";
+
 import LineChart, {
   type LineChartPoint,
   type LineChartProps,
@@ -19,7 +21,7 @@ export default function AreaChart({
       style={
         {
           "--chart-area-opacity": fillOpacity,
-        } as React.CSSProperties
+        } as CSSProperties
       }
     >
       <LineChart

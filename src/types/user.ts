@@ -1,8 +1,6 @@
 // Các vai trò được định nghĩa trong hệ thống
 export type UserRole =
   | "admin"
-  | "technician"
-  | "operator"
   | "farm_owner"
   | "client_developer";
 

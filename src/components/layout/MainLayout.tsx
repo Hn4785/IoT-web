@@ -21,9 +21,13 @@ export default function MainLayout({ children }: MainLayoutProps) {
   return (
     <div className={styles.layout}>
       <Sidebar />
+
       <div className={styles.main}>
         <Topbar />
-        <main className={styles.content}>{children}</main>
+
+        <main className={styles.content}>
+          {children}
+        </main>
       </div>
     </div>
   );

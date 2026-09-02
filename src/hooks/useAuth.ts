@@ -31,15 +31,6 @@ function readStoredUser(): User | null {
   }
 }
 
-/**
- * Frontend authentication state.
- *
- * Current implementation is intentionally local/mock because
- * the production authentication contract has not been confirmed.
- *
- * It provides the user state required by ProtectedRoute and RoleRoute
- * without assuming a backend API, access-token format, or refresh-token flow.
- */
 export function useAuth(): UseAuthReturn {
   const [state, setState] = useState<AuthState>({
     user: null,

@@ -39,11 +39,9 @@ interface AuditLog {
 const auditLogs: AuditLog[] = [
   {
     id: "AUD-001",
-    timestamp:
-      "2026-08-30T16:42:11Z",
+    timestamp: "2026-08-30T16:42:11Z",
     user: "Alex Morgan",
-    action:
-      "Changed sensor threshold",
+    action: "Changed sensor threshold",
     resource: "Alert Rule",
     resourceId: "RULE-001",
     previous: "30%",
@@ -53,11 +51,9 @@ const auditLogs: AuditLog[] = [
   },
   {
     id: "AUD-002",
-    timestamp:
-      "2026-08-30T16:28:34Z",
+    timestamp: "2026-08-30T16:28:34Z",
     user: "Daniel Nguyen",
-    action:
-      "Updated station configuration",
+    action: "Updated station configuration",
     resource: "Station",
     resourceId: "ST-001",
     previous: "10s",
@@ -67,11 +63,9 @@ const auditLogs: AuditLog[] = [
   },
   {
     id: "AUD-003",
-    timestamp:
-      "2026-08-30T16:15:02Z",
+    timestamp: "2026-08-30T16:15:02Z",
     user: "Alex Morgan",
-    action:
-      "Rotated gateway credential",
+    action: "Rotated gateway credential",
     resource: "Gateway",
     resourceId: "GW-004",
     previous: "credential-v3",
@@ -81,11 +75,9 @@ const auditLogs: AuditLog[] = [
   },
   {
     id: "AUD-004",
-    timestamp:
-      "2026-08-30T15:58:46Z",
+    timestamp: "2026-08-30T15:58:46Z",
     user: "Emily Tran",
-    action:
-      "Updated station configuration",
+    action: "Updated station configuration",
     resource: "Station",
     resourceId: "ST-004",
     previous: "20s",
@@ -95,11 +87,9 @@ const auditLogs: AuditLog[] = [
   },
   {
     id: "AUD-005",
-    timestamp:
-      "2026-08-30T15:41:20Z",
+    timestamp: "2026-08-30T15:41:20Z",
     user: "Alex Morgan",
-    action:
-      "Created alert rule",
+    action: "Created alert rule",
     resource: "Alert Rule",
     resourceId: "RULE-004",
     previous: "—",
@@ -109,11 +99,9 @@ const auditLogs: AuditLog[] = [
   },
   {
     id: "AUD-006",
-    timestamp:
-      "2026-08-30T15:22:05Z",
+    timestamp: "2026-08-30T15:22:05Z",
     user: "System",
-    action:
-      "Device heartbeat processed",
+    action: "Device heartbeat processed",
     resource: "Station",
     resourceId: "ST-003",
     previous: "offline",
@@ -123,11 +111,9 @@ const auditLogs: AuditLog[] = [
   },
   {
     id: "AUD-007",
-    timestamp:
-      "2026-08-30T14:58:09Z",
+    timestamp: "2026-08-30T14:58:09Z",
     user: "Daniel Nguyen",
-    action:
-      "Changed user role",
+    action: "Changed user role",
     resource: "User",
     resourceId: "USR-008",
     previous: "operator",
@@ -180,22 +166,37 @@ const services = [
   ],
 ] as const;
 
+/**
+ * FIX TYPE:
+ * Tạo union type từ tên các service trong mảng services.
+ *
+ * Kết quả:
+ * "MQTT Broker"
+ * | "Ingestion"
+ * | "Notification"
+ * | "WebSocket"
+ * | "Dead Letter Queue"
+ */
+type ServiceName = (typeof services)[number][0];
+
 export default function AuditLogs() {
-  const [query, setQuery] =
-    useState("");
+  const [query, setQuery] = useState("");
 
   const [result, setResult] =
-    useState<"all" | AuditResult>(
-      "all",
-    );
+    useState<"all" | AuditResult>("all");
 
   const [dateRange, setDateRange] =
     useState<DateRange | undefined>();
 
   const [page, setPage] = useState(1);
 
+  /**
+   * FIX ERROR TS2345:
+   * Không để TypeScript tự suy luận chỉ là "MQTT Broker".
+   * Khai báo rõ selectedService có kiểu ServiceName.
+   */
   const [selectedService, setSelectedService] =
-    useState(services[0][0]);
+    useState<ServiceName>(services[0][0]);
 
   const pageSize = 6;
 
@@ -218,10 +219,7 @@ export default function AuditLogs() {
         result === "all" ||
         log.result === result;
 
-      return (
-        matchesSearch &&
-        matchesResult
-      );
+      return matchesSearch && matchesResult;
     });
   }, [query, result]);
 
@@ -246,6 +244,7 @@ export default function AuditLogs() {
         }
       />
 
+      {/* Filters */}
       <section className={styles.filters}>
         <SearchInput
           onSearch={(value) => {
@@ -308,28 +307,21 @@ export default function AuditLogs() {
         />
       </section>
 
+      {/* Audit Activity */}
       <section className={styles.panel}>
-        <div
-          className={
-            styles.sectionHeader
-          }
-        >
+        <div className={styles.sectionHeader}>
           <div>
             <h2>
               Audit Activity
             </h2>
 
             <p>
-              Administrative activity
-              records.
+              Administrative activity records.
             </p>
           </div>
 
-          <span
-            className={styles.count}
-          >
-            {filteredLogs.length} visible
-            events
+          <span className={styles.count}>
+            {filteredLogs.length} visible events
           </span>
         </div>
 
@@ -352,8 +344,7 @@ export default function AuditLogs() {
             <tbody>
               {filteredLogs
                 .slice(
-                  (page - 1) *
-                    pageSize,
+                  (page - 1) * pageSize,
                   page * pageSize,
                 )
                 .map((log) => (
@@ -375,9 +366,7 @@ export default function AuditLogs() {
                     </td>
 
                     <td
-                      className={
-                        styles.mono
-                      }
+                      className={styles.mono}
                     >
                       {log.resourceId}
                     </td>
@@ -391,9 +380,7 @@ export default function AuditLogs() {
                     </td>
 
                     <td
-                      className={
-                        styles.mono
-                      }
+                      className={styles.mono}
                     >
                       {log.source}
                     </td>
@@ -401,14 +388,12 @@ export default function AuditLogs() {
                     <td>
                       <StatusBadge
                         status={
-                          log.result ===
-                          "success"
+                          log.result === "success"
                             ? "active"
                             : "critical"
                         }
                         label={
-                          log.result ===
-                          "success"
+                          log.result === "success"
                             ? "Success"
                             : "Failed"
                         }
@@ -422,29 +407,23 @@ export default function AuditLogs() {
 
         <Pagination
           currentPage={page}
-          totalItems={
-            filteredLogs.length
-          }
+          totalItems={filteredLogs.length}
           pageSize={pageSize}
           onPageChange={setPage}
           itemLabel="events"
         />
       </section>
 
+      {/* System Monitoring */}
       <section className={styles.panel}>
-        <div
-          className={
-            styles.sectionHeader
-          }
-        >
+        <div className={styles.sectionHeader}>
           <div>
             <h2>
               System Monitoring
             </h2>
 
             <p>
-              Health of critical platform
-              services.
+              Health of critical platform services.
             </p>
           </div>
 
@@ -454,49 +433,28 @@ export default function AuditLogs() {
           </span>
         </div>
 
-        <div
-          className={
-            styles.serviceTabs
-          }
-        >
-          {services.map(
-            ([name, Icon]) => (
-              <button
-                key={name}
-                className={
-                  selectedService ===
-                  name
-                    ? styles.activeService
-                    : ""
-                }
-                onClick={() =>
-                  setSelectedService(
-                    name,
-                  )
-                }
-              >
-                <Icon size={16} />
-                {name}
-              </button>
-            ),
-          )}
-        </div>
-
-        <div
-          className={
-            styles.serviceDetail
-          }
-        >
-          <div
-            className={
-              styles.serviceTitle
-            }
-          >
-            <span
+        <div className={styles.serviceTabs}>
+          {services.map(([name, Icon]) => (
+            <button
+              key={name}
               className={
-                styles.serviceIcon
+                selectedService === name
+                  ? styles.activeService
+                  : ""
+              }
+              onClick={() =>
+                setSelectedService(name)
               }
             >
+              <Icon size={16} />
+              {name}
+            </button>
+          ))}
+        </div>
+
+        <div className={styles.serviceDetail}>
+          <div className={styles.serviceTitle}>
+            <span className={styles.serviceIcon}>
               <ServiceIcon size={20} />
             </span>
 
@@ -555,11 +513,7 @@ export default function AuditLogs() {
           </div>
         </div>
 
-        <div
-          className={
-            styles.monitoringFooter
-          }
-        >
+        <div className={styles.monitoringFooter}>
           <Activity size={16} />
 
           Last health check: 30 Aug 2026,

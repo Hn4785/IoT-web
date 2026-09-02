@@ -1,14 +1,3 @@
-/* ============================================================
-   GLOBALS.CSS
-   Global resets & base element styles only.
-   Do NOT put component-specific CSS here (Sidebar, KPI Card,
-   Table, Modal, etc.) — each component owns its own CSS file.
-
-   Font loading: Inter + JetBrains Mono are loaded via <link>
-   tags in index.html (Google Fonts CDN), not @import here,
-   so the browser can start fetching fonts as early as possible.
-   ============================================================ */
-
 @import './variables.css';
 
 /* ------------------------------------------------------------
@@ -24,6 +13,8 @@
 }
 
 html {
+  width: 100%;
+  min-width: 100%;
   -webkit-text-size-adjust: 100%;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -39,21 +30,27 @@ ol {
    ------------------------------------------------------------ */
 
 html,
-body {
-  height: 100%;
+body,
+  #root {
+  width: 100%;
+  min-width: 100%;
+  min-height: 100%;
 }
 
 body {
+  min-height: 100vh;
   font-family: var(--font-family-base);
   font-size: var(--font-size-body);
   font-weight: var(--font-weight-regular);
   line-height: var(--line-height-base);
   color: var(--color-text-primary);
   background-color: var(--color-bg-page);
+  overflow-x: hidden;
 }
 
 #root {
-  min-height: 100%;
+  width: 100%;
+  min-height: 100vh;
 }
 
 h1, h2, h3, h4, h5, h6 {

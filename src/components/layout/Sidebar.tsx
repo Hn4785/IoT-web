@@ -32,24 +32,11 @@ interface NavItem {
  */
 const NAV_CONFIG: Record<UserRole, NavItem[]> = {
   admin: [
-    { label: 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard },
+    { label: 'Dashboard', path: '/admin', icon: LayoutDashboard },
     { label: 'Users', path: '/admin/users', icon: Users },
-    { label: 'IoT Config', path: '/admin/iot-configuration', icon: Settings },
+    { label: 'IoT Config', path: '/admin/configuration', icon: Settings },
     { label: 'Devices', path: '/admin/devices', icon: Monitor },
     { label: 'Audit Log', path: '/admin/audit-logs', icon: History },
-    { label: 'System Monitor', path: '/admin/system-monitor', icon: Activity },
-  ],
-  technician: [
-    { label: 'Device Health', path: '/technician/device-health', icon: Activity },
-    { label: 'Stations', path: '/technician/stations', icon: Monitor },
-    { label: 'Technical Alerts', path: '/technician/alerts', icon: History },
-    { label: 'Config Proposals', path: '/technician/config-proposals', icon: Settings },
-  ],
-  operator: [
-    { label: 'Dashboard', path: '/operator/dashboard', icon: LayoutDashboard },
-    { label: 'Soil History', path: '/operator/soil-history', icon: History },
-    { label: 'Soil Comparison', path: '/operator/soil-comparison', icon: Activity },
-    { label: 'Agricultural Alerts', path: '/operator/alerts', icon: Monitor },
   ],
   farm_owner: [
     { label: 'Dashboard', path: '/farm-owner/dashboard', icon: LayoutDashboard },
@@ -81,8 +68,7 @@ function getInitials(name: string): string {
 function formatRoleLabel(role: UserRole): string {
   const map: Record<UserRole, string> = {
     admin: 'Admin',
-    technician: 'Technician',
-    operator: 'Operator',
+
     farm_owner: 'Farm Owner',
     client_developer: 'Developer',
   };
