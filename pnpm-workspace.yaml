@@ -1,4 +1,11 @@
 allowBuilds:
+  '@prisma/engines': true
   '@scarf/scarf': false
+  argon2: true
+  esbuild: true
+  prisma: true
 minimumReleaseAge: 1440
 minimumReleaseAgeStrict: true
+overrides:
+  deepmerge-ts: 8.0.0
+  mysql2: 3.22.0

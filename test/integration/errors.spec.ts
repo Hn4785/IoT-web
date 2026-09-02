@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { createApp } from '../../src/app/create-app.js';
 import type { RuntimeConfig } from '../../src/config/runtime-config.js';
+import { makeTestRuntimeConfig } from '../helpers/runtime-config.js';
 
 const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
@@ -10,14 +11,11 @@ describe('HTTP errors', () => {
   let app: NestFastifyApplication;
 
   beforeEach(async () => {
-    app = await createApp({
-      nodeEnv: 'test',
-      port: 3000,
-      logLevel: 'error',
-      weatherApiBaseUrl: 'http://127.0.0.1:9999/api/v1',
-      weatherApiKey: 'error-test-key',
-      weatherApiTimeoutMs: 500,
-    });
+    app = await createApp(
+      makeTestRuntimeConfig({
+        weatherApiKey: 'error-test-key',
+      }),
+    );
   });
 
   afterEach(async () => {
@@ -59,16 +57,12 @@ describe('HTTP errors', () => {
     await app.close();
     let nodeEnvReads = 0;
     const throwingConfig: RuntimeConfig = {
+      ...makeTestRuntimeConfig(),
       get nodeEnv(): RuntimeConfig['nodeEnv'] {
         nodeEnvReads += 1;
         if (nodeEnvReads === 1) return 'test';
         throw new Error('secret-stack-marker');
       },
-      port: 3000,
-      logLevel: 'error',
-      weatherApiBaseUrl: 'http://127.0.0.1:9999/api/v1',
-      weatherApiKey: 'error-test-key',
-      weatherApiTimeoutMs: 500,
     };
     app = await createApp(throwingConfig);
 

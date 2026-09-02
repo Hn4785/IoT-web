@@ -1,17 +1,14 @@
 import { startUpstreamServer } from '../../../test/helpers/upstream-server.js';
-import type { RuntimeConfig } from '../../config/runtime-config.js';
+import { makeTestRuntimeConfig } from '../../../test/helpers/runtime-config.js';
 import { parseLatestWeatherQuery, parseWeatherHistoryQuery } from './contracts.js';
 import { WeatherClientService } from './weather-client.service.js';
 
 const makeClient = (baseUrl: string, apiKey = 'server-only-key', timeoutMs = 1_000) => {
-  const config: RuntimeConfig = {
-    nodeEnv: 'test',
-    port: 3000,
-    logLevel: 'info',
+  const config = makeTestRuntimeConfig({
     weatherApiBaseUrl: baseUrl,
     weatherApiKey: apiKey,
     weatherApiTimeoutMs: timeoutMs,
-  };
+  });
 
   return new WeatherClientService(config);
 };

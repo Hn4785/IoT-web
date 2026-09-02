@@ -3,6 +3,7 @@ import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 
 import { createApp } from '../../src/app/create-app.js';
 import type { HealthResponse } from '../../src/health/health.controller.js';
+import { makeTestRuntimeConfig } from '../helpers/runtime-config.js';
 
 describe('GET /api/v1/health', () => {
   let app: NestFastifyApplication | undefined;
@@ -12,14 +13,11 @@ describe('GET /api/v1/health', () => {
   });
 
   it('returns the stable liveness envelope without secret values', async () => {
-    app = await createApp({
-      nodeEnv: 'test',
-      port: 3000,
-      logLevel: 'error',
-      weatherApiBaseUrl: 'http://127.0.0.1:9999/api/v1',
-      weatherApiKey: 'must-not-appear',
-      weatherApiTimeoutMs: 500,
-    });
+    app = await createApp(
+      makeTestRuntimeConfig({
+        weatherApiKey: 'must-not-appear',
+      }),
+    );
 
     const response = await app.inject({ method: 'GET', url: '/api/v1/health' });
 

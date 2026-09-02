@@ -2,6 +2,7 @@ import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { createApp } from '../../src/app/create-app.js';
+import { makeTestRuntimeConfig } from '../helpers/runtime-config.js';
 
 describe('OpenAPI contract', () => {
   let app: NestFastifyApplication | undefined;
@@ -11,14 +12,11 @@ describe('OpenAPI contract', () => {
   });
 
   it('documents only the health contract without Weather credentials', async () => {
-    app = await createApp({
-      nodeEnv: 'test',
-      port: 3000,
-      logLevel: 'error',
-      weatherApiBaseUrl: 'http://127.0.0.1:9999/api/v1',
-      weatherApiKey: 'must-not-appear',
-      weatherApiTimeoutMs: 500,
-    });
+    app = await createApp(
+      makeTestRuntimeConfig({
+        weatherApiKey: 'must-not-appear',
+      }),
+    );
 
     const response = await app.inject({ method: 'GET', url: '/docs-json' });
 
@@ -31,14 +29,12 @@ describe('OpenAPI contract', () => {
   });
 
   it('serves the interactive API documentation at /docs', async () => {
-    app = await createApp({
-      nodeEnv: 'development',
-      port: 3000,
-      logLevel: 'error',
-      weatherApiBaseUrl: 'http://127.0.0.1:9999/api/v1',
-      weatherApiKey: 'must-not-appear',
-      weatherApiTimeoutMs: 500,
-    });
+    app = await createApp(
+      makeTestRuntimeConfig({
+        nodeEnv: 'development',
+        weatherApiKey: 'must-not-appear',
+      }),
+    );
 
     const response = await app.inject({ method: 'GET', url: '/docs' });
 
@@ -50,14 +46,13 @@ describe('OpenAPI contract', () => {
   it.each(['/docs-json', '/docs'])(
     'does not expose %s in production',
     async (documentationPath) => {
-      app = await createApp({
-        nodeEnv: 'production',
-        port: 3000,
-        logLevel: 'error',
-        weatherApiBaseUrl: 'https://weather.example/api/v1',
-        weatherApiKey: 'must-not-appear',
-        weatherApiTimeoutMs: 500,
-      });
+      app = await createApp(
+        makeTestRuntimeConfig({
+          nodeEnv: 'production',
+          weatherApiBaseUrl: 'https://weather.example/api/v1',
+          weatherApiKey: 'must-not-appear',
+        }),
+      );
 
       const response = await app.inject({ method: 'GET', url: documentationPath });
 
