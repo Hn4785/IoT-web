@@ -1,7 +1,7 @@
 # Design Spec: `identity-access`
 
 Date: 2026-09-02
-Status: Draft for written-spec review
+Status: Implemented and verified
 Initiative: IoT Soil Monitoring Backend
 Depends on: `integration-core`
 

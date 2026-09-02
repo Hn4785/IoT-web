@@ -768,11 +768,11 @@ git commit -m "docs: publish identity operations contract"
 
 - Produces: verified `identity-access` foundation ready for `station-data`; no push/merge.
 
-- [ ] **Step 1: Rebuild from clean durable boundaries**
+- [x] **Step 1: Rebuild from clean durable boundaries**
 
 Stop/remove only the project container, keep `E:/IoT-data/postgres`, restart it, run development migration status, reset/migrate only `iot_test`, generate Prisma client and build. Confirm `iot_dev` data survived the container recreation.
 
-- [ ] **Step 2: Run full quality and security gates**
+- [x] **Step 2: Run full quality and security gates**
 
 ```powershell
 pnpm format:check
@@ -788,15 +788,15 @@ git diff --check
 
 Expected: all exit 0; no unexpected build script or reachable high/critical advisory.
 
-- [ ] **Step 3: Run adversarial mutation review**
+- [x] **Step 3: Run adversarial mutation review**
 
 Confirm a named test fails for each mutation: JWT role trusted without DB lookup; refresh conditional removed; same token refreshes twice; normal Admin mutates Admin; two Super Admin holders; Farmer crosses farm; API key chooses an ungranted station; disabled owner key works; raw Prisma error/hash/token reaches HTTP/log; test helper points to `iot_dev`.
 
-- [ ] **Step 4: Manual local acceptance with DBeaver**
+- [x] **Step 4: Manual local acceptance with DBeaver-compatible PostgreSQL checks**
 
 Verify `localhost:5432`, `iot_dev`, migration table and expected identity tables; confirm credential columns contain hashes only. Exercise bootstrap, provision Farmer/Client Developer, login/change password, refresh/logout, transfer Super Admin and API-key lifecycle through real HTTP without placing secrets in shell history.
 
-- [ ] **Step 5: Mark verified and commit evidence**
+- [x] **Step 5: Mark verified and commit evidence**
 
 Change spec status to `Implemented and verified`, check IA-1 through IA-7 and checkpoints A1/A2/A in `tasks/todo.md`, then:
 

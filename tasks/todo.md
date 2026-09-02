@@ -24,7 +24,7 @@
 - [x] Checkpoint A2: Review session security and replay resistance
 - [x] IA-6: Enforce farm/plot/station resource scope
 - [x] IA-7: Implement Client Developer API-key lifecycle
-- [ ] Checkpoint A: Frontend replaces mock authentication
+- [x] Checkpoint A: Backend contract verified; frontend can replace mock authentication
 
 ## Phase B: Authorized station data
 
