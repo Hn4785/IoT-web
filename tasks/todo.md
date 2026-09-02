@@ -15,7 +15,7 @@
 
 ## Phase A: Identity and access
 
-- [ ] IA-1: Review roadmap and approve the `identity-access` design spec
+- [x] IA-1: Review roadmap and approve the `identity-access` design spec
 - [ ] IA-2: Establish PostgreSQL/Prisma identity persistence
 - [ ] IA-3: Implement Admin user provisioning and three-role assignment
 - [ ] Checkpoint A1: Review persistence and provisioning contract
