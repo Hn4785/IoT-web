@@ -36,8 +36,7 @@ const cursorPayloadSchema = z.discriminatedUnion('kind', [
 export type CursorPayload = z.infer<typeof cursorPayloadSchema>;
 export type CursorKind = CursorPayload['kind'];
 
-const invalidCursor = (): AppError =>
-  new AppError('VALIDATION_ERROR', 400, 'Cursor is invalid');
+const invalidCursor = (): AppError => new AppError('VALIDATION_ERROR', 400, 'Cursor is invalid');
 
 export function encodeCursor(value: CursorPayload): string {
   const parsed = cursorPayloadSchema.safeParse(value);

@@ -8,6 +8,7 @@ import type { RuntimeConfig } from '../config/runtime-config.js';
 import { DatabaseModule } from '../database/database.module.js';
 import { HealthModule } from '../health/health.module.js';
 import { IdentityModule } from '../identity/identity.module.js';
+import { StationDataModule } from '../station-data/station-data.module.js';
 
 @Module({})
 export class AppModule {
@@ -22,6 +23,7 @@ export class AppModule {
         AuthorizationModule,
         HealthModule,
         IdentityModule,
+        StationDataModule,
       ],
     };
   }

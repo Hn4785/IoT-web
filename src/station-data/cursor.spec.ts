@@ -18,16 +18,17 @@ describe('station-data cursor codec', () => {
 
   it.each(['', 'not-base64', Buffer.from('{}').toString('base64url'), 'x'.repeat(2049)])(
     'rejects malformed cursor %s',
-    (cursor) =>
-      expect(() => decodeCursor(cursor, 'farm')).toThrowError(
+    (cursor) => {
+      expect(() => decodeCursor(cursor, 'farm')).toThrow(
         expect.objectContaining({ code: 'VALIDATION_ERROR', statusCode: 400 }),
-      ),
+      );
+    },
   );
 
   it('rejects a cursor from another route kind', () => {
     const cursor = encodeCursor({ v: 1, kind: 'farm', name: 'A', id: randomUUID() });
 
-    expect(() => decodeCursor(cursor, 'plot')).toThrowError(
+    expect(() => decodeCursor(cursor, 'plot')).toThrow(
       expect.objectContaining({ code: 'VALIDATION_ERROR', statusCode: 400 }),
     );
   });
@@ -38,7 +39,7 @@ describe('station-data cursor codec', () => {
       'utf8',
     ).toString('base64url');
 
-    expect(() => decodeCursor(cursor, 'farm')).toThrowError(
+    expect(() => decodeCursor(cursor, 'farm')).toThrow(
       expect.objectContaining({ code: 'VALIDATION_ERROR' }),
     );
   });

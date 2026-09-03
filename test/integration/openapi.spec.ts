@@ -11,7 +11,7 @@ describe('OpenAPI contract', () => {
     await app?.close();
   });
 
-  it('documents Phase A HTTP contracts without credential material', async () => {
+  it('documents current HTTP contracts without credential material', async () => {
     app = await createApp(
       makeTestRuntimeConfig({
         weatherApiKey: 'must-not-appear',
@@ -38,6 +38,10 @@ describe('OpenAPI contract', () => {
       '/api/v1/admin/users/{userId}/reset-password',
       '/api/v1/admin/users/{userId}/farm-memberships/{farmId}',
       '/api/v1/admin/users/{userId}/station-grants/{stationId}',
+      '/api/v1/farms',
+      '/api/v1/farms/{farmId}/plots',
+      '/api/v1/plots/{plotId}/stations',
+      '/api/v1/stations/{stationId}',
     ]);
     expect(response.body).not.toContain('WEATHER_API_KEY');
     expect(response.body).toContain('X-API-Key');
