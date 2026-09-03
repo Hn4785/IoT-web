@@ -22,6 +22,7 @@
     "db:migrate:deploy": "prisma migrate deploy",
     "db:status": "prisma migrate status",
     "db:bootstrap-super-admin": "tsx src/identity/bootstrap-super-admin.ts",
+    "db:seed-station-demo": "tsx src/station-data/seed-station-demo.ts",
     "retention:run": "tsx src/identity/retention.command.ts"
   },
   "dependencies": {

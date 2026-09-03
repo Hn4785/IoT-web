@@ -15,6 +15,17 @@ Phase A chưa cung cấp latest/history của cảm biến. Endpoint dữ liệu
 thêm trong Phase B và bắt buộc gọi policy scope hoặc API-key guard hiện có.
 Weather credential luôn ở backend và không được gửi cho frontend.
 
+Phase B1 đã cung cấp hierarchy có phân quyền cho browser:
+
+- `GET /api/v1/farms`
+- `GET /api/v1/farms/:farmId/plots`
+- `GET /api/v1/plots/:plotId/stations`
+- `GET /api/v1/stations/:stationId`
+
+Admin đọc toàn bộ registry; Farmer chỉ đọc nông trại đang có membership. Các tài
+nguyên không tồn tại và ngoài phạm vi đều trả cùng `404 NOT_FOUND`. Client
+Developer không dùng các route browser này và nhận `403 FORBIDDEN`.
+
 ## Chạy local
 
 Yêu cầu Node.js `>=24.19.0 <25`, pnpm `11.19.0`, Docker Desktop và PostgreSQL
@@ -44,6 +55,18 @@ Bootstrap Super Admin lần đầu. Mật khẩu được nhập hai lần bằn
 ```powershell
 pnpm db:bootstrap-super-admin -- --email root@example.com
 ```
+
+Tạo registry demo sau khi migration đã áp dụng:
+
+```powershell
+pnpm db:seed-station-demo -- --confirm-demo-seed
+```
+
+Lệnh chỉ chạy khi `DATABASE_URL` trỏ chính xác tới database `/iot_dev`, môi trường
+không phải production và có đúng cờ xác nhận. Lệnh idempotent, chỉ tạo `Farm
+Demo`, `Plot Demo`, `Station NODE01` và `Station NODE02`; không sửa/xóa dữ liệu,
+không tạo user, membership, station grant hoặc API key. Admin vẫn phải gán quyền
+qua API quản trị.
 
 ```powershell
 pnpm dev
@@ -107,20 +130,21 @@ authority không bị anonymize; audit linkage bằng user ID được giữ l�
 
 ## Lệnh kiểm tra và vận hành
 
-| Lệnh                                        | Mục đích                                 |
-| ------------------------------------------- | ---------------------------------------- |
-| `pnpm dev`                                  | Chạy development server                  |
-| `pnpm build`                                | Biên dịch production                     |
-| `pnpm start`                                | Chạy bản đã build                        |
-| `pnpm test`                                 | Chạy toàn bộ test                        |
-| `pnpm test:coverage`                        | Chạy test và xuất coverage               |
-| `pnpm typecheck`                            | Kiểm tra TypeScript                      |
-| `pnpm lint`                                 | Kiểm tra ESLint, không chấp nhận warning |
-| `pnpm format:check`                         | Kiểm tra Prettier                        |
-| `pnpm audit`                                | Kiểm tra dependency advisory             |
-| `pnpm ignored-builds`                       | Kiểm tra package build script bị chặn    |
-| `pnpm db:status`                            | Kiểm tra migration database hiện tại     |
-| `pnpm retention:run -- --confirm-retention` | Chạy retention có xác nhận               |
+| Lệnh                                               | Mục đích                                  |
+| -------------------------------------------------- | ----------------------------------------- |
+| `pnpm dev`                                         | Chạy development server                   |
+| `pnpm build`                                       | Biên dịch production                      |
+| `pnpm start`                                       | Chạy bản đã build                         |
+| `pnpm test`                                        | Chạy toàn bộ test                         |
+| `pnpm test:coverage`                               | Chạy test và xuất coverage                |
+| `pnpm typecheck`                                   | Kiểm tra TypeScript                       |
+| `pnpm lint`                                        | Kiểm tra ESLint, không chấp nhận warning  |
+| `pnpm format:check`                                | Kiểm tra Prettier                         |
+| `pnpm audit`                                       | Kiểm tra dependency advisory              |
+| `pnpm ignored-builds`                              | Kiểm tra package build script bị chặn     |
+| `pnpm db:status`                                   | Kiểm tra migration database hiện tại      |
+| `pnpm db:seed-station-demo -- --confirm-demo-seed` | Tạo registry demo an toàn trong `iot_dev` |
+| `pnpm retention:run -- --confirm-retention`        | Chạy retention có xác nhận                |
 
 ## Tài liệu kiến trúc và bảo mật
 

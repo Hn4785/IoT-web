@@ -29,8 +29,8 @@
 ## Phase B: Authorized station data
 
 - [x] SD-1: Approve the `station-data` design spec
-- [ ] SD-2: Expose authorized farm/plot/station hierarchy
-- [ ] Checkpoint B1: Review hierarchy ownership and scope denials
+- [x] SD-2: Expose authorized farm/plot/station hierarchy
+- [x] Checkpoint B1: Review hierarchy ownership and scope denials
 - [ ] SD-3: Expose validated latest measurements
 - [ ] SD-4: Expose bounded historical measurements
 - [ ] SD-5: Expose scoped Client Developer data access
