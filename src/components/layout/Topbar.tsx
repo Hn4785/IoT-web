@@ -55,7 +55,7 @@ export default function Topbar({ notificationCount = 0, onSearch }: TopbarProps)
         {user && (
           <button type="button" className={styles.avatarButton} aria-label="User menu">
             <span className={styles.avatarFallback}>
-              {user.fullName.charAt(0).toUpperCase()}
+              {user.displayName.charAt(0).toUpperCase()}
             </span>
           </button>
         )}

@@ -2,8 +2,11 @@ import { Navigate, Route, Routes } from "react-router-dom";
 
 import { useAuth } from "@/hooks/useAuth";
 
+import MainLayout from "@/components/layout/MainLayout";
+
 import ProtectedRoute from "./ProtectedRoute";
 import RoleRoute from "./RoleRoute";
+
 import {
   getDefaultRouteByRole,
   publicRoutes,
@@ -57,10 +60,14 @@ export default function AppRoutes() {
             element={
               route.roles ? (
                 <RoleRoute allowedRoles={route.roles}>
-                  {route.element}
+                  <MainLayout>
+                    {route.element}
+                  </MainLayout>
                 </RoleRoute>
               ) : (
-                route.element
+                <MainLayout>
+                  {route.element}
+                </MainLayout>
               )
             }
           />

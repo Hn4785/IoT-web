@@ -1,67 +1,73 @@
 import type { User } from "@/types/user";
 
-export const mockAdminUser: User = {
-  id: "USR-ADMIN-001",
+export const mockUsers: User[] = [
+  {
+    id: "USR-ADMIN-001",
+    displayName: "System Administrator",
+    email: "admin@iot.local",
+    phone: "0123456789",
 
-  fullName: "System Administrator",
+    role: "ADMIN",
+    isSuperAdmin: true,
+    status: "ACTIVE",
 
-  email: "admin@iot.local",
+    assignedFarmIds: [],
+    assignedPlotIds: [],
+    assignedStationIds: [],
 
-  phone: "0123456789",
+    permissions: [],
 
-  role: "admin",
+    lastLogin: new Date().toISOString(),
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
 
-  status: "active",
+  {
+    id: "USR-FARM-001",
+    displayName: "Farm Owner",
+    email: "farmer@iot.local",
+    phone: "0987654321",
 
-  assignedFarmIds: [],
+    role: "FARMER",
+    isSuperAdmin: false,
+    status: "ACTIVE",
 
-  assignedPlotIds: [],
+    assignedFarmIds: ["FARM-001"],
+    assignedPlotIds: ["PLOT-001", "PLOT-002"],
+    assignedStationIds: ["STATION-001", "STATION-002"],
 
-  assignedStationIds: [],
+    permissions: [],
 
-  permissions: [],
+    lastLogin: new Date().toISOString(),
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
 
-  lastLogin: new Date().toISOString(),
+  {
+    id: "USR-DEV-001",
+    displayName: "Client Developer",
+    email: "developer@iot.local",
+    phone: "0912345678",
 
-  createdAt: new Date().toISOString(),
+    role: "CLIENT_DEVELOPER",
+    isSuperAdmin: false,
+    status: "ACTIVE",
 
-  updatedAt: new Date().toISOString(),
-};
-export const mockFarmOwnerUser: User = {
-  id: "USR-FARM-001",
-  fullName: "Farm Owner",
-  email: "farmer@iot.local",
-  phone: "0987654321",
+    assignedFarmIds: [],
+    assignedPlotIds: [],
+    assignedStationIds: [],
 
-  role: "farm_owner",
-  status: "active",
+    permissions: [],
 
-  assignedFarmIds: ["FARM-001"],
-  assignedPlotIds: ["PLOT-001", "PLOT-002"],
-  assignedStationIds: ["STATION-001", "STATION-002"],
+    lastLogin: new Date().toISOString(),
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+];
 
-  permissions: [],
+// Giữ các export riêng để tương thích với Login.tsx hiện tại
+export const mockAdminUser = mockUsers[0];
 
-  lastLogin: new Date().toISOString(),
-  createdAt: new Date().toISOString(),
-  updatedAt: new Date().toISOString(),
-};
-export const mockDeveloperUser: User = {
-  id: "USR-DEV-001",
-  fullName: "Client Developer",
-  email: "developer@iot.local",
-  phone: "0912345678",
+export const mockFarmOwnerUser = mockUsers[1];
 
-  role: "client_developer",
-  status: "active",
-
-  assignedFarmIds: [],
-  assignedPlotIds: [],
-  assignedStationIds: [],
-
-  permissions: [],
-
-  lastLogin: new Date().toISOString(),
-  createdAt: new Date().toISOString(),
-  updatedAt: new Date().toISOString(),
-};
+export const mockDeveloperUser = mockUsers[2];

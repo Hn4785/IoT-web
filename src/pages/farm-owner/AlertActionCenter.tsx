@@ -1029,7 +1029,7 @@ export default function AlertActionCenter() {
 
                           <div>
                             <strong>
-                              {author?.fullName ??
+                              {author?.displayName ??
                                 "Farm user"}
                             </strong>
 
@@ -1062,7 +1062,7 @@ export default function AlertActionCenter() {
 
               Actions are recorded for{" "}
               <strong>
-                {currentUser?.fullName ??
+                {currentUser?.displayName ??
                   "the farm owner"}
               </strong>{" "}
               in this mock workflow.

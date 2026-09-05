@@ -19,32 +19,21 @@ interface NavItem {
   icon: LucideIcon;
 }
 
-/**
- * ⚠️ GIẢ ĐỊNH — CẦN XÁC NHẬN VỚI FIGMA
- * - Menu "admin" lấy đúng theo ảnh Admin Dashboard đã gửi (Dashboard, Users, IoT Config,
- *   Devices, Audit Log, System Monitor).
- *   Lưu ý: "System Monitor" xuất hiện trong ảnh nhưng KHÔNG có trong danh sách
- *   `pages/admin/` gốc (AdminDashboard, UserManagement, IoTConfiguration,
- *   DeviceManagement, AuditLogs) — cần xác nhận có thêm trang này không.
- * - Menu của 4 role còn lại (technician, operator, farm_owner, developer) được SUY RA
- *   từ tên file trong `pages/{role}/` ở tài liệu handover, CHƯA có ảnh Figma xác nhận
- *   label/icon/thứ tự thật. Cần thay lại khi có ảnh.
- */
 const NAV_CONFIG: Record<UserRole, NavItem[]> = {
-  admin: [
+  ADMIN: [
     { label: 'Dashboard', path: '/admin', icon: LayoutDashboard },
     { label: 'Users', path: '/admin/users', icon: Users },
     { label: 'IoT Config', path: '/admin/configuration', icon: Settings },
     { label: 'Devices', path: '/admin/devices', icon: Monitor },
     { label: 'Audit Log', path: '/admin/audit-logs', icon: History },
   ],
-  farm_owner: [
+  FARMER: [
     { label: 'Dashboard', path: '/farm-owner/dashboard', icon: LayoutDashboard },
-    { label: 'History Report', path: '/farm-owner/history-report', icon: History },
+    { label: 'History Report', path: '/farm-owner/history-reports', icon: History },
     { label: 'Notifications', path: '/farm-owner/notifications', icon: Settings },
     { label: 'Alert Center', path: '/farm-owner/alert-center', icon: Activity },
   ],
-  client_developer: [
+  CLIENT_DEVELOPER: [
     { label: 'Dashboard', path: '/developer/dashboard', icon: LayoutDashboard },
     { label: 'API Keys', path: '/developer/api-keys', icon: Settings },
     { label: 'API Permissions', path: '/developer/api-permissions', icon: Users },
@@ -67,10 +56,9 @@ function getInitials(name: string): string {
  */
 function formatRoleLabel(role: UserRole): string {
   const map: Record<UserRole, string> = {
-    admin: 'Admin',
-
-    farm_owner: 'Farm Owner',
-    client_developer: 'Developer',
+    ADMIN: 'Admin',
+    FARMER: 'Farm Owner',
+    CLIENT_DEVELOPER: 'Developer',
   };
   return map[role] ?? role;
 }
@@ -110,9 +98,9 @@ export default function Sidebar() {
       </nav>
 
       <div className={styles.userFooter}>
-        <span className={styles.userAvatar}>{getInitials(user.fullName)}</span>
+        <span className={styles.userAvatar}>{getInitials(user.displayName)}</span>
         <div className={styles.userInfo}>
-          <span className={styles.userName}>{user.fullName}</span>
+          <span className={styles.userName}>{user.displayName}</span>
           <span className={styles.userRole}>{formatRoleLabel(user.role)}</span>
         </div>
       </div>

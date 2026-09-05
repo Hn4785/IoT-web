@@ -46,27 +46,27 @@ export const protectedRoutes: AppRoute[] = [
   // =========================
   {
     path: "/admin",
-    roles: ["admin"],
+    roles: ["ADMIN"],
     element: <AdminDashboard />,
   },
   {
     path: "/admin/users",
-    roles: ["admin"],
+    roles: ["ADMIN"],
     element: <UserManagement />,
   },
   {
     path: "/admin/configuration",
-    roles: ["admin"],
+    roles: ["ADMIN"],
     element: <IoTConfiguration />,
   },
   {
     path: "/admin/devices",
-    roles: ["admin"],
+    roles: ["ADMIN"],
     element: <DeviceManagement />,
   },
   {
     path: "/admin/audit-logs",
-    roles: ["admin"],
+    roles: ["ADMIN"],
     element: <AuditLogs />,
   },
 
@@ -75,22 +75,22 @@ export const protectedRoutes: AppRoute[] = [
   // =========================
   {
     path: "/farm-owner/dashboard",
-    roles: ["farm_owner"],
+    roles: ["FARMER"],
     element: <FarmDashboard />,
   },
   {
     path: "/farm-owner/history-reports",
-    roles: ["farm_owner"],
+    roles: ["FARMER"],
     element: <HistoryReport />,
   },
   {
     path: "/farm-owner/notifications",
-    roles: ["farm_owner"],
+    roles: ["FARMER"],
     element: <NotificationSettings />,
   },
   {
     path: "/farm-owner/alert-center",
-    roles: ["farm_owner"],
+    roles: ["FARMER"],
     element: <AlertActionCenter />,
   },
 
@@ -99,45 +99,45 @@ export const protectedRoutes: AppRoute[] = [
   // =========================
   {
     path: "/developer/dashboard",
-    roles: ["client_developer"],
+    roles: ["CLIENT_DEVELOPER"],
     element: <DeveloperDashboard />,
   },
   {
     path: "/developer/api-keys",
-    roles: ["client_developer"],
+    roles: ["CLIENT_DEVELOPER"],
     element: <ApiKeys />,
   },
   {
     path: "/developer/api-permissions",
-    roles: ["client_developer"],
+    roles: ["CLIENT_DEVELOPER"],
     element: <ApiPermissions />,
   },
   {
     path: "/developer/api-docs",
-    roles: ["client_developer"],
+    roles: ["CLIENT_DEVELOPER"],
     element: <ApiDocs />,
   },
   {
     path: "/developer/api-explorer",
-    roles: ["client_developer"],
+    roles: ["CLIENT_DEVELOPER"],
     element: <ApiExplorer />,
   },
   {
     path: "/developer/api-metrics",
-    roles: ["client_developer"],
+    roles: ["CLIENT_DEVELOPER"],
     element: <ApiMetrics />,
   },
 ];
 
 export const getDefaultRouteByRole = (role: UserRole): string => {
   switch (role) {
-    case "admin":
+    case "ADMIN":
       return "/admin";
 
-    case "farm_owner":
+    case "FARMER":
       return "/farm-owner/dashboard";
 
-    case "client_developer":
+    case "CLIENT_DEVELOPER":
       return "/developer/dashboard";
 
     default:

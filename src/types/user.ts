@@ -1,14 +1,13 @@
 // Các vai trò được định nghĩa trong hệ thống
 export type UserRole =
-  | "admin"
-  | "farm_owner"
-  | "client_developer";
+  | "ADMIN"
+  | "FARMER"
+  | "CLIENT_DEVELOPER";
 
 // Các trạng thái của người dùng trong hệ thống
 export type UserStatus =
-  | "active"
-  | "inactive"
-  | "suspended";
+  | "ACTIVE"
+  | "DISABLED"
 
 // Quyền truy cập của người dùng đối với các tài nguyên trong hệ thống
 export type Permission =
@@ -38,11 +37,12 @@ export interface ResourcePermission {
 
 export interface User {
   id: string;
-  fullName: string;
+  displayName: string;
   email: string;
   phone?: string;
 
   role: UserRole;
+  isSuperAdmin: boolean;
   status: UserStatus;
 
   assignedFarmIds: string[]; // Các farm mà user được phép truy cập
