@@ -5,6 +5,7 @@ import {
 } from "react-router-dom";
 
 import { useAuth } from "@/hooks/useAuth";
+import { requiresPasswordChange } from "@/auth/passwordChange";
 
 export default function ProtectedRoute() {
   const {
@@ -34,6 +35,10 @@ export default function ProtectedRoute() {
         }}
       />
     );
+  }
+
+  if (requiresPasswordChange(user) && location.pathname !== "/change-password") {
+    return <Navigate to="/change-password" replace />;
   }
 
   /**

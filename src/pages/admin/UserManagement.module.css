@@ -229,3 +229,11 @@
     grid-template-columns: 1fr;
   }
 }
+.paginationControls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--spacing-3);
+  padding: var(--spacing-4);
+  color: var(--color-text-secondary);
+}

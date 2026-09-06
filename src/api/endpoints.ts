@@ -22,6 +22,12 @@ export const API_ENDPOINTS = {
     resetPassword: (id: string) => `/admin/users/${id}/reset-password`,
   },
 
+  apiKeys: {
+    base: "/developer/api-keys",
+    rotate: (id: string) => `/developer/api-keys/${id}/rotate`,
+    revoke: (id: string) => `/developer/api-keys/${id}/revoke`,
+  },
+
   stations: {
     base: "/stations",
     byId: (id: string) => `/stations/${id}`,

@@ -6,6 +6,7 @@ import { unwrapApiResponse } from "@/types/api";
 
 import type { User } from "@/types/user";
 import type { ApiSuccessEnvelope } from "@/types/api";
+import { normalizeBackendUser } from "@/services/normalizeBackendUser";
 
 export interface LoginRequest {
   email: string;
@@ -33,7 +34,7 @@ export const authService = {
     const data = unwrapApiResponse(response.data);
     authStorage.setAccessToken(data.accessToken);
 
-    return data;
+    return { ...data, user: normalizeBackendUser(data.user) };
   },
 
   async logout(): Promise<void> {
@@ -49,7 +50,7 @@ export const authService = {
       API_ENDPOINTS.auth.me
     );
 
-    return unwrapApiResponse(response.data);
+    return normalizeBackendUser(unwrapApiResponse(response.data));
   },
 
   async refresh(): Promise<{ accessToken: string; expiresIn: number }> {
@@ -66,7 +67,7 @@ export const authService = {
       API_ENDPOINTS.auth.changePassword,
       payload,
     );
-    return unwrapApiResponse(response.data);
+    return normalizeBackendUser(unwrapApiResponse(response.data));
   },
 
   clearSession(): void {

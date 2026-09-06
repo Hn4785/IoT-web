@@ -8,10 +8,11 @@ import ProtectedRoute from "./ProtectedRoute";
 import RoleRoute from "./RoleRoute";
 
 import {
-  getDefaultRouteByRole,
   publicRoutes,
   protectedRoutes,
 } from "./routeConfig";
+import { requiresPasswordChange } from "@/auth/passwordChange";
+import { getDefaultRouteByRole } from "@/auth/defaultRoute";
 
 export default function AppRoutes() {
   const { user } = useAuth();
@@ -39,7 +40,7 @@ export default function AppRoutes() {
         element={
           user ? (
             <Navigate
-              to={getDefaultRouteByRole(user.role)}
+              to={requiresPasswordChange(user) ? "/change-password" : getDefaultRouteByRole(user.role)}
               replace
             />
           ) : (

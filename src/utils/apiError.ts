@@ -13,18 +13,22 @@ export function normalizeApiError(
       typeof responseData === "object"
     ) {
       const data = responseData as Record<string, unknown>;
+      const backendError =
+        data.error && typeof data.error === "object"
+          ? (data.error as Record<string, unknown>)
+          : data;
 
       return {
         message:
-          typeof data.message === "string"
-            ? data.message
+          typeof backendError.message === "string"
+            ? backendError.message
             : error.message || "Request failed",
 
         status: error.response?.status,
 
         code:
-          typeof data.code === "string"
-            ? data.code
+          typeof backendError.code === "string"
+            ? backendError.code
             : undefined,
 
         details: data,

@@ -1,4 +1,5 @@
-import { Search, Bell } from 'lucide-react';
+import { Search, Bell, LogOut } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import Breadcrumb from './Breadcrumb';
 import styles from './Topbar.module.css';
@@ -24,7 +25,8 @@ interface TopbarProps {
  *   khác (vd. Gravatar/S3 URL riêng) rồi truyền qua props.
  */
 export default function Topbar({ notificationCount = 0, onSearch }: TopbarProps) {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
   return (
     <header className={styles.topbar}>
@@ -50,6 +52,10 @@ export default function Topbar({ notificationCount = 0, onSearch }: TopbarProps)
               {notificationCount > 9 ? '9+' : notificationCount}
             </span>
           )}
+        </button>
+
+        <button type="button" className={styles.iconButton} aria-label="Log out" title="Log out" onClick={async () => { await logout(); navigate('/login', { replace: true }); }}>
+          <LogOut size={18} />
         </button>
 
         {user && (

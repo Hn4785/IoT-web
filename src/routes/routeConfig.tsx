@@ -1,8 +1,10 @@
 import type { ReactNode } from "react";
 import type { UserRole } from "@/types/user";
+export { getDefaultRouteByRole } from "@/auth/defaultRoute";
 
 import Login from "@/pages/auth/Login";
 import ForgotPassword from "@/pages/auth/ForgotPassword";
+import ChangePassword from "@/pages/auth/ChangePassword";
 
 import AdminDashboard from "@/pages/admin/AdminDashboard";
 import UserManagement from "@/pages/admin/UserManagement";
@@ -41,6 +43,7 @@ export const publicRoutes: AppRoute[] = [
 ];
 
 export const protectedRoutes: AppRoute[] = [
+  { path: "/change-password", element: <ChangePassword /> },
   // =========================
   // ADMIN
   // =========================
@@ -128,19 +131,3 @@ export const protectedRoutes: AppRoute[] = [
     element: <ApiMetrics />,
   },
 ];
-
-export const getDefaultRouteByRole = (role: UserRole): string => {
-  switch (role) {
-    case "ADMIN":
-      return "/admin";
-
-    case "FARMER":
-      return "/farm-owner/dashboard";
-
-    case "CLIENT_DEVELOPER":
-      return "/developer/dashboard";
-
-    default:
-      return "/login";
-  }
-};

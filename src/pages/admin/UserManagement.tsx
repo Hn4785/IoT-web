@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Edit3,
   KeyRound,
@@ -15,19 +15,13 @@ import SearchInput from "@/components/common/SearchInput";
 import StatusBadge from "@/components/common/StatusBadge";
 import Drawer from "@/components/common/Drawer";
 import { ConfirmDialog } from "@/components/common/Modal";
-import Pagination from "@/components/common/Pagination";
-
-import { users as initialUsers } from "@/data/user";
-import { farms } from "@/data/farms";
-import { plots } from "@/data/plots";
-import { stations } from "@/data/stations";
-
 import type {
-  Permission,
   User,
   UserRole,
   UserStatus,
 } from "@/types/user";
+import { userService } from "@/services/userService";
+import { normalizeApiError } from "@/utils/apiError";
 
 import styles from "./UserManagement.module.css";
 
@@ -43,29 +37,34 @@ const statusLabels: Record<UserStatus, string> = {
   PENDING_PASSWORD_CHANGE: "Password change required",
 };
 
-const permissions: Permission[] = [
-  "view",
-  "edit",
-  "configure",
-  "manage_alerts",
-  "export_data",
-  "manage_devices",
-];
-
 export default function UserManagement() {
-  const [items, setItems] = useState<User[]>(initialUsers);
+  const [items, setItems] = useState<User[]>([]);
+  const [operationError, setOperationError] = useState("");
+  const [temporaryPassword, setTemporaryPassword] = useState("");
 
   const [query, setQuery] = useState("");
   const [role, setRole] = useState<UserRole | "all">("all");
   const [status, setStatus] = useState<UserStatus | "all">("all");
 
-  const [page, setPage] = useState(1);
+  const [cursorHistory, setCursorHistory] = useState<Array<string | undefined>>([undefined]);
+  const [page, setPage] = useState(0);
+  const [nextCursor, setNextCursor] = useState<string>();
+  const [loading, setLoading] = useState(true);
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [confirmUser, setConfirmUser] = useState<User | null>(null);
 
-  const pageSize = 7;
+  const pageSize = 20;
+
+  useEffect(() => {
+    let active = true;
+    userService.getUsers({ limit: pageSize, cursor: cursorHistory[page] }).then(
+      (result) => { if (active) { setItems(result.items); setNextCursor(result.nextCursor ?? undefined); } },
+      (error) => { if (active) setOperationError(normalizeApiError(error).message); },
+    ).finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [cursorHistory, page]);
 
   const filteredUsers = useMemo(() => {
     return items.filter((user) => {
@@ -93,10 +92,7 @@ export default function UserManagement() {
     });
   }, [items, query, role, status]);
 
-  const visibleUsers = filteredUsers.slice(
-    (page - 1) * pageSize,
-    page * pageSize,
-  );
+  const visibleUsers = filteredUsers;
 
   const openCreate = () => {
     setEditingUser(null);
@@ -108,7 +104,7 @@ export default function UserManagement() {
     setDrawerOpen(true);
   };
 
-  const saveUser = (
+  const saveUser = async (
     event: React.FormEvent<HTMLFormElement>,
   ) => {
     event.preventDefault();
@@ -123,88 +119,59 @@ export default function UserManagement() {
       form.get("email") ?? "",
     ).trim();
 
-    const phone = String(
-      form.get("phone") ?? "",
-    ).trim();
-
     const nextRole = String(
-      form.get("role") ?? "FARM_OWNER",
+      form.get("role") ?? "FARMER",
     ) as UserRole;
 
     const nextStatus = String(
       form.get("status") ?? "ACTIVE",
     ) as UserStatus;
 
-    const now = new Date().toISOString();
-
-    if (editingUser) {
-      setItems((current) =>
-        current.map((user) =>
-          user.id === editingUser.id
-            ? {
-                ...user,
-                displayName: dName,
-                email,
-                phone,
-                role: nextRole,
-                status: nextStatus,
-                updatedAt: now,
-              }
-            : user,
-        ),
-      );
-    } else {
-      const newUser: User = {
-        id: `USR-${String(
-          items.length + 1,
-        ).padStart(3, "0")}`,
-
-        displayName: dName,
-        email,
-        phone,
-
-        role: nextRole,
-        isSuperAdmin: false,
-        status: nextStatus,
-
-        assignedFarmIds: [],
-        assignedPlotIds: [],
-        assignedStationIds: [],
-
-        createdAt: now,
-        updatedAt: now,
-      };
-
-      setItems((current) => [
-        ...current,
-        newUser,
-      ]);
+    setOperationError("");
+    try {
+      if (editingUser) {
+        const updated = await userService.updateUser(editingUser.id, {
+          displayName: dName,
+          role: nextRole,
+          status: nextStatus,
+        });
+        setItems((current) => current.map((user) => user.id === updated.id ? updated : user));
+      } else {
+        const created = await userService.createUser({ email, displayName: dName, role: nextRole });
+        setItems((current) => [...current, created.user]);
+        setTemporaryPassword(created.temporaryPassword);
+      }
+      setDrawerOpen(false);
+    } catch (error) {
+      setOperationError(normalizeApiError(error).message);
     }
-
-    setDrawerOpen(false);
   };
 
-  const toggleUserStatus = () => {
+  const toggleUserStatus = async () => {
     if (!confirmUser) {
       return;
     }
 
-    setItems((current) =>
-      current.map((user) =>
-        user.id === confirmUser.id
-          ? {
-              ...user,
-              status:
-                user.status === "ACTIVE"
-                  ? "DISABLED"
-                  : "ACTIVE",
-              updatedAt: new Date().toISOString(),
-            }
-          : user,
-      ),
-    );
+    try {
+      const updated = await userService.updateUser(confirmUser.id, {
+        status: confirmUser.status === "ACTIVE" ? "DISABLED" : "ACTIVE",
+      });
+      setItems((current) => current.map((user) => user.id === updated.id ? updated : user));
+      setConfirmUser(null);
+    } catch (error) {
+      setOperationError(normalizeApiError(error).message);
+    }
+  };
 
-    setConfirmUser(null);
+  const resetPassword = async (user: User) => {
+    setOperationError("");
+    try {
+      const result = await userService.resetPassword(user.id);
+      setItems((current) => current.map((item) => item.id === result.user.id ? result.user : item));
+      setTemporaryPassword(result.temporaryPassword);
+    } catch (error) {
+      setOperationError(normalizeApiError(error).message);
+    }
   };
 
   return (
@@ -221,6 +188,14 @@ export default function UserManagement() {
           </Button>
         }
       />
+
+      {operationError && <div role="alert">{operationError}</div>}
+      {temporaryPassword && (
+        <div role="status">
+          Temporary password (shown once): <code>{temporaryPassword}</code>{" "}
+          <Button size="sm" variant="ghost" onClick={() => setTemporaryPassword("")}>Dismiss</Button>
+        </div>
+      )}
 
       <section className={styles.stats}>
         <div>
@@ -257,7 +232,7 @@ export default function UserManagement() {
             value={query}
             onSearch={(value) => {
               setQuery(value);
-              setPage(1);
+              setPage(0);
             }}
             placeholder="Search users..."
           />
@@ -270,7 +245,7 @@ export default function UserManagement() {
                   | UserRole
                   | "all",
               );
-              setPage(1);
+              setPage(0);
             }}
           >
             <option value="all">
@@ -297,7 +272,7 @@ export default function UserManagement() {
                   | UserStatus
                   | "all",
               );
-              setPage(1);
+              setPage(0);
             }}
           >
             <option value="all">
@@ -333,7 +308,7 @@ export default function UserManagement() {
               </tr>
             </thead>
 
-            <tbody>
+            <tbody aria-busy={loading}>
               {visibleUsers.map((user) => (
                 <tr key={user.id}>
                   <td>
@@ -429,6 +404,7 @@ export default function UserManagement() {
                         variant="ghost"
                         size="sm"
                         aria-label="Reset credentials"
+                        onClick={() => void resetPassword(user)}
                       >
                         <KeyRound size={15} />
                       </Button>
@@ -449,13 +425,16 @@ export default function UserManagement() {
           </table>
         </div>
 
-        <Pagination
-          currentPage={page}
-          totalItems={filteredUsers.length}
-          pageSize={pageSize}
-          onPageChange={setPage}
-          itemLabel="users"
-        />
+        <div className={styles.paginationControls}>
+          <span>Page {page + 1}</span>
+          <Button variant="outline" size="sm" disabled={page === 0 || loading} onClick={() => { setLoading(true); setPage((current) => current - 1); }}>Previous</Button>
+          <Button variant="outline" size="sm" disabled={!nextCursor || loading} onClick={() => {
+            if (!nextCursor) return;
+            setLoading(true);
+            setCursorHistory((current) => [...current.slice(0, page + 1), nextCursor]);
+            setPage((current) => current + 1);
+          }}>Next</Button>
+        </div>
       </section>
 
       <Drawer
@@ -518,18 +497,8 @@ export default function UserManagement() {
               defaultValue={
                 editingUser?.email
               }
+              disabled={Boolean(editingUser)}
               required
-            />
-          </label>
-
-          <label>
-            Phone
-
-            <input
-              name="phone"
-              defaultValue={
-                editingUser?.phone
-              }
             />
           </label>
 
@@ -541,7 +510,7 @@ export default function UserManagement() {
                 name="role"
                 defaultValue={
                   editingUser?.role ??
-                  "OPERATOR"
+                  "FARMER"
                 }
               >
                 {Object.entries(
@@ -585,99 +554,8 @@ export default function UserManagement() {
             </label>
           </div>
 
-          <div className={styles.authBox}>
-            <strong>
-              Tenant Authorization
-            </strong>
-
-            <span>
-              Farm → Plot → Station
-            </span>
-
-            <label>
-              Farm
-
-              <select
-                multiple
-                defaultValue={
-                  editingUser?.assignedFarmIds ??
-                  []
-                }
-              >
-                {farms.map((farm) => (
-                  <option
-                    key={farm.id}
-                    value={farm.id}
-                  >
-                    {farm.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label>
-              Plot
-
-              <select
-                multiple
-                defaultValue={
-                  editingUser?.assignedPlotIds ??
-                  []
-                }
-              >
-                {plots.map((plot) => (
-                  <option
-                    key={plot.id}
-                    value={plot.id}
-                  >
-                    {plot.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label>
-              Station
-
-              <select
-                multiple
-                defaultValue={
-                  editingUser?.assignedStationIds ??
-                  []
-                }
-              >
-                {stations.map(
-                  (station) => (
-                    <option
-                      key={station.id}
-                      value={station.id}
-                    >
-                      {station.name}
-                    </option>
-                  ),
-                )}
-              </select>
-            </label>
-
-            <div className={styles.permissionGrid}>
-              {permissions.map(
-                (permission) => (
-                  <label key={permission}>
-                    <input
-                      type="checkbox"
-                      defaultChecked={
-                        permission === "view"
-                      }
-                    />
-
-                    {permission.replace(
-                      "_",
-                      " ",
-                    )}
-                  </label>
-                ),
-              )}
-            </div>
+          <div className={styles.authBox} role="note">
+            Farm and station access cannot be edited here until the backend exposes each user's current assignments.
           </div>
         </form>
       </Drawer>

@@ -5,6 +5,8 @@ import type { User } from "@/types/user";
 import { unwrapApiResponse } from "@/types/api";
 import type { ApiSuccessEnvelope, CursorPage } from "@/types/api";
 import type { UserRole, UserStatus } from "@/types/user";
+import { normalizeBackendUser } from "./normalizeBackendUser";
+import type { BackendUser } from "./normalizeBackendUser";
 
 export interface UserQueryParams {
   cursor?: string;
@@ -33,50 +35,57 @@ export const userService = {
     params?: UserQueryParams
   ): Promise<CursorPage<User>> {
     const response = await apiClient.get<
-      ApiSuccessEnvelope<CursorPage<User>>
+      ApiSuccessEnvelope<CursorPage<BackendUser>>
     >(
       API_ENDPOINTS.users.base,
       { params }
     );
 
-    return unwrapApiResponse(response.data);
+    const page = unwrapApiResponse(response.data);
+    return { ...page, items: page.items.map(normalizeBackendUser) };
   },
 
   async getUserById(id: string): Promise<User> {
-    const response = await apiClient.get<ApiSuccessEnvelope<User>>(
+    const response = await apiClient.get<ApiSuccessEnvelope<BackendUser>>(
       API_ENDPOINTS.users.byId(id)
     );
 
-    return unwrapApiResponse(response.data);
+    return normalizeBackendUser(unwrapApiResponse(response.data));
   },
 
   async createUser(
     payload: CreateUserRequest
   ): Promise<ProvisionedUser> {
-    const response = await apiClient.post<ApiSuccessEnvelope<ProvisionedUser>>(
+    const response = await apiClient.post<
+      ApiSuccessEnvelope<{ user: BackendUser; temporaryPassword: string }>
+    >(
       API_ENDPOINTS.users.base,
       payload
     );
 
-    return unwrapApiResponse(response.data);
+    const provisioned = unwrapApiResponse(response.data);
+    return { ...provisioned, user: normalizeBackendUser(provisioned.user) };
   },
 
   async updateUser(
     id: string,
     payload: UpdateUserRequest
   ): Promise<User> {
-    const response = await apiClient.patch<ApiSuccessEnvelope<User>>(
+    const response = await apiClient.patch<ApiSuccessEnvelope<BackendUser>>(
       API_ENDPOINTS.users.byId(id),
       payload
     );
 
-    return unwrapApiResponse(response.data);
+    return normalizeBackendUser(unwrapApiResponse(response.data));
   },
 
   async resetPassword(id: string): Promise<ProvisionedUser> {
-    const response = await apiClient.post<ApiSuccessEnvelope<ProvisionedUser>>(
+    const response = await apiClient.post<
+      ApiSuccessEnvelope<{ user: BackendUser; temporaryPassword: string }>
+    >(
       API_ENDPOINTS.users.resetPassword(id),
     );
-    return unwrapApiResponse(response.data);
+    const provisioned = unwrapApiResponse(response.data);
+    return { ...provisioned, user: normalizeBackendUser(provisioned.user) };
   },
 };
