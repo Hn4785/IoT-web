@@ -7,31 +7,29 @@ import type { PaginatedResponse } from "@/types/api";
 export interface UserQueryParams {
   page?: number;
   limit?: number;
+
   search?: string;
   role?: string;
   status?: string;
+
+  farmId?: string;
+  plotId?: string;
 }
 
-export interface CreateUserRequest {
-  fullName: string;
-  email: string;
-  phone?: string;
-  role: string;
-}
+export type CreateUserRequest = Omit<
+  User,
+  "id" | "createdAt" | "updatedAt"
+>;
 
-export interface UpdateUserRequest {
-  fullName?: string;
-  email?: string;
-  phone?: string;
-  role?: string;
-  status?: string;
-}
+export type UpdateUserRequest = Partial<CreateUserRequest>;
 
 export const userService = {
   async getUsers(
     params?: UserQueryParams
   ): Promise<PaginatedResponse<User>> {
-    const response = await apiClient.get<PaginatedResponse<User>>(
+    const response = await apiClient.get<
+      PaginatedResponse<User>
+    >(
       API_ENDPOINTS.users.base,
       { params }
     );
@@ -47,7 +45,9 @@ export const userService = {
     return response.data;
   },
 
-  async createUser(payload: CreateUserRequest): Promise<User> {
+  async createUser(
+    payload: CreateUserRequest
+  ): Promise<User> {
     const response = await apiClient.post<User>(
       API_ENDPOINTS.users.base,
       payload

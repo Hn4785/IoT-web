@@ -1,22 +1,41 @@
 import { apiClient } from "@/api/apiClient";
 import { API_ENDPOINTS } from "@/api/endpoints";
 
-import type { Alert } from "@/types/alert";
+import type {
+  Alert,
+  AlertSeverity,
+  AlertStatus,
+  AlertType,
+} from "@/types/alert";
+
 import type { PaginatedResponse } from "@/types/api";
 
 export interface AlertQueryParams {
   page?: number;
   limit?: number;
+
+  farmId?: string;
+  plotId?: string;
   stationId?: string;
   sensorId?: string;
-  severity?: string;
-  status?: string;
+
+  type?: AlertType;
+  severity?: AlertSeverity;
+  status?: AlertStatus;
 }
 
 export interface UpdateAlertRequest {
-  status?: string;
+  status?: AlertStatus;
+
   assignedTo?: string;
-  comment?: string;
+
+  acknowledgedBy?: string;
+
+  resolvedBy?: string;
+}
+
+export interface AddAlertCommentRequest {
+  content: string;
 }
 
 export const alertService = {
@@ -53,9 +72,41 @@ export const alertService = {
     return response.data;
   },
 
-  async deleteAlert(id: string): Promise<void> {
-    await apiClient.delete(
-      API_ENDPOINTS.alerts.byId(id)
+  async acknowledgeAlert(
+    id: string
+  ): Promise<Alert> {
+    const response = await apiClient.patch<Alert>(
+      API_ENDPOINTS.alerts.byId(id),
+      {
+        status: "acknowledged",
+      }
     );
+
+    return response.data;
+  },
+
+  async resolveAlert(
+    id: string
+  ): Promise<Alert> {
+    const response = await apiClient.patch<Alert>(
+      API_ENDPOINTS.alerts.byId(id),
+      {
+        status: "resolved",
+      }
+    );
+
+    return response.data;
+  },
+
+  async addComment(
+    id: string,
+    payload: AddAlertCommentRequest
+  ): Promise<Alert> {
+    const response = await apiClient.post<Alert>(
+      `${API_ENDPOINTS.alerts.byId(id)}/comments`,
+      payload
+    );
+
+    return response.data;
   },
 };

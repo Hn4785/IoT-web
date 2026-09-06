@@ -1,31 +1,51 @@
 import { apiClient } from "@/api/apiClient";
 import { API_ENDPOINTS } from "@/api/endpoints";
 
-import type { Station } from "@/types/station";
+import type {
+  Station,
+  StationStatus,
+  StationLocation,
+} from "@/types/station";
+
 import type { PaginatedResponse } from "@/types/api";
 
 export interface StationQueryParams {
   page?: number;
   limit?: number;
+
   search?: string;
+
   farmId?: string;
   plotId?: string;
-  status?: string;
+  gatewayId?: string;
+
+  status?: StationStatus;
 }
 
 export interface CreateStationRequest {
   name: string;
+
   farmId: string;
   plotId: string;
+
   gatewayId?: string;
+
+  status?: StationStatus;
+
+  location?: StationLocation;
 }
 
 export interface UpdateStationRequest {
   name?: string;
+
   farmId?: string;
   plotId?: string;
+
   gatewayId?: string;
-  status?: string;
+
+  status?: StationStatus;
+
+  location?: StationLocation;
 }
 
 export const stationService = {

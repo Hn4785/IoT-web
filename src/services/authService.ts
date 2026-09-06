@@ -1,6 +1,8 @@
 import { apiClient } from "@/api/apiClient";
 import { API_ENDPOINTS } from "@/api/endpoints";
 
+import { authStorage } from "@/utils/authStorage";
+
 import type { User } from "@/types/user";
 
 export interface LoginRequest {
@@ -10,6 +12,7 @@ export interface LoginRequest {
 
 export interface LoginResponse {
   user: User;
+
   accessToken?: string;
   refreshToken?: string;
 }
@@ -21,11 +24,25 @@ export const authService = {
       payload
     );
 
-    return response.data;
+    const data = response.data;
+
+    if (data.accessToken) {
+      authStorage.setAccessToken(data.accessToken);
+    }
+
+    if (data.refreshToken) {
+      authStorage.setRefreshToken(data.refreshToken);
+    }
+
+    return data;
   },
 
   async logout(): Promise<void> {
-    await apiClient.post(API_ENDPOINTS.auth.logout);
+    try {
+      await apiClient.post(API_ENDPOINTS.auth.logout);
+    } finally {
+      authStorage.clearTokens();
+    }
   },
 
   async getCurrentUser(): Promise<User> {
@@ -34,5 +51,9 @@ export const authService = {
     );
 
     return response.data;
+  },
+
+  clearSession(): void {
+    authStorage.clearTokens();
   },
 };

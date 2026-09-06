@@ -32,11 +32,14 @@ import type {
 import styles from "./UserManagement.module.css";
 
 const roleLabels: Record<UserRole, string> = {
-  admin: "Admin",
-  technician: "Technician",
-  operator: "Operator",
-  farm_owner: "Farm Owner",
-  client_developer: "Client Developer",
+  ADMIN: "Admin",
+  FARMER: "Farmer",
+  CLIENT_DEVELOPER: "Client Developer",
+};
+
+const statusLabels: Record<UserStatus, string> = {
+  ACTIVE: "Active",
+  DISABLED: "Disabled",
 };
 
 const permissions: Permission[] = [
@@ -66,7 +69,7 @@ export default function UserManagement() {
   const filteredUsers = useMemo(() => {
     return items.filter((user) => {
       const searchableText = `
-        ${user.fullName}
+        ${user.displayName}
         ${user.email}
         ${user.id}
       `.toLowerCase();
@@ -111,8 +114,8 @@ export default function UserManagement() {
 
     const form = new FormData(event.currentTarget);
 
-    const fullName = String(
-      form.get("fullName") ?? "",
+    const dName = String(
+      form.get("displayName") ?? "",
     ).trim();
 
     const email = String(
@@ -124,11 +127,11 @@ export default function UserManagement() {
     ).trim();
 
     const nextRole = String(
-      form.get("role") ?? "operator",
+      form.get("role") ?? "FARM_OWNER",
     ) as UserRole;
 
     const nextStatus = String(
-      form.get("status") ?? "active",
+      form.get("status") ?? "ACTIVE",
     ) as UserStatus;
 
     const now = new Date().toISOString();
@@ -139,7 +142,7 @@ export default function UserManagement() {
           user.id === editingUser.id
             ? {
                 ...user,
-                fullName,
+                displayName: dName,
                 email,
                 phone,
                 role: nextRole,
@@ -155,11 +158,12 @@ export default function UserManagement() {
           items.length + 1,
         ).padStart(3, "0")}`,
 
-        fullName,
+        displayName: dName,
         email,
         phone,
 
         role: nextRole,
+        isSuperAdmin: false,
         status: nextStatus,
 
         assignedFarmIds: [],
@@ -190,9 +194,10 @@ export default function UserManagement() {
           ? {
               ...user,
               status:
-                user.status === "active"
-                  ? "inactive"
-                  : "active",
+                user.status === "ACTIVE"
+                  ? "DISABLED"
+                  : "ACTIVE",
+              updatedAt: new Date().toISOString(),
             }
           : user,
       ),
@@ -227,30 +232,18 @@ export default function UserManagement() {
           <strong>
             {
               items.filter(
-                (user) => user.status === "active",
+                (user) => user.status === "ACTIVE",
               ).length
             }
           </strong>
         </div>
 
         <div>
-          <span>Inactive</span>
+          <span>Disabled</span>
           <strong>
             {
               items.filter(
-                (user) => user.status === "inactive",
-              ).length
-            }
-          </strong>
-        </div>
-
-        <div>
-          <span>Suspended</span>
-          <strong>
-            {
-              items.filter(
-                (user) =>
-                  user.status === "suspended",
+                (user) => user.status === "DISABLED",
               ).length
             }
           </strong>
@@ -309,15 +302,17 @@ export default function UserManagement() {
             <option value="all">
               All Statuses
             </option>
-            <option value="active">
-              Active
-            </option>
-            <option value="inactive">
-              Inactive
-            </option>
-            <option value="suspended">
-              Suspended
-            </option>
+
+            {Object.entries(statusLabels).map(
+              ([key, label]) => (
+                <option
+                  key={key}
+                  value={key}
+                >
+                  {label}
+                </option>
+              ),
+            )}
           </select>
         </div>
 
@@ -341,29 +336,18 @@ export default function UserManagement() {
               {visibleUsers.map((user) => (
                 <tr key={user.id}>
                   <td>
-                    <div
-                      className={
-                        styles.userCell
-                      }
-                    >
-                      <span
-                        className={
-                          styles.avatar
-                        }
-                      >
-                        {user.fullName
+                    <div className={styles.userCell}>
+                      <span className={styles.avatar}>
+                        {user.displayName
                           .split(" ")
-                          .map(
-                            (part) =>
-                              part[0],
-                          )
+                          .map((part) => part[0])
                           .slice(-2)
                           .join("")}
                       </span>
 
                       <div>
                         <strong>
-                          {user.fullName}
+                          {user.displayName}
                         </strong>
 
                         <small>
@@ -376,11 +360,7 @@ export default function UserManagement() {
                   <td>{user.email}</td>
 
                   <td>
-                    <span
-                      className={
-                        styles.role
-                      }
-                    >
+                    <span className={styles.role}>
                       <Shield size={13} />
                       {roleLabels[user.role]}
                     </span>
@@ -389,34 +369,24 @@ export default function UserManagement() {
                   <td>
                     <StatusBadge
                       status={
-                        user.status === "active"
+                        user.status === "ACTIVE"
                           ? "active"
-                          : user.status ===
-                              "inactive"
-                            ? "inactive"
-                            : "disabled"
+                          : "disabled"
                       }
-                      label={user.status}
+                      label={statusLabels[user.status]}
                     />
                   </td>
 
                   <td>
-                    {
-                      user.assignedFarmIds
-                        .length
-                    }
+                    {user.assignedFarmIds.length}
                   </td>
 
                   <td>
-                    {
-                      user.assignedPlotIds
-                        .length
-                    }
+                    {user.assignedPlotIds.length}
                   </td>
 
                   <td>
-                    {user.lastLogin ??
-                      "Never"}
+                    {user.lastLogin ?? "Never"}
                   </td>
 
                   <td>
@@ -424,11 +394,7 @@ export default function UserManagement() {
                   </td>
 
                   <td>
-                    <div
-                      className={
-                        styles.actions
-                      }
-                    >
+                    <div className={styles.actions}>
                       <Button
                         iconOnly
                         variant="ghost"
@@ -447,18 +413,13 @@ export default function UserManagement() {
                         size="sm"
                         aria-label="Enable or disable user"
                         onClick={() =>
-                          setConfirmUser(
-                            user,
-                          )
+                          setConfirmUser(user)
                         }
                       >
-                        {user.status ===
-                        "active" ? (
+                        {user.status === "ACTIVE" ? (
                           <UserX size={15} />
                         ) : (
-                          <UserCheck
-                            size={15}
-                          />
+                          <UserCheck size={15} />
                         )}
                       </Button>
 
@@ -468,9 +429,7 @@ export default function UserManagement() {
                         size="sm"
                         aria-label="Reset credentials"
                       >
-                        <KeyRound
-                          size={15}
-                        />
+                        <KeyRound size={15} />
                       </Button>
 
                       <Button
@@ -479,9 +438,7 @@ export default function UserManagement() {
                         size="sm"
                         aria-label="More actions"
                       >
-                        <MoreHorizontal
-                          size={15}
-                        />
+                        <MoreHorizontal size={15} />
                       </Button>
                     </div>
                   </td>
@@ -540,12 +497,12 @@ export default function UserManagement() {
           onSubmit={saveUser}
         >
           <label>
-            Full name
+            Display name
 
             <input
-              name="fullName"
+              name="displayName"
               defaultValue={
-                editingUser?.fullName
+                editingUser?.displayName
               }
               required
             />
@@ -575,11 +532,7 @@ export default function UserManagement() {
             />
           </label>
 
-          <div
-            className={
-              styles.formGrid
-            }
-          >
+          <div className={styles.formGrid}>
             <label>
               Role
 
@@ -587,7 +540,7 @@ export default function UserManagement() {
                 name="role"
                 defaultValue={
                   editingUser?.role ??
-                  "operator"
+                  "OPERATOR"
                 }
               >
                 {Object.entries(
@@ -612,27 +565,26 @@ export default function UserManagement() {
                 name="status"
                 defaultValue={
                   editingUser?.status ??
-                  "active"
+                  "ACTIVE"
                 }
               >
-                <option value="active">
-                  Active
-                </option>
-                <option value="inactive">
-                  Inactive
-                </option>
-                <option value="suspended">
-                  Suspended
-                </option>
+                {Object.entries(
+                  statusLabels,
+                ).map(
+                  ([key, label]) => (
+                    <option
+                      key={key}
+                      value={key}
+                    >
+                      {label}
+                    </option>
+                  ),
+                )}
               </select>
             </label>
           </div>
 
-          <div
-            className={
-              styles.authBox
-            }
-          >
+          <div className={styles.authBox}>
             <strong>
               Tenant Authorization
             </strong>
@@ -706,21 +658,14 @@ export default function UserManagement() {
               </select>
             </label>
 
-            <div
-              className={
-                styles.permissionGrid
-              }
-            >
+            <div className={styles.permissionGrid}>
               {permissions.map(
                 (permission) => (
-                  <label
-                    key={permission}
-                  >
+                  <label key={permission}>
                     <input
                       type="checkbox"
                       defaultChecked={
-                        permission ===
-                        "view"
+                        permission === "view"
                       }
                     />
 
@@ -737,34 +682,27 @@ export default function UserManagement() {
       </Drawer>
 
       <ConfirmDialog
-        isOpen={Boolean(
-          confirmUser,
-        )}
+        isOpen={Boolean(confirmUser)}
         onClose={() =>
           setConfirmUser(null)
         }
-        onConfirm={
-          toggleUserStatus
-        }
+        onConfirm={toggleUserStatus}
         title={`${
-          confirmUser?.status ===
-          "active"
+          confirmUser?.status === "ACTIVE"
             ? "Disable"
             : "Enable"
         } account?`}
         description={`This will change the account status for ${
-          confirmUser?.fullName ??
+          confirmUser?.displayName ??
           "this user"
         }.`}
         confirmText={
-          confirmUser?.status ===
-          "active"
+          confirmUser?.status === "ACTIVE"
             ? "Disable"
             : "Enable"
         }
         variant={
-          confirmUser?.status ===
-          "active"
+          confirmUser?.status === "ACTIVE"
             ? "danger"
             : "primary"
         }

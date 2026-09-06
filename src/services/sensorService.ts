@@ -1,30 +1,65 @@
 import { apiClient } from "@/api/apiClient";
 import { API_ENDPOINTS } from "@/api/endpoints";
 
-import type { Sensor } from "@/types/sensor";
+import type {
+  MeasurementType,
+  Sensor,
+  SensorCalibration,
+  SensorStatus,
+} from "@/types/sensor";
+
 import type { PaginatedResponse } from "@/types/api";
 
 export interface SensorQueryParams {
   page?: number;
   limit?: number;
+
   stationId?: string;
-  status?: string;
-  type?: string;
+
+  measurement?: MeasurementType;
+  status?: SensorStatus;
 }
 
 export interface CreateSensorRequest {
-  name: string;
   stationId: string;
-  type: string;
+
+  name?: string;
+  model: string;
+
+  measurement: MeasurementType;
+  field: string;
+
   depth?: number;
+  depthUnit?: "cm" | "m";
+
+  unit: string;
+
+  status?: SensorStatus;
+
+  measurementInterval?: number;
+  sendInterval?: number;
+
+  calibration?: SensorCalibration;
 }
 
 export interface UpdateSensorRequest {
   name?: string;
-  stationId?: string;
-  type?: string;
+  model?: string;
+
+  measurement?: MeasurementType;
+  field?: string;
+
   depth?: number;
-  status?: string;
+  depthUnit?: "cm" | "m";
+
+  unit?: string;
+
+  status?: SensorStatus;
+
+  measurementInterval?: number;
+  sendInterval?: number;
+
+  calibration?: SensorCalibration;
 }
 
 export const sensorService = {
