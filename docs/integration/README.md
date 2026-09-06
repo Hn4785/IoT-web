@@ -1,36 +1,88 @@
-# Frontend–backend integration status
+# Bàn giao kết nối Frontend - Backend
 
-This branch connects the account area to the Phase A backend at `VITE_API_BASE_URL` (default: `http://localhost:3000/api/v1`). It deliberately leaves unfinished IoT screens on mock data until their contracts are available.
+## Mốc cập nhật
 
-## Connected
+- Nhánh: `FE`
+- Backend local: `http://localhost:3000/api/v1`
+- Biến môi trường frontend: `VITE_API_BASE_URL`
+- Commit hoàn thiện luồng tài khoản: `7f5b42a`
 
-- Login uses the backend envelope and redirects by `ADMIN`, `FARMER`, or `CLIENT_DEVELOPER` role.
-- Access tokens remain in memory. Refresh tokens remain in the backend-managed HttpOnly cookie.
-- Session restoration calls refresh once, then `/auth/me`; concurrent 401 responses share one refresh request.
-- Logout calls the backend, clears local authentication state, and is visible in the top bar.
-- Accounts with `PENDING_PASSWORD_CHANGE` are restricted to `/change-password` until the backend accepts a new password.
-- Admin User Management lists users with backend cursor pagination and supports create, edit role/status, disable/enable, and password reset. One-time passwords are displayed only after the relevant operation.
-- Client Developer API Keys supports list, create, rotate, and revoke. A secret is shown only after creation or rotation and is never persisted by the frontend.
+Đợt cập nhật này thay phần mock của tài khoản bằng API thật từ backend Phase A. Các màn hình IoT thuộc Phase B/C vẫn giữ nguyên cho đến khi có contract tương ứng.
 
-## Known contract gap
+## Những phần đã hoạt động với backend
 
-The backend exposes commands to grant or remove Farm/Station access, but the Admin User response has no current membership/grant list and there is no read endpoint for it. The former mock permission editor was therefore disabled instead of sending fake IDs or overwriting unknown access.
+| Chức năng | API đang dùng | Trạng thái |
+| --- | --- | --- |
+| Đăng nhập | `POST /auth/login` | Đã nối |
+| Khôi phục phiên | `POST /auth/refresh`, `GET /auth/me` | Đã nối |
+| Đăng xuất | `POST /auth/logout` | Đã nối và có nút trên thanh trên cùng |
+| Đổi mật khẩu bắt buộc | `POST /auth/change-password` | Đã nối |
+| Danh sách tài khoản | `GET /admin/users` | Đã nối phân trang cursor |
+| Tạo tài khoản | `POST /admin/users` | Đã nối |
+| Sửa role/trạng thái | `PATCH /admin/users/:id` | Đã nối |
+| Reset mật khẩu | `POST /admin/users/:id/reset-password` | Đã nối |
+| Danh sách API Key | `GET /developer/api-keys` | Đã nối |
+| Tạo API Key | `POST /developer/api-keys` | Đã nối |
+| Rotate API Key | `POST /developer/api-keys/:id/rotate` | Đã nối |
+| Revoke API Key | `POST /developer/api-keys/:id/revoke` | Đã nối |
 
-To finish that UI safely, the backend should expose either assignment IDs in `GET /admin/users/:id` or a dedicated read endpoint. The frontend can then load real Farm/Plot/Station UUIDs and reconcile changes explicitly.
+## Thay đổi frontend cần chú ý
 
-## Still mocked or deferred
+Access token chỉ được giữ trong bộ nhớ, không lưu vào `localStorage`. Refresh token do backend quản lý bằng cookie `HttpOnly`, vì vậy request phải giữ `withCredentials: true`.
 
-- Station telemetry, sensors, alerts, weather, reports, dashboard metrics, and other Phase B/C screens.
-- Station-scoped selection during API-key creation; new keys currently send `stationIds: []`, meaning the backend applies its documented default scope.
-- Browser end-to-end authentication tests and automated accessibility checks.
+Khi nhiều request cùng gặp lỗi 401, frontend chỉ gửi một request refresh. Những request còn lại chờ kết quả chung, tránh reuse refresh token và làm người dùng bị đăng xuất ngoài ý muốn.
 
-## Local verification
+Tài khoản có trạng thái `PENDING_PASSWORD_CHANGE` luôn được chuyển tới `/change-password`. Người dùng không thể mở dashboard trước khi đổi mật khẩu tạm thành công.
 
-1. Start the backend on port 3000 and the frontend with `npm run dev`.
-2. Sign in using a seeded account. Confirm refresh-cookie requests use credentials and logout returns to `/login`.
-3. Use a temporary-password account and confirm every protected route redirects to `/change-password`.
-4. As Admin, create/edit/disable/reset an account and use Next/Previous on the user list.
-5. As Client Developer, create, copy once, rotate, and revoke an API key.
-6. Run `npm test`, `npm run lint`, `npm run build`, and `npm audit --audit-level=high`.
+Mật khẩu tạm và API Key secret chỉ hiện ngay sau khi tạo hoặc rotate. Không lưu hai giá trị này vào store, trình duyệt hay source code.
 
-Never commit `.env`, access tokens, refresh cookies, temporary passwords, or generated API-key secrets.
+Danh sách Admin User dùng `nextCursor`; backend không trả tổng số bản ghi. Giao diện vì vậy chỉ có `Previous` và `Next`, không được tự suy ra tổng số trang.
+
+## Phần chưa được nối
+
+### Quyền Farm và Station của tài khoản
+
+Backend đã có lệnh gán hoặc bỏ quyền nhưng chưa có API đọc quyền hiện tại của một user. Form chọn quyền mock đã được tắt để tránh gửi ID giả hoặc ghi đè nhầm quyền đang có.
+
+Muốn hoàn thiện phần này, backend cần trả danh sách Farm/Station đã gán trong `GET /admin/users/:id`, hoặc bổ sung endpoint đọc riêng. Sau đó frontend mới nên dựng lại phần chọn quyền bằng UUID thật.
+
+### Dữ liệu IoT
+
+Telemetry, cảm biến, cảnh báo, thời tiết, báo cáo và số liệu dashboard vẫn là mock. Không đổi những màn hình này sang API tài khoản và không coi dữ liệu demo là dữ liệu backend thật.
+
+### Phạm vi API Key theo Station
+
+Khi tạo API Key, frontend hiện gửi `stationIds: []`. Việc chọn Station cụ thể sẽ được bổ sung sau khi contract đọc quyền Station hoàn chỉnh.
+
+## Cách chạy và kiểm tra nhanh
+
+```powershell
+# Terminal backend
+cd D:\IoT-api\.worktrees\integration-core
+pnpm start
+
+# Terminal frontend
+cd D:\IoT-web
+npm install
+npm run dev
+```
+
+Kiểm tra thủ công theo thứ tự:
+
+1. Đăng nhập bằng từng role và kiểm tra đúng dashboard.
+2. Dùng tài khoản có mật khẩu tạm, thử mở dashboard và xác nhận hệ thống chuyển về `/change-password`.
+3. Đổi mật khẩu, đăng xuất rồi đăng nhập lại bằng mật khẩu mới.
+4. Với Admin: tạo user, đổi role/trạng thái, reset mật khẩu và thử nút phân trang.
+5. Với Client Developer: tạo, copy, rotate và revoke API Key.
+6. Mở DevTools để chắc chắn không có access token, refresh token, mật khẩu tạm hoặc API Key secret trong `localStorage`.
+
+Trước khi bàn giao tiếp, chạy:
+
+```powershell
+npm test
+npm run lint
+npm run build
+npm audit --audit-level=high
+```
+
+Không commit `.env`, cookie, access token, mật khẩu tạm hoặc API Key secret lên Git.
