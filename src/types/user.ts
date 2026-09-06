@@ -8,6 +8,7 @@ export type UserRole =
 export type UserStatus =
   | "ACTIVE"
   | "DISABLED"
+  | "PENDING_PASSWORD_CHANGE";
 
 // Quyền truy cập của người dùng đối với các tài nguyên trong hệ thống
 export type Permission =

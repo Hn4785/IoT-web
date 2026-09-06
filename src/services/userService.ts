@@ -2,75 +2,81 @@ import { apiClient } from "@/api/apiClient";
 import { API_ENDPOINTS } from "@/api/endpoints";
 
 import type { User } from "@/types/user";
-import type { PaginatedResponse } from "@/types/api";
+import { unwrapApiResponse } from "@/types/api";
+import type { ApiSuccessEnvelope, CursorPage } from "@/types/api";
+import type { UserRole, UserStatus } from "@/types/user";
 
 export interface UserQueryParams {
-  page?: number;
+  cursor?: string;
   limit?: number;
-
-  search?: string;
-  role?: string;
-  status?: string;
-
-  farmId?: string;
-  plotId?: string;
 }
 
-export type CreateUserRequest = Omit<
-  User,
-  "id" | "createdAt" | "updatedAt"
->;
+export interface CreateUserRequest {
+  email: string;
+  displayName: string;
+  role: UserRole;
+}
 
-export type UpdateUserRequest = Partial<CreateUserRequest>;
+export interface UpdateUserRequest {
+  displayName?: string;
+  role?: UserRole;
+  status?: UserStatus;
+}
+
+export interface ProvisionedUser {
+  user: User;
+  temporaryPassword: string;
+}
 
 export const userService = {
   async getUsers(
     params?: UserQueryParams
-  ): Promise<PaginatedResponse<User>> {
+  ): Promise<CursorPage<User>> {
     const response = await apiClient.get<
-      PaginatedResponse<User>
+      ApiSuccessEnvelope<CursorPage<User>>
     >(
       API_ENDPOINTS.users.base,
       { params }
     );
 
-    return response.data;
+    return unwrapApiResponse(response.data);
   },
 
   async getUserById(id: string): Promise<User> {
-    const response = await apiClient.get<User>(
+    const response = await apiClient.get<ApiSuccessEnvelope<User>>(
       API_ENDPOINTS.users.byId(id)
     );
 
-    return response.data;
+    return unwrapApiResponse(response.data);
   },
 
   async createUser(
     payload: CreateUserRequest
-  ): Promise<User> {
-    const response = await apiClient.post<User>(
+  ): Promise<ProvisionedUser> {
+    const response = await apiClient.post<ApiSuccessEnvelope<ProvisionedUser>>(
       API_ENDPOINTS.users.base,
       payload
     );
 
-    return response.data;
+    return unwrapApiResponse(response.data);
   },
 
   async updateUser(
     id: string,
     payload: UpdateUserRequest
   ): Promise<User> {
-    const response = await apiClient.put<User>(
+    const response = await apiClient.patch<ApiSuccessEnvelope<User>>(
       API_ENDPOINTS.users.byId(id),
       payload
     );
 
-    return response.data;
+    return unwrapApiResponse(response.data);
   },
 
-  async deleteUser(id: string): Promise<void> {
-    await apiClient.delete(
-      API_ENDPOINTS.users.byId(id)
+  async resetPassword(id: string): Promise<ProvisionedUser> {
+    const response = await apiClient.post<ApiSuccessEnvelope<ProvisionedUser>>(
+      API_ENDPOINTS.users.resetPassword(id),
     );
+    return unwrapApiResponse(response.data);
   },
 };

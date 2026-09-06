@@ -40,6 +40,7 @@ const roleLabels: Record<UserRole, string> = {
 const statusLabels: Record<UserStatus, string> = {
   ACTIVE: "Active",
   DISABLED: "Disabled",
+  PENDING_PASSWORD_CHANGE: "Password change required",
 };
 
 const permissions: Permission[] = [

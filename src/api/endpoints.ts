@@ -10,13 +10,16 @@ export const API_ENDPOINTS = {
 
   auth: {
     login: "/auth/login",
+    refresh: "/auth/refresh",
     logout: "/auth/logout",
     me: "/auth/me",
+    changePassword: "/auth/change-password",
   },
 
   users: {
-    base: "/users",
-    byId: (id: string) => `/users/${id}`,
+    base: "/admin/users",
+    byId: (id: string) => `/admin/users/${id}`,
+    resetPassword: (id: string) => `/admin/users/${id}/reset-password`,
   },
 
   stations: {

@@ -2,8 +2,10 @@ import { apiClient } from "@/api/apiClient";
 import { API_ENDPOINTS } from "@/api/endpoints";
 
 import { authStorage } from "@/utils/authStorage";
+import { unwrapApiResponse } from "@/types/api";
 
 import type { User } from "@/types/user";
+import type { ApiSuccessEnvelope } from "@/types/api";
 
 export interface LoginRequest {
   email: string;
@@ -12,27 +14,24 @@ export interface LoginRequest {
 
 export interface LoginResponse {
   user: User;
+  accessToken: string;
+  expiresIn: number;
+}
 
-  accessToken?: string;
-  refreshToken?: string;
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
 }
 
 export const authService = {
   async login(payload: LoginRequest): Promise<LoginResponse> {
-    const response = await apiClient.post<LoginResponse>(
+    const response = await apiClient.post<ApiSuccessEnvelope<LoginResponse>>(
       API_ENDPOINTS.auth.login,
       payload
     );
 
-    const data = response.data;
-
-    if (data.accessToken) {
-      authStorage.setAccessToken(data.accessToken);
-    }
-
-    if (data.refreshToken) {
-      authStorage.setRefreshToken(data.refreshToken);
-    }
+    const data = unwrapApiResponse(response.data);
+    authStorage.setAccessToken(data.accessToken);
 
     return data;
   },
@@ -41,19 +40,36 @@ export const authService = {
     try {
       await apiClient.post(API_ENDPOINTS.auth.logout);
     } finally {
-      authStorage.clearTokens();
+      authStorage.clearAccessToken();
     }
   },
 
   async getCurrentUser(): Promise<User> {
-    const response = await apiClient.get<User>(
+    const response = await apiClient.get<ApiSuccessEnvelope<User>>(
       API_ENDPOINTS.auth.me
     );
 
-    return response.data;
+    return unwrapApiResponse(response.data);
+  },
+
+  async refresh(): Promise<{ accessToken: string; expiresIn: number }> {
+    const response = await apiClient.post<
+      ApiSuccessEnvelope<{ accessToken: string; expiresIn: number }>
+    >(API_ENDPOINTS.auth.refresh);
+    const data = unwrapApiResponse(response.data);
+    authStorage.setAccessToken(data.accessToken);
+    return data;
+  },
+
+  async changePassword(payload: ChangePasswordRequest): Promise<User> {
+    const response = await apiClient.post<ApiSuccessEnvelope<User>>(
+      API_ENDPOINTS.auth.changePassword,
+      payload,
+    );
+    return unwrapApiResponse(response.data);
   },
 
   clearSession(): void {
-    authStorage.clearTokens();
+    authStorage.clearAccessToken();
   },
 };
