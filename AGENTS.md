@@ -16,11 +16,24 @@ Frontend source belongs in `D:/IoT-web` and must not be copied into this project
 
 ## Required workflow
 
-- Read `CAPABILITY-MAP.md` and the active module specification before editing.
+- Read `CAPABILITY-MAP.md`, the current status in `tasks/todo.md`, and only the relevant section of the active module specification before editing. Do not load completed implementation plans or unrelated module documents by default.
 - Use test-driven development: add one failing behavioral test, verify the expected failure, add minimal production code, then refactor while green.
+- After completing a feature or module slice, re-check every connected path it can affect: controllers and public contracts, services and authorization policies, database transactions and cleanup, sessions/API keys, frontend integration assumptions, OpenAPI, and related integration tests.
+- Reproduce each suspected bug before changing production code. Fix bugs that are in the approved task scope; record verified-but-deferred issues in the current dated file under `docs/reviews/` with severity, evidence, impact, affected paths, proposed fix, and required regression test.
+- When a suspected issue cannot be reproduced, record the attempted scenario and observed result instead of changing behavior speculatively.
+- Treat a passing focused test as incomplete evidence: also run the connected module tests and the project quality gates. If shared integration infrastructure causes test races, report that separately and verify with an isolation-safe command rather than hiding the failure.
 - Keep commits atomic and scoped to one verified behavior.
 - Run build, test, lint, and type checking before declaring a change complete.
 - Update the specification before changing an approved public contract.
+
+## Context and document budget
+
+- Keep task context focused: rules, current status/checkpoint, affected source and tests, one matching project pattern, and the relevant spec section. Aim to stay below 2,000 lines unless broader review is explicitly required.
+- Treat `docs/superpowers/plans/` as execution history. Read a completed plan only to verify an earlier decision or unfinished task; do not reload it for routine implementation.
+- Prefer updating `tasks/todo.md`, the current checkpoint, or the current dated review over creating another status document with duplicate content.
+- Periodically compact active status and review documents: remove repetition, replace copied detail with links to the authoritative spec/test/file, and retain decisions, evidence, open risks, and next actions.
+- Never shorten approved specs, security records, migrations, or audit evidence merely to save tokens. Archive superseded human-facing summaries instead of deleting technical history.
+- When switching modules, discard stale file context and load the new module selectively from the hierarchy above.
 
 ## Security boundaries
 

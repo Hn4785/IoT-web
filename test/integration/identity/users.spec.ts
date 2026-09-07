@@ -234,6 +234,50 @@ describe('administrator user provisioning', () => {
     expect(mutateSelf.statusCode).toBe(403);
   });
 
+  it('preserves credentials when role and status are unchanged', async () => {
+    const user = await prisma.user.create({
+      data: {
+        email: 'unchanged-client@example.test',
+        displayName: 'Unchanged Client',
+        passwordHash: '$argon2id$test',
+        role: 'CLIENT_DEVELOPER',
+        status: 'ACTIVE',
+      },
+    });
+    await prisma.session.create({
+      data: {
+        userId: user.id,
+        tokenHash: 'c'.repeat(64),
+        familyId: randomUUID(),
+        expiresAt: new Date(Date.now() + 60_000),
+      },
+    });
+    await prisma.apiKey.create({
+      data: {
+        ownerUserId: user.id,
+        name: 'unchanged-test',
+        prefix: 'iot_test_unchanged',
+        keyHash: 'd'.repeat(64),
+        expiresAt: new Date(Date.now() + 60_000),
+      },
+    });
+
+    const update = await app.inject({
+      method: 'PATCH',
+      url: `/api/v1/admin/users/${user.id}`,
+      headers: bearer(rootToken),
+      payload: { role: 'CLIENT_DEVELOPER', status: 'ACTIVE' },
+    });
+
+    expect(update.statusCode).toBe(200);
+    await expect(
+      prisma.session.count({ where: { userId: user.id, revokedAt: null } }),
+    ).resolves.toBe(1);
+    await expect(
+      prisma.apiKey.count({ where: { ownerUserId: user.id, revokedAt: null } }),
+    ).resolves.toBe(1);
+  });
+
   it('lists safe DTOs and resets a permitted password with no-store', async () => {
     const list = await app.inject({
       method: 'GET',
@@ -256,6 +300,21 @@ describe('administrator user provisioning', () => {
     expect(reset.headers['cache-control']).toBe('no-store');
     expect(reset.json<ProvisionResponse>().data.temporaryPassword).toMatch(/^.{20}$/);
     expect(reset.body).not.toContain('passwordHash');
+  });
+
+  it('prevents the Super Admin from resetting its own password over HTTP', async () => {
+    const root = await prisma.systemAuthority.findUniqueOrThrow({
+      where: { authority: 'SUPER_ADMIN' },
+      select: { holderUserId: true },
+    });
+    const response = await app.inject({
+      method: 'POST',
+      url: `/api/v1/admin/users/${root.holderUserId}/reset-password`,
+      headers: bearer(rootToken),
+    });
+
+    expect(response.statusCode).toBe(409);
+    expect(response.json<ErrorResponse>().error.code).toBe('CONFLICT');
   });
 
   it('publishes provisioning and authentication contracts without password hashes', async () => {

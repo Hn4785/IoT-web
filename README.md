@@ -152,5 +152,4 @@ authority không bị anonymize; audit linkage bằng user ID được giữ l�
 - [Identity-access design spec](./docs/superpowers/specs/2026-09-02-identity-access-design.md)
 - [Backend capability map](./CAPABILITY-MAP.md)
 - [Threat model](./docs/security/integration-core-threat-model.md)
-- [Project status report](./docs/project/2026-09-02-project-status-report.md)
 - [Backend completion roadmap](./docs/roadmaps/2026-09-02-backend-completion-roadmap.md)

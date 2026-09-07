@@ -110,7 +110,6 @@ export class IdentityService {
     input: UpdateUserInput,
     requestId: string,
   ): Promise<UserDto> {
-    const credentialsChanged = input.role !== undefined || input.status !== undefined;
     const updateData: Prisma.UserUpdateInput = {};
     if (input.displayName !== undefined) updateData.displayName = input.displayName;
     if (input.role !== undefined) updateData.role = input.role;
@@ -124,6 +123,9 @@ export class IdentityService {
         }),
       ]);
       if (!target) throw new AppError('NOT_FOUND', 404, 'User not found');
+      const credentialsChanged =
+        (input.role !== undefined && input.role !== target.role) ||
+        (input.status !== undefined && input.status !== target.status);
       const actorIsSuperAdmin = authority?.holderUserId === actor.userId;
       if (!actorIsSuperAdmin) {
         if (target.id === actor.userId || target.role === 'ADMIN') {
@@ -197,6 +199,13 @@ export class IdentityService {
       ]);
       if (!target) throw new AppError('NOT_FOUND', 404, 'User not found');
       const actorIsSuperAdmin = authority?.holderUserId === actor.userId;
+      if (actorIsSuperAdmin && target.id === actor.userId) {
+        throw new AppError(
+          'CONFLICT',
+          409,
+          'Use the emergency recovery command to reset the Super Admin password',
+        );
+      }
       if (!actorIsSuperAdmin && (target.id === actor.userId || target.role === 'ADMIN')) {
         throw new AppError('FORBIDDEN', 403, 'This password cannot be reset by an Admin');
       }

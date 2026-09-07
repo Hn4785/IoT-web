@@ -22,7 +22,9 @@ export class HttpErrorFilter implements ExceptionFilter {
         ? exception.code
         : status === 404
           ? 'NOT_FOUND'
-          : 'INTERNAL_ERROR';
+          : status === 400
+            ? 'VALIDATION_ERROR'
+            : 'INTERNAL_ERROR';
     const message =
       exception instanceof AppError
         ? exception.safeMessage
