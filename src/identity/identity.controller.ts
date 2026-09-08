@@ -13,6 +13,7 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
+import { RouteConfig } from '@nestjs/platform-fastify';
 import {
   ApiBearerAuth,
   ApiBody,
@@ -38,6 +39,7 @@ import {
   parseUserId,
   provisionUserOpenApiSchema,
   updateUserOpenApiSchema,
+  userDetailOpenApiSchema,
   userOpenApiSchema,
 } from './identity.contracts.js';
 import { IdentityService } from './identity.service.js';
@@ -94,7 +96,7 @@ export class IdentityController {
   @ApiOkResponse({
     schema: {
       type: 'object',
-      properties: { success: { type: 'boolean', enum: [true] }, data: userOpenApiSchema },
+      properties: { success: { type: 'boolean', enum: [true] }, data: userDetailOpenApiSchema },
     },
   })
   async get(@Param('userId') userId: string) {
@@ -131,6 +133,7 @@ export class IdentityController {
   @Post(':userId/reset-password')
   @ApiParam({ name: 'userId', format: 'uuid' })
   @ApiCreatedResponse({ schema: provisionUserOpenApiSchema })
+  @RouteConfig({ rateLimit: { max: 10, timeWindow: 60_000 } })
   async resetPassword(
     @CurrentPrincipal() actor: CurrentPrincipalValue,
     @Param('userId') userId: string,

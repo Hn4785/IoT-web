@@ -47,6 +47,11 @@ export type UserDto = Readonly<{
   updatedAt: string;
 }>;
 
+export type UserDetailDto = UserDto &
+  Readonly<{
+    assignments: Readonly<{ farmIds: readonly string[]; stationIds: readonly string[] }>;
+  }>;
+
 export const createUserOpenApiSchema: SchemaObject = {
   type: 'object',
   additionalProperties: false,
@@ -91,6 +96,23 @@ export const userOpenApiSchema: SchemaObject = {
     isSuperAdmin: { type: 'boolean' },
     createdAt: { type: 'string', format: 'date-time' },
     updatedAt: { type: 'string', format: 'date-time' },
+  },
+};
+
+export const userDetailOpenApiSchema: SchemaObject = {
+  ...userOpenApiSchema,
+  required: [...(userOpenApiSchema.required ?? []), 'assignments'],
+  properties: {
+    ...userOpenApiSchema.properties,
+    assignments: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['farmIds', 'stationIds'],
+      properties: {
+        farmIds: { type: 'array', items: { type: 'string', format: 'uuid' } },
+        stationIds: { type: 'array', items: { type: 'string', format: 'uuid' } },
+      },
+    },
   },
 };
 

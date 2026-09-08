@@ -1,33 +1,8 @@
 # Sổ lỗi Backend
 
-Cập nhật gần nhất: 2026-09-06. Đây là file theo dõi lỗi chính của backend. Lỗi chưa hoàn thành luôn đặt ở trên; lỗi đã sửa được chuyển xuống cuối file sau khi có test hoặc bằng chứng kiểm chứng.
+Cập nhật gần nhất: 2026-09-08. Đây là file theo dõi lỗi chính của backend. Lỗi chưa hoàn thành luôn đặt ở trên; lỗi đã sửa được chuyển xuống cuối file sau khi có test hoặc bằng chứng kiểm chứng.
 
 ## Chưa sửa
-
-### [Trung bình] Integration tests tranh chấp cùng database
-
-- Hiện tượng: nhiều suite cùng `TRUNCATE` database `iot_test` khi Vitest chạy song song, làm fixture bị xóa hoặc trùng chéo.
-- Bằng chứng: chạy tuần tự bằng `vitest run --no-file-parallelism` đạt 31/31 file và 135/135 test trong lần audit.
-- Cần sửa: cấu hình nhóm integration chạy tuần tự hoặc cấp database/schema riêng cho từng worker. Không dùng retry để che race.
-- Acceptance test: toàn bộ suite ổn định qua nhiều lần chạy bằng lệnh mặc định trong CI.
-
-### [Trung bình] Database unavailable chưa có contract 503
-
-- Hiện tượng: lỗi kết nối/timeout Prisma có thể đi qua filter chung và trả `500 INTERNAL_ERROR`.
-- Cần sửa: chỉ ánh xạ các lỗi kết nối Prisma đã xác minh sang HTTP 503 với mã công khai trung tính; lỗi truy vấn/lập trình vẫn là 500.
-- Acceptance test: mất kết nối trả 503; response và log không lộ URL, username, password hoặc raw exception.
-
-### [Trung bình] Reset password chưa có rate limit riêng
-
-- Hiện tượng: endpoint reset chỉ dùng giới hạn toàn cục 100 request/phút.
-- Cần sửa: áp dụng giới hạn riêng sau khi chốt ngưỡng, đề xuất 10 request/phút tương tự thao tác chuyển Super Admin.
-- Acceptance test: các request trong ngưỡng hoạt động; request vượt ngưỡng trả `429 RATE_LIMITED`.
-
-### [Trung bình] Admin chưa đọc được quyền Farm/Station hiện tại của user
-
-- Hiện tượng: backend có lệnh gán/bỏ quyền nhưng User DTO và API chi tiết không trả danh sách membership/grant hiện tại. Frontend không thể đối chiếu trước khi sửa.
-- Cần sửa: trả assignment IDs trong `GET /admin/users/:id` hoặc bổ sung endpoint đọc riêng; sau đó frontend mới dùng UUID thật.
-- Acceptance test: Admin đọc đúng quyền; Farmer/Client Developer không đọc chéo; resource ngoài phạm vi trả lỗi an toàn.
 
 ### [Vận hành] Các hardening trước production còn thiếu
 
@@ -56,6 +31,36 @@ Cập nhật gần nhất: 2026-09-06. Đây là file theo dõi lỗi chính c�
 - Frontend phải dùng hàng đợi/single-flight để không gọi song song cùng refresh token.
 
 ## Đã sửa
+
+### [Trung bình] Integration tests tranh chấp cùng database
+
+- Vitest chạy các test file tuần tự bằng `fileParallelism: false`; không dùng retry
+  để che race và vẫn giữ database test riêng `/iot_test`.
+- Verification ngày 2026-09-08: lệnh mặc định `pnpm test` đạt ba lần liên tiếp,
+  mỗi lần 33/33 file và 150/150 test.
+
+### [Trung bình] Reset password chưa có rate limit riêng
+
+- Route reset password có giới hạn riêng 10 request/phút/IP; request thứ 11 trả
+  `429 RATE_LIMITED`.
+- Regression test: `test/integration/identity/users.spec.ts`.
+
+### [Trung bình] Admin chưa đọc được quyền Farm/Station hiện tại của user
+
+- `GET /api/v1/admin/users/:userId` trả thêm `assignments.farmIds` và
+  `assignments.stationIds`, sắp xếp ổn định và chỉ lấy từ quyền hiện tại.
+- User list và `/auth/me` vẫn dùng DTO gọn cũ; response không lộ upstream code,
+  hash hoặc database record.
+- Regression test: `test/integration/identity/users.spec.ts`.
+
+### [Trung bình] Database unavailable chưa có contract 503
+
+- `HttpErrorFilter` ánh xạ riêng các mã kết nối/timeout Prisma đã xác minh
+  (`P1001`, `P1002`, `P1008`, `P1017`, `ECONNREFUSED`) sang HTTP 503
+  `DATABASE_UNAVAILABLE` với thông báo công khai trung tính.
+- Lỗi Prisma không thuộc nhóm kết nối vẫn trả 500 `INTERNAL_ERROR`; raw exception
+  không được đưa vào response.
+- Regression test: `src/common/errors/http-error.filter.spec.ts`.
 
 ### [Cao] Mật khẩu tạm có thể bị mất khi tạo hoặc reset tài khoản
 

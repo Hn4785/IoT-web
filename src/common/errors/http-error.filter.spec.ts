@@ -1,6 +1,7 @@
 import { ArgumentsHost, HttpException } from '@nestjs/common';
 import { describe, expect, it, vi } from 'vitest';
 
+import { Prisma } from '../../generated/prisma/client.js';
 import { HttpErrorFilter } from './http-error.filter.js';
 
 const createHost = (
@@ -41,6 +42,43 @@ describe('HttpErrorFilter', () => {
       success: false,
       error: { code: 'INTERNAL_ERROR', message: 'An unexpected error occurred' },
       requestId: 'req-456',
+    });
+  });
+
+  it.each(['P1001', 'P1002', 'P1008', 'P1017', 'ECONNREFUSED'])(
+    'maps verified database connectivity error %s to a safe 503',
+    (databaseCode) => {
+      const reply = { status: vi.fn().mockReturnThis(), send: vi.fn() };
+      const error = new Prisma.PrismaClientKnownRequestError('secret database failure', {
+        code: databaseCode,
+        clientVersion: '7.10.0',
+      });
+
+      new HttpErrorFilter().catch(error, createHost('req-db', reply));
+
+      expect(reply.status).toHaveBeenCalledWith(503);
+      expect(reply.send).toHaveBeenCalledWith({
+        success: false,
+        error: { code: 'DATABASE_UNAVAILABLE', message: 'Database is temporarily unavailable' },
+        requestId: 'req-db',
+      });
+    },
+  );
+
+  it('keeps non-connectivity Prisma errors as safe 500 responses', () => {
+    const reply = { status: vi.fn().mockReturnThis(), send: vi.fn() };
+    const error = new Prisma.PrismaClientKnownRequestError('record conflict detail', {
+      code: 'P2002',
+      clientVersion: '7.10.0',
+    });
+
+    new HttpErrorFilter().catch(error, createHost('req-query', reply));
+
+    expect(reply.status).toHaveBeenCalledWith(500);
+    expect(reply.send).toHaveBeenCalledWith({
+      success: false,
+      error: { code: 'INTERNAL_ERROR', message: 'An unexpected error occurred' },
+      requestId: 'req-query',
     });
   });
 });

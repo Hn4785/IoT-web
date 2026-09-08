@@ -32,10 +32,20 @@
 - [x] SD-2: Expose authorized farm/plot/station hierarchy
 - [x] Checkpoint B1: Review hierarchy ownership and scope denials
 - [ ] SD-3: Expose validated latest measurements
+- [ ] Checkpoint B2: Verify latest DTO and frontend adapter against approved sample JSON
 - [ ] SD-4: Expose bounded historical measurements
 - [ ] SD-5: Expose scoped Client Developer data access
 - [ ] Checkpoint B-core: Frontend replaces station and soil mocks against verified fake upstream data
 - [ ] Checkpoint B-device: Hardware metadata and one real station validate physical assumptions
+
+Integration note: the upstream API is temporarily unavailable during device
+installation, so implementation uses the API Guide response JSON as its sample
+contract. The planned topology is one `CENTER` station and six node stations,
+`NODE01` through `NODE06`; the six nodes share the same JSON structure. Treat this
+as a deployment fixture rather than a permanent hardcoded registry. `CENTER`
+behavior remains unverified. The development seed may remain the deterministic
+NODE01/NODE02 subset. Until upstream access is restored, B-core evidence is
+`sample-verified`; only B-device/live evidence may be marked `live-verified`.
 
 ## Phase C: Alerts and in-app notifications
 

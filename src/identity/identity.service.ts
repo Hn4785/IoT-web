@@ -12,6 +12,7 @@ import type {
   CreateUserInput,
   ListUsersQuery,
   UpdateUserInput,
+  UserDetailDto,
   UserDto,
 } from './identity.contracts.js';
 import { IdentityRepository, safeUserSelect } from './identity.repository.js';
@@ -48,10 +49,16 @@ export class IdentityService {
     };
   }
 
-  async getUser(userId: string): Promise<UserDto> {
+  async getUser(userId: string): Promise<UserDetailDto> {
     const user = await this.repository.findUser(userId);
     if (!user) throw new AppError('NOT_FOUND', 404, 'User not found');
-    return toUserDto(user);
+    return {
+      ...toUserDto(user),
+      assignments: {
+        farmIds: user.farmMemberships.map(({ farmId }) => farmId),
+        stationIds: user.clientStationGrants.map(({ stationId }) => stationId),
+      },
+    };
   }
 
   async createUser(

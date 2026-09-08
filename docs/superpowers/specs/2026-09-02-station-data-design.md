@@ -46,6 +46,22 @@ station confirms:
 B-core may ship to local integration before this gate, but unverified metadata
 must remain `null` and values must not be converted speculatively.
 
+### Current upstream integration status
+
+The upstream API is temporarily unavailable while the device installation is in
+progress. Until access is restored, backend and frontend integration work uses
+the response JSON documented in the approved API Guide as its sample contract.
+Evidence produced from that sample is labeled `sample-verified`, not live-device
+evidence.
+
+The planned installation contains one station named `CENTER` and six node
+stations named `NODE01` through `NODE06`. The six node stations are confirmed to
+return the same JSON structure, although their values may differ. This topology
+is a current deployment fixture and must not be hardcoded as the permanent
+application registry. Behavior or soil-field availability for `CENTER` remains
+unverified until its real response is available. The existing NODE01/NODE02
+development seed remains intentionally minimal and deterministic.
+
 ## 3. Scope
 
 ### In scope
@@ -467,11 +483,14 @@ IDs and safe error codes, not upstream bodies, credentials or raw exceptions.
 2. **SD-2:** hierarchy/list contract and demo registry seed.
 3. **Checkpoint B1:** authorization and hierarchy review.
 4. **SD-3:** latest soil data, mapping, cache and polling contract.
-5. **SD-4:** bounded soil history and cursor pagination.
-6. **SD-5:** Client API-key data routes and per-key rate limiting.
-7. **Checkpoint B-core:** frontend can replace farm/plot/station/soil mocks against
+5. **Checkpoint B2:** latest DTO and frontend adapter are verified against the
+   approved sample JSON, including all eight fields, per-field timestamps, nullable
+   device metadata and unavailable/stale states.
+6. **SD-4:** bounded soil history and cursor pagination.
+7. **SD-5:** Client API-key data routes and per-key rate limiting.
+8. **Checkpoint B-core:** frontend can replace farm/plot/station/soil mocks against
    fake and approved Weather data.
-8. **Checkpoint B-device:** hardware metadata and one real station validate the
+9. **Checkpoint B-device:** hardware metadata and one real station validate the
    unresolved physical-data assumptions.
 
 No Phase C alert/configuration implementation begins before B-core is verified.

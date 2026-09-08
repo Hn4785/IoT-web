@@ -2,17 +2,19 @@
 
 Canonical roadmap: [`docs/roadmaps/2026-09-02-backend-completion-roadmap.md`](../docs/roadmaps/2026-09-02-backend-completion-roadmap.md)
 
-Approved spec: [`docs/superpowers/specs/2026-09-02-identity-access-design.md`](../docs/superpowers/specs/2026-09-02-identity-access-design.md)
+Approved spec: [`docs/superpowers/specs/2026-09-02-station-data-design.md`](../docs/superpowers/specs/2026-09-02-station-data-design.md)
 
-Implementation plan: [`docs/superpowers/plans/2026-09-02-identity-access.md`](../docs/superpowers/plans/2026-09-02-identity-access.md)
+Implementation plan: [`docs/superpowers/plans/2026-09-02-station-data.md`](../docs/superpowers/plans/2026-09-02-station-data.md)
 
-Completed module: `integration-core`
+Completed modules: `integration-core`, `identity-access`
 
-Next proposed module: `identity-access`
+Current module: `station-data`
 
-The identity design is approved. The implementation plan is ready for an
-execution-mode decision; production changes begin with its Task 1 only after that
-handoff.
+Current delivery point: SD-3 latest soil measurements after Checkpoint B1.
+Development uses the approved API Guide sample JSON while the upstream service is
+unavailable. B-core may become `sample-verified`; Phase B remains incomplete until
+Checkpoint B-device proves at least one live station and the unresolved hardware
+metadata.
 
 Dependencies remain sequential:
 

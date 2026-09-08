@@ -143,7 +143,10 @@ HTTP 200 response:
 
 - `code` is stable and machine-readable.
 - `message` is safe and contains no stack trace, secret, or upstream body.
-- Unknown exceptions map to HTTP 500 and `INTERNAL_ERROR`.
+- Verified Prisma connectivity and timeout failures map to HTTP 503 and
+  `DATABASE_UNAVAILABLE`; their raw exception details remain private. Unknown
+  exceptions and non-connectivity database failures map to HTTP 500 and
+  `INTERNAL_ERROR`.
 - Timeout maps internally to `UPSTREAM_TIMEOUT`.
 - Invalid or unavailable upstream responses map to `UPSTREAM_UNAVAILABLE`.
 - Validation details are returned only for client-controlled input and do not

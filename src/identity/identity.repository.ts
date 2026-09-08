@@ -15,6 +15,12 @@ export const safeUserSelect = {
   heldAuthority: { select: { authority: true } },
 } as const;
 
+const safeUserDetailSelect = {
+  ...safeUserSelect,
+  farmMemberships: { select: { farmId: true }, orderBy: { farmId: 'asc' as const } },
+  clientStationGrants: { select: { stationId: true }, orderBy: { stationId: 'asc' as const } },
+} as const;
+
 @Injectable()
 export class IdentityRepository {
   constructor(private readonly prisma: PrismaService) {}
@@ -29,7 +35,7 @@ export class IdentityRepository {
   }
 
   findUser(userId: string) {
-    return this.prisma.user.findUnique({ where: { id: userId }, select: safeUserSelect });
+    return this.prisma.user.findUnique({ where: { id: userId }, select: safeUserDetailSelect });
   }
 
   transaction<T>(operation: (transaction: Prisma.TransactionClient) => Promise<T>): Promise<T> {

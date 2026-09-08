@@ -13,6 +13,7 @@ export type AppErrorCode =
   | 'RATE_LIMITED'
   | 'UPSTREAM_TIMEOUT'
   | 'UPSTREAM_UNAVAILABLE'
+  | 'DATABASE_UNAVAILABLE'
   | 'INTERNAL_ERROR';
 
 export interface SerializedAppError {

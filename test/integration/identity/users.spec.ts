@@ -22,6 +22,9 @@ type ProvisionResponse = {
 
 type ErrorResponse = { error: { code: string } };
 type UserListResponse = { data: { items: unknown[]; nextCursor: string | null } };
+type UserDetailResponse = {
+  data: { assignments: { farmIds: string[]; stationIds: string[] } };
+};
 type OpenApiResponse = {
   paths: Record<string, unknown>;
   components?: { securitySchemes?: Record<string, unknown> };
@@ -287,6 +290,7 @@ describe('administrator user provisioning', () => {
     expect(list.statusCode).toBe(200);
     expect(list.headers['cache-control']).toBe('no-store');
     expect(list.body).not.toContain('passwordHash');
+    expect(list.body).not.toContain('assignments');
     expect(list.json<UserListResponse>().data.items).toHaveLength(2);
     expect(list.json<UserListResponse>().data.nextCursor).toMatch(/^[0-9a-f-]{36}$/);
 
@@ -300,6 +304,92 @@ describe('administrator user provisioning', () => {
     expect(reset.headers['cache-control']).toBe('no-store');
     expect(reset.json<ProvisionResponse>().data.temporaryPassword).toMatch(/^.{20}$/);
     expect(reset.body).not.toContain('passwordHash');
+  });
+
+  it('returns current farm and station assignments in user detail only', async () => {
+    const farm = await prisma.farm.create({ data: { name: 'Assignment Farm' } });
+    const plot = await prisma.plot.create({ data: { name: 'Assignment Plot', farmId: farm.id } });
+    const station = await prisma.station.create({
+      data: { name: 'Assignment Station', upstreamCode: 'ASSIGNMENT01', plotId: plot.id },
+    });
+    const farmer = await prisma.user.create({
+      data: {
+        email: 'assignment-farmer@example.test',
+        displayName: 'Assignment Farmer',
+        passwordHash: '$argon2id$test',
+        role: 'FARMER',
+        status: 'ACTIVE',
+        farmMemberships: { create: { farmId: farm.id } },
+      },
+    });
+    const client = await prisma.user.create({
+      data: {
+        email: 'assignment-client@example.test',
+        displayName: 'Assignment Client',
+        passwordHash: '$argon2id$test',
+        role: 'CLIENT_DEVELOPER',
+        status: 'ACTIVE',
+        clientStationGrants: { create: { stationId: station.id } },
+      },
+    });
+
+    const farmerResponse = await app.inject({
+      method: 'GET',
+      url: `/api/v1/admin/users/${farmer.id}`,
+      headers: bearer(adminToken),
+    });
+    const clientResponse = await app.inject({
+      method: 'GET',
+      url: `/api/v1/admin/users/${client.id}`,
+      headers: bearer(adminToken),
+    });
+
+    expect(farmerResponse.statusCode).toBe(200);
+    expect(farmerResponse.json<UserDetailResponse>().data.assignments).toEqual({
+      farmIds: [farm.id],
+      stationIds: [],
+    });
+    expect(clientResponse.statusCode).toBe(200);
+    expect(clientResponse.json<UserDetailResponse>().data.assignments).toEqual({
+      farmIds: [],
+      stationIds: [station.id],
+    });
+    expect(farmerResponse.body).not.toMatch(/upstreamCode|passwordHash|keyHash/);
+
+    const meResponse = await app.inject({
+      method: 'GET',
+      url: '/api/v1/auth/me',
+      headers: bearer(adminToken),
+    });
+    const missingResponse = await app.inject({
+      method: 'GET',
+      url: `/api/v1/admin/users/${randomUUID()}`,
+      headers: bearer(adminToken),
+    });
+    expect(meResponse.statusCode).toBe(200);
+    expect(meResponse.body).not.toContain('assignments');
+    expect(missingResponse.statusCode).toBe(404);
+    expect(missingResponse.json<ErrorResponse>().error.code).toBe('NOT_FOUND');
+  });
+
+  it('rate limits password reset to ten requests per minute', async () => {
+    const responses = [];
+    for (let attempt = 0; attempt < 11; attempt += 1) {
+      responses.push(
+        await app.inject({
+          method: 'POST',
+          url: '/api/v1/admin/users/not-a-uuid/reset-password',
+          headers: bearer(adminToken),
+          remoteAddress: '192.0.2.10',
+        }),
+      );
+    }
+
+    expect(responses.slice(0, 10).map(({ statusCode }) => statusCode)).toEqual(
+      Array.from({ length: 10 }, () => 400),
+    );
+    expect(responses[10]?.statusCode).toBe(429);
+    expect(responses[10]?.json<ErrorResponse>().error.code).toBe('RATE_LIMITED');
   });
 
   it('prevents the Super Admin from resetting its own password over HTTP', async () => {

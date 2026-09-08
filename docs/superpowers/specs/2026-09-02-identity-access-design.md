@@ -329,8 +329,9 @@ schema validated. Responses use the `integration-core` envelopes.
 | POST   | `/api/v1/auth/change-password`                            | Authenticated, including forced-change state |
 | POST   | `/api/v1/admin/users`                                     | Admin; only Super Admin may create an Admin  |
 | GET    | `/api/v1/admin/users`                                     | Admin, bounded pagination/filtering          |
+| GET    | `/api/v1/admin/users/{userId}`                            | Admin; includes current assignment IDs       |
 | PATCH  | `/api/v1/admin/users/{userId}`                            | Authority matrix above                       |
-| POST   | `/api/v1/admin/users/{userId}/reset-password`             | Authority matrix above                       |
+| POST   | `/api/v1/admin/users/{userId}/reset-password`             | Authority matrix; 10 requests/minute/IP      |
 | PUT    | `/api/v1/admin/users/{userId}/farm-memberships/{farmId}`  | Admin for Farmer targets                     |
 | DELETE | `/api/v1/admin/users/{userId}/farm-memberships/{farmId}`  | Admin for Farmer targets                     |
 | PUT    | `/api/v1/admin/users/{userId}/station-grants/{stationId}` | Admin for Client Developer targets           |
@@ -341,9 +342,12 @@ schema validated. Responses use the `integration-core` envelopes.
 | POST   | `/api/v1/developer/api-keys/{apiKeyId}/rotate`            | Owner                                        |
 | POST   | `/api/v1/developer/api-keys/{apiKeyId}/revoke`            | Owner or authorized Admin                    |
 
-The safe user DTO contains identifier, email, display name, role, status,
-`isSuperAdmin`, assigned farm identifiers where authorized, and timestamps. It
-never contains password/session/API-key hashes or lockout implementation data.
+The shared safe user DTO contains identifier, email, display name, role, status,
+`isSuperAdmin` and timestamps. The Admin-only user-detail response adds current
+`assignments.farmIds` and `assignments.stationIds`, both deterministically ordered.
+List and current-user responses do not include assignments. No user response
+contains password/session/API-key hashes, upstream station codes or lockout
+implementation data.
 
 Login returns an access token, expiry seconds and the safe current-user DTO. The
 refresh token is set only as a cookie. User creation/reset and API-key

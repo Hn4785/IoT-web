@@ -21,6 +21,8 @@
 - Weather host and credential remain owned by `integration-core`; request data can select only a database-resolved `Station.upstreamCode`.
 - Soil fields are exactly `temperature`, `moisture`, `ec`, `ph`, `nitrogen`, `phosphorus`, `potassium`, `light`.
 - Preserve upstream numeric values; B-core returns `unit`, `sensorId` and `depthCm` as `null`.
+- While installation keeps the upstream API unavailable, use the approved API Guide response JSON as the sample contract and label the resulting evidence `sample-verified`.
+- Cover the planned `CENTER` plus `NODE01` through `NODE06` topology as compatibility fixtures without hardcoding it as the permanent registry. The six node stations share one JSON structure; `CENTER` behavior remains unverified.
 - Do not add measurement tables, Redis, WebSockets, SSE, alerts, reports, weather/water DTOs or hardware configuration.
 - Test database target must remain exactly `/iot_test`; demo seed target must remain exactly `/iot_dev`.
 - New dependencies, auth-flow changes, CORS changes and externally visible contract changes require a spec update and user approval first.
@@ -1298,5 +1300,8 @@ git commit -m "docs: verify station data b-core"
 ## Execution Order
 
 Execute Tasks 1-3, stop at Checkpoint B1 and review. Then execute Tasks 4-6 and
-manually verify latest data. Execute Task 7, review history pagination, then Task 8. Task 9 is the only B-core completion gate. Do not start any Phase C production
+verify Checkpoint B2 against the approved sample JSON and the frontend adapter.
+This verification must cover all eight soil fields, per-field timestamps, nullable
+unit/sensor/depth metadata, dynamic station discovery, and unavailable/stale UI
+states. Execute Task 7, review history pagination, then Task 8. Task 9 is the only B-core completion gate. Do not start any Phase C production
 task from this plan.
