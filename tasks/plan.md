@@ -10,7 +10,8 @@ Completed modules: `integration-core`, `identity-access`
 
 Current module: `station-data`
 
-Current delivery point: SD-3 latest soil measurements after Checkpoint B1.
+Current delivery point: Checkpoint B2, verifying the completed SD-3 latest-soil
+DTO and frontend adapter against the approved sample JSON.
 Development uses the approved API Guide sample JSON while the upstream service is
 unavailable. B-core may become `sample-verified`; Phase B remains incomplete until
 Checkpoint B-device proves at least one live station and the unresolved hardware
