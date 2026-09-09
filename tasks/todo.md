@@ -32,7 +32,7 @@
 - [x] SD-2: Expose authorized farm/plot/station hierarchy
 - [x] Checkpoint B1: Review hierarchy ownership and scope denials
 - [x] SD-3: Expose validated latest measurements
-- [ ] Checkpoint B2: Verify latest DTO and frontend adapter against approved sample JSON
+- [x] Checkpoint B2: Verify latest DTO and frontend adapter against approved sample JSON
 - [ ] SD-4: Expose bounded historical measurements
 - [ ] SD-5: Expose scoped Client Developer data access
 - [ ] Checkpoint B-core: Frontend replaces station and soil mocks against verified fake upstream data
