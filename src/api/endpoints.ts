@@ -31,6 +31,7 @@ export const API_ENDPOINTS = {
   stations: {
     base: "/stations",
     byId: (id: string) => `/stations/${id}`,
+    latest: (id: string) => `/stations/${id}/data/latest`,
   },
 
   sensors: {

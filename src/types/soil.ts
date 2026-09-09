@@ -77,3 +77,56 @@ export interface SoilHistoryPoint {
   unit: string;
   quality: QualityFlag;
 }
+
+export const API_SOIL_FIELDS = [
+  "temperature",
+  "moisture",
+  "ec",
+  "ph",
+  "nitrogen",
+  "phosphorus",
+  "potassium",
+  "light",
+] as const;
+
+export type ApiSoilField = (typeof API_SOIL_FIELDS)[number];
+export type ApiSoilQuality = "good" | "stale" | "unknown";
+
+export interface LatestSoilFieldDto {
+  readonly field: ApiSoilField;
+  readonly value: number;
+  readonly unit: string | null;
+  readonly observedAt: string;
+  readonly quality: ApiSoilQuality;
+  readonly sensorId: string | null;
+  readonly depthCm: number | null;
+}
+
+export interface LatestSoilDataDto {
+  readonly station: Readonly<{ id: string; name: string; code: string }>;
+  readonly measurement: "soil";
+  readonly fields: readonly LatestSoilFieldDto[];
+  readonly fetchedAt: string;
+  readonly isFromCache: boolean;
+  readonly isStale: boolean;
+}
+
+export interface LatestSoilView {
+  readonly station: LatestSoilDataDto["station"];
+  readonly fields: Readonly<Partial<Record<ApiSoilField, LatestSoilFieldDto>>>;
+  readonly fetchedAt: string;
+  readonly isFromCache: boolean;
+  readonly isStale: boolean;
+}
+
+export function adaptLatestSoilData(data: LatestSoilDataDto): LatestSoilView {
+  const fields: Partial<Record<ApiSoilField, LatestSoilFieldDto>> = {};
+  for (const reading of data.fields) fields[reading.field] = reading;
+  return {
+    station: data.station,
+    fields,
+    fetchedAt: data.fetchedAt,
+    isFromCache: data.isFromCache,
+    isStale: data.isStale,
+  };
+}
