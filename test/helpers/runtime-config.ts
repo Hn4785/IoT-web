@@ -19,6 +19,11 @@ export function makeTestRuntimeConfig(overrides: Partial<RuntimeConfig> = {}): R
     frontendOrigin: 'http://localhost:5173',
     jwtSecret: 'test-jwt-secret-with-at-least-32-characters',
     credentialPepper: 'different-test-pepper-with-32-characters',
+    soilLatestCacheTtlMs: 30_000,
+    soilHistoryCacheTtlMs: 300_000,
+    soilStaleAfterMs: 900_000,
+    soilStaleIfErrorMs: 300_000,
+    soilCacheMaxEntries: 500,
     ...overrides,
   };
 }

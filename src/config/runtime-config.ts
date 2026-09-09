@@ -41,6 +41,11 @@ const runtimeConfigSchema = z
     FRONTEND_ORIGIN: frontendOrigin,
     JWT_SECRET: z.string().min(32).max(4096),
     CREDENTIAL_PEPPER: z.string().min(32).max(4096),
+    SOIL_LATEST_CACHE_TTL_MS: z.coerce.number().int().min(1).max(3_600_000),
+    SOIL_HISTORY_CACHE_TTL_MS: z.coerce.number().int().min(1).max(3_600_000),
+    SOIL_STALE_AFTER_MS: z.coerce.number().int().min(1).max(3_600_000),
+    SOIL_STALE_IF_ERROR_MS: z.coerce.number().int().min(1).max(3_600_000),
+    SOIL_CACHE_MAX_ENTRIES: z.coerce.number().int().min(1).max(10_000),
   })
   .superRefine((value, context) => {
     if (
@@ -81,6 +86,11 @@ export type RuntimeConfig = Readonly<{
   frontendOrigin: string;
   jwtSecret: string;
   credentialPepper: string;
+  soilLatestCacheTtlMs: number;
+  soilHistoryCacheTtlMs: number;
+  soilStaleAfterMs: number;
+  soilStaleIfErrorMs: number;
+  soilCacheMaxEntries: number;
 }>;
 
 export function parseRuntimeConfig(env: Record<string, string | undefined>): RuntimeConfig {
@@ -98,5 +108,10 @@ export function parseRuntimeConfig(env: Record<string, string | undefined>): Run
     frontendOrigin: value.FRONTEND_ORIGIN,
     jwtSecret: value.JWT_SECRET,
     credentialPepper: value.CREDENTIAL_PEPPER,
+    soilLatestCacheTtlMs: value.SOIL_LATEST_CACHE_TTL_MS,
+    soilHistoryCacheTtlMs: value.SOIL_HISTORY_CACHE_TTL_MS,
+    soilStaleAfterMs: value.SOIL_STALE_AFTER_MS,
+    soilStaleIfErrorMs: value.SOIL_STALE_IF_ERROR_MS,
+    soilCacheMaxEntries: value.SOIL_CACHE_MAX_ENTRIES,
   });
 }
