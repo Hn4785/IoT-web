@@ -15,6 +15,31 @@ export const SOIL_FIELDS = [
 ] as const;
 
 export type SoilField = (typeof SOIL_FIELDS)[number];
+
+const latestSoilQuerySchema = z.strictObject({
+  fields: z
+    .string()
+    .transform((val) => val.split(','))
+    .pipe(
+      z
+        .array(z.enum(SOIL_FIELDS))
+        .min(1)
+        .nonempty()
+        .refine((items) => new Set(items).size === items.length, {
+          message: 'Duplicate fields are not allowed',
+        }),
+    )
+    .default(() => [...SOIL_FIELDS]),
+});
+
+export type LatestSoilQuery = z.output<typeof latestSoilQuerySchema>;
+
+export function parseLatestSoilQuery(value: unknown): LatestSoilQuery {
+  const result = latestSoilQuerySchema.safeParse(value);
+  if (!result.success) throw new AppError('VALIDATION_ERROR', 400, 'Invalid query');
+  return result.data;
+}
+
 export type SoilQuality = 'good' | 'stale' | 'unknown';
 export type SoilFieldDto = Readonly<{
   field: SoilField;
