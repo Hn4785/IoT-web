@@ -15,6 +15,29 @@ export const SOIL_FIELDS = [
 ] as const;
 
 export type SoilField = (typeof SOIL_FIELDS)[number];
+export type SoilQuality = 'good' | 'stale' | 'unknown';
+export type SoilFieldDto = Readonly<{
+  field: SoilField;
+  value: number;
+  unit: string | null;
+  observedAt: string;
+  quality: SoilQuality;
+  sensorId: string | null;
+  depthCm: number | null;
+}>;
+export type LatestSoilDataDto = Readonly<{
+  station: Pick<StationDto, 'id' | 'name' | 'code'>;
+  measurement: 'soil';
+  fields: readonly SoilFieldDto[];
+  fetchedAt: string;
+  isFromCache: boolean;
+  isStale: boolean;
+}>;
+export type NormalizedLatestSoil = Readonly<{
+  station: Pick<StationDto, 'id' | 'name' | 'code'>;
+  fields: readonly Readonly<{ field: SoilField; value: number; observedAt: string }>[];
+  fetchedAt: string;
+}>;
 export type CursorPage<T> = Readonly<{ items: readonly T[]; nextCursor: string | null }>;
 export type FarmDto = Readonly<{ id: string; name: string }>;
 export type PlotDto = Readonly<{ id: string; farmId: string; name: string }>;
