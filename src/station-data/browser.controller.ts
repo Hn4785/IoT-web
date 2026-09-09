@@ -6,16 +6,21 @@ import {
   CurrentPrincipal,
   type CurrentPrincipalValue,
 } from '../authorization/current-principal.js';
+import { AppError } from '../common/errors/app-error.js';
 import { HierarchyService } from './hierarchy.service.js';
 import {
   farmOpenApiSchema,
   hierarchyCursorOpenApiSchema,
   hierarchyLimitOpenApiSchema,
   parseHierarchyQuery,
+  parseLatestSoilQuery,
   parseUuid,
   plotOpenApiSchema,
+  SOIL_FIELDS,
   stationOpenApiSchema,
 } from './station-data.contracts.js';
+import { StationDataService } from './station-data.service.js';
+import { StationRepository } from './station.repository.js';
 
 const pageSchema = (item: object) => ({
   type: 'object' as const,
@@ -40,7 +45,11 @@ const pageSchema = (item: object) => ({
 @UseGuards(AccessTokenGuard)
 @Controller()
 export class BrowserStationController {
-  constructor(private readonly hierarchy: HierarchyService) {}
+  constructor(
+    private readonly hierarchy: HierarchyService,
+    private readonly stationRepository: StationRepository,
+    private readonly stationDataService: StationDataService,
+  ) {}
 
   @Get('farms')
   @Header('Cache-Control', 'no-store')
@@ -114,6 +123,94 @@ export class BrowserStationController {
     return {
       success: true,
       data: await this.hierarchy.getStation(principal, parseUuid(stationId)),
+    };
+  }
+
+  @Get('stations/:stationId/data/latest')
+  @Header('Cache-Control', 'no-store')
+  @ApiParam({ name: 'stationId', schema: { type: 'string', format: 'uuid' } })
+  @ApiQuery({
+    name: 'fields',
+    required: false,
+    schema: {
+      type: 'string',
+      description: 'Comma-separated soil fields',
+      example: 'temperature,moisture',
+    },
+  })
+  @ApiOkResponse({
+    schema: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['success', 'data'],
+      properties: {
+        success: { type: 'boolean', enum: [true] },
+        data: {
+          type: 'object',
+          additionalProperties: false,
+          required: ['station', 'measurement', 'fields', 'fetchedAt', 'isFromCache', 'isStale'],
+          properties: {
+            station: {
+              type: 'object',
+              additionalProperties: false,
+              required: ['id', 'name', 'code'],
+              properties: {
+                id: { type: 'string', format: 'uuid' },
+                name: { type: 'string' },
+                code: { type: 'string' },
+              },
+            },
+            measurement: { type: 'string', enum: ['soil'] },
+            fields: {
+              type: 'array',
+              items: {
+                type: 'object',
+                additionalProperties: false,
+                required: [
+                  'field',
+                  'value',
+                  'unit',
+                  'observedAt',
+                  'quality',
+                  'sensorId',
+                  'depthCm',
+                ],
+                properties: {
+                  field: { type: 'string', enum: [...SOIL_FIELDS] },
+                  value: { type: 'number' },
+                  unit: { type: 'string', nullable: true },
+                  observedAt: { type: 'string', format: 'date-time' },
+                  quality: { type: 'string', enum: ['good', 'stale', 'unknown'] },
+                  sensorId: { type: 'string', nullable: true },
+                  depthCm: { type: 'number', nullable: true },
+                },
+              },
+            },
+            fetchedAt: { type: 'string', format: 'date-time' },
+            isFromCache: { type: 'boolean' },
+            isStale: { type: 'boolean' },
+          },
+        },
+      },
+    },
+  })
+  async getLatestSoil(
+    @CurrentPrincipal() principal: CurrentPrincipalValue,
+    @Param('stationId') stationId: string,
+    @Query() query: unknown,
+  ) {
+    const validStationId = parseUuid(stationId);
+    const validQuery = parseLatestSoilQuery(query);
+    if (principal.status !== 'ACTIVE' || !['ADMIN', 'FARMER'].includes(principal.role)) {
+      throw new AppError('FORBIDDEN', 403, 'Access is forbidden');
+    }
+    const station = await this.stationRepository.getAuthorizedStation(principal, validStationId);
+    if (!station) {
+      throw new AppError('NOT_FOUND', 404, 'Resource not found');
+    }
+    return {
+      success: true,
+      data: await this.stationDataService.getLatest(station, validQuery),
     };
   }
 }
