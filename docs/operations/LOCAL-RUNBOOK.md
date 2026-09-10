@@ -8,7 +8,7 @@ cd D:\IoT-api\.worktrees\integration-core
 
 ## 1. Chuẩn bị lần đầu
 
-Yêu cầu: Node.js `>=24.19.0 <25`, pnpm `11.19.0` và Docker Desktop đang hoạt động.
+Yêu cầu: Node.js `>=24.17.0 <25`, pnpm `11.19.0` và Docker Desktop đang hoạt động.
 
 ```powershell
 pnpm install --frozen-lockfile

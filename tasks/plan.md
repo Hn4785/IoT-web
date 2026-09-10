@@ -6,13 +6,13 @@ Approved spec: [`docs/superpowers/specs/2026-09-02-station-data-design.md`](../d
 
 Implementation plan: [`docs/superpowers/plans/2026-09-02-station-data.md`](../docs/superpowers/plans/2026-09-02-station-data.md)
 
-Completed modules: `integration-core`, `identity-access`
+Completed backend modules: `integration-core`, `identity-access`, `station-data`
 
-Current module: `station-data`
+Current module: frontend B-core integration; backend next module is `alert-config`
 
-Current delivery point: SD-4 bounded soil history after Checkpoint B2. The
-latest-soil DTO and frontend adapter are sample-verified; UI mock replacement
-remains part of Checkpoint B-core.
+Current delivery point: SD-4 history and SD-5 Client Developer routes are
+backend-verified. Latest/history DTOs are sample-verified; UI mock replacement
+remains the open part of Checkpoint B-core.
 Development uses the approved API Guide sample JSON while the upstream service is
 unavailable. B-core may become `sample-verified`; Phase B remains incomplete until
 Checkpoint B-device proves at least one live station and the unresolved hardware

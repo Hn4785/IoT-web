@@ -12,7 +12,7 @@
 
 ## Global Constraints
 
-- Node runtime is `>=24.19.0 <25`; package manager is exactly `pnpm@11.19.0`.
+- Node runtime is `>=24.17.0 <25`; package manager is exactly `pnpm@11.19.0`.
 - API prefix is `/api/v1`; timestamps returned by this service are ISO 8601 UTC.
 - Success envelope is `{ "success": true, "data": ... }`.
 - Error envelope is `{ "success": false, "error": { "code": "...", "message": "..." }, "requestId": "..." }`.
@@ -75,7 +75,7 @@ test/integration/*.spec.ts            consumer-visible HTTP behavior
 
 **Interfaces:**
 
-- Consumes: Node.js `>=24.19.0 <25`, pnpm `11.19.0`.
+- Consumes: Node.js `>=24.17.0 <25`, pnpm `11.19.0`.
 - Produces: deterministic `pnpm build`, `pnpm typecheck`, `pnpm lint`, `pnpm test`, and `pnpm test:coverage` commands.
 
 - [ ] **Step 1: Create the package manifest and fail-closed package policy**
@@ -86,7 +86,7 @@ test/integration/*.spec.ts            consumer-visible HTTP behavior
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=24.19.0 <25" },
+  "engines": { "node": ">=24.17.0 <25" },
   "packageManager": "pnpm@11.19.0",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",

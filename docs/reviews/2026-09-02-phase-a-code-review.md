@@ -41,7 +41,8 @@ secret handling, operational safety, maintainability and test evidence.
 
 ## Verification evidence
 
-- Node `24.19.0`, pnpm `11.19.0`.
+- Node 24 contract (now pinned to the available `>=24.17.0 <25` LTS line),
+  pnpm `11.19.0`.
 - PostgreSQL container was removed and recreated while retaining
   `E:/IoT-data/postgres`; the `iot_dev` user count was unchanged (`0` before and after).
 - `iot_dev` has one completed Prisma migration and all 11 expected Phase A tables.

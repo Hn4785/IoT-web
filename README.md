@@ -11,8 +11,8 @@ nông trại/trạm và API key có scope cho Client Developer.
 lý tài khoản, authority, farm membership và station grant; Client Developer quản
 lý key qua `/api/v1/developer/api-keys`. Client Developer không có business UI.
 
-Phase A chưa cung cấp latest/history của cảm biến. Endpoint dữ liệu trạm chỉ được
-thêm trong Phase B và bắt buộc gọi policy scope hoặc API-key guard hiện có.
+Phase A cung cấp identity/access; Phase B đã bổ sung latest/history của cảm biến
+và bắt buộc gọi policy scope hoặc API-key guard hiện có.
 Weather credential luôn ở backend và không được gửi cho frontend.
 
 Phase B1 đã cung cấp hierarchy có phân quyền cho browser:
@@ -46,7 +46,7 @@ Phase B là live-verified.
 
 ## Chạy local
 
-Yêu cầu Node.js `>=24.19.0 <25`, pnpm `11.19.0`, Docker Desktop và PostgreSQL
+Yêu cầu Node.js `>=24.17.0 <25`, pnpm `11.19.0`, Docker Desktop và PostgreSQL
 container được cấu hình trong `compose.yaml`.
 
 ```powershell

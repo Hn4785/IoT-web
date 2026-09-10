@@ -29,8 +29,8 @@ history bounds/cursors and per-key rate-limit/reset behavior.
   Prisma tooling. Runtime is PostgreSQL-only and no MySQL protocol path is used;
   this remains tracked for a controlled Prisma update and does not represent a
   reachable high/critical production finding.
-- Local shell uses Node 22.17.0 while the project requires Node 24.19.x. The
-  complete gate passed, but release verification must use the declared runtime.
+- Node 24.17.0 LTS is installed under `E:\Dev\nvm`; the full test, typecheck,
+  lint, format and build gate passed on this declared runtime.
 - Frontend replacement of station/soil mocks is not verified, so the shared
   Checkpoint B-core remains open.
 - B-device remains open until CENTER metadata and at least one real station are

@@ -6,13 +6,13 @@
 
 **Architecture:** The existing NestJS/Fastify modular monolith gains one Prisma/PostgreSQL boundary and focused identity, auth, authorization, API-key and security-audit modules. Current authority is loaded from durable state on every protected request; public DTOs and policies remain independent of Prisma records.
 
-**Tech Stack:** Node.js 24.19, TypeScript 6, pnpm 11, NestJS 12, Fastify 5, PostgreSQL 17, Prisma 7.10, Zod 4, Argon2 0.45, JOSE 6, Vitest 4.
+**Tech Stack:** Node.js 24.17 LTS, TypeScript 6, pnpm 11, NestJS 12, Fastify 5, PostgreSQL 17, Prisma 7.10, Zod 4, Argon2 0.45, JOSE 6, Vitest 4.
 
 **Spec:** `docs/superpowers/specs/2026-09-02-identity-access-design.md`
 
 ## Global Constraints
 
-- Runtime is `>=24.19.0 <25`; package manager is exactly `pnpm@11.19.0`.
+- Runtime is `>=24.17.0 <25`; package manager is exactly `pnpm@11.19.0`.
 - PostgreSQL runs in Docker; local durable files bind to `E:/IoT-data/postgres`.
 - Development and test databases are `iot_dev` and `iot_test`; tests never clear development data.
 - API prefix is `/api/v1`; existing success/error envelopes remain unchanged.

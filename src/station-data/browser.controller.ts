@@ -9,6 +9,7 @@ import {
 import { AppError } from '../common/errors/app-error.js';
 import { HierarchyService } from './hierarchy.service.js';
 import {
+  cursorPageOpenApiSchema,
   farmOpenApiSchema,
   hierarchyCursorOpenApiSchema,
   hierarchyLimitOpenApiSchema,
@@ -29,15 +30,7 @@ const pageSchema = (item: object) => ({
   required: ['success', 'data'],
   properties: {
     success: { type: 'boolean' as const, enum: [true] },
-    data: {
-      type: 'object' as const,
-      additionalProperties: false,
-      required: ['items', 'nextCursor'],
-      properties: {
-        items: { type: 'array' as const, items: item },
-        nextCursor: { type: 'string' as const, nullable: true, maxLength: 2048 },
-      },
-    },
+    data: cursorPageOpenApiSchema(item),
   },
 });
 
