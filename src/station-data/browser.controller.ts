@@ -14,6 +14,7 @@ import {
   hierarchyLimitOpenApiSchema,
   parseHierarchyQuery,
   parseLatestSoilQuery,
+  parseSoilHistoryQuery,
   parseUuid,
   plotOpenApiSchema,
   SOIL_FIELDS,
@@ -211,6 +212,40 @@ export class BrowserStationController {
     return {
       success: true,
       data: await this.stationDataService.getLatest(station, validQuery),
+    };
+  }
+
+  @Get('stations/:stationId/data/history')
+  @Header('Cache-Control', 'no-store')
+  @ApiParam({ name: 'stationId', schema: { type: 'string', format: 'uuid' } })
+  @ApiQuery({ name: 'fields', required: false, schema: { type: 'string' } })
+  @ApiQuery({ name: 'begin', required: true, schema: { type: 'string', format: 'date-time' } })
+  @ApiQuery({ name: 'end', required: true, schema: { type: 'string', format: 'date-time' } })
+  @ApiQuery({ name: 'interval', required: false, enum: ['raw', '5m', '30m', '1h', '1d'] })
+  @ApiQuery({ name: 'aggregate', required: false, enum: ['mean', 'min', 'max', 'first', 'last'] })
+  @ApiQuery({ name: 'order', required: false, enum: ['asc', 'desc'] })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    schema: { type: 'integer', minimum: 1, maximum: 500 },
+  })
+  @ApiQuery({ name: 'cursor', required: false, schema: { type: 'string', maxLength: 2048 } })
+  @ApiOkResponse({ description: 'Bounded soil history grouped into per-field series' })
+  async getSoilHistory(
+    @CurrentPrincipal() principal: CurrentPrincipalValue,
+    @Param('stationId') stationId: string,
+    @Query() query: unknown,
+  ) {
+    const validStationId = parseUuid(stationId);
+    const validQuery = parseSoilHistoryQuery(query);
+    if (principal.status !== 'ACTIVE' || !['ADMIN', 'FARMER'].includes(principal.role)) {
+      throw new AppError('FORBIDDEN', 403, 'Access is forbidden');
+    }
+    const station = await this.stationRepository.getAuthorizedStation(principal, validStationId);
+    if (!station) throw new AppError('NOT_FOUND', 404, 'Resource not found');
+    return {
+      success: true,
+      data: await this.stationDataService.getHistory(station, validQuery),
     };
   }
 }
