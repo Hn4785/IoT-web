@@ -55,6 +55,24 @@ describe('API-key authentication', () => {
     service = app.get(ApiKeyService);
   });
 
+  it('authenticates a valid active key credential without a station', async () => {
+    const principal = await service.authenticateCredential(validKey);
+    expect(typeof principal.apiKeyId).toBe('string');
+    expect(principal).toMatchObject({
+      ownerUserId: client.id,
+      requestsPerMinute: 60,
+    });
+    expect(principal).not.toHaveProperty('stationId');
+    expect(principal).not.toHaveProperty('keyHash');
+  });
+
+  it('rejects invalid credentials without selecting a station', async () => {
+    await expect(service.authenticateCredential('malformed')).rejects.toMatchObject({
+      code: 'INVALID_API_KEY',
+      statusCode: 401,
+    });
+  });
+
   afterAll(async () => {
     await app.close();
     await prisma.$disconnect();

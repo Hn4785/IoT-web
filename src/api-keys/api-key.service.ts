@@ -34,7 +34,6 @@ type ApiKeyRecord = Prisma.ApiKeyGetPayload<{ select: typeof apiKeyWithScopes }>
 export type ApiKeyPrincipal = Readonly<{
   apiKeyId: string;
   ownerUserId: string;
-  stationId: string;
   requestsPerMinute: number;
 }>;
 
@@ -159,10 +158,8 @@ export class ApiKeyService {
     return { revoked: true };
   }
 
-  async authenticate(rawKey: string, stationId: string): Promise<ApiKeyPrincipal> {
+  async authenticateCredential(rawKey: string): Promise<ApiKeyPrincipal> {
     const match = API_KEY_PATTERN.exec(rawKey);
-    const stationIdIsValid = UUID_PATTERN.test(stationId);
-    const queriedStationId = stationIdIsValid ? stationId : NIL_STATION_ID;
     const prefix = match?.[1] ?? 'invalid_';
     const presentedHash = this.tokenHashes.hash(match ? rawKey : 'invalid-api-key');
     const key = await this.prisma.apiKey.findUnique({
@@ -178,27 +175,19 @@ export class ApiKeyService {
           select: {
             role: true,
             status: true,
-            clientStationGrants: {
-              where: { stationId: queriedStationId },
-              select: { stationId: true },
-            },
           },
         },
-        scopes: { where: { stationId: queriedStationId }, select: { stationId: true } },
       },
     });
     const hashesMatch = constantTimeHashEquals(presentedHash, key?.keyHash ?? DUMMY_HASH);
     if (
       !match ||
-      !stationIdIsValid ||
       !hashesMatch ||
       !key ||
       key.revokedAt ||
       key.expiresAt <= new Date() ||
       key.owner.role !== 'CLIENT_DEVELOPER' ||
-      key.owner.status !== 'ACTIVE' ||
-      key.scopes.length !== 1 ||
-      key.owner.clientStationGrants.length !== 1
+      key.owner.status !== 'ACTIVE'
     ) {
       this.invalidKey();
     }
@@ -206,9 +195,39 @@ export class ApiKeyService {
     return {
       apiKeyId: key.id,
       ownerUserId: key.ownerUserId,
-      stationId,
       requestsPerMinute: key.requestsPerMinute,
     };
+  }
+
+  async authenticate(
+    rawKey: string,
+    stationId: string,
+  ): Promise<ApiKeyPrincipal & { stationId: string }> {
+    const principal = await this.authenticateCredential(rawKey);
+    const stationIdIsValid = UUID_PATTERN.test(stationId);
+    const queriedStationId = stationIdIsValid ? stationId : NIL_STATION_ID;
+    const [scope, grant] = await Promise.all([
+      this.prisma.apiKeyStationScope.findUnique({
+        where: {
+          apiKeyId_stationId: {
+            apiKeyId: principal.apiKeyId,
+            stationId: queriedStationId,
+          },
+        },
+      }),
+      this.prisma.clientStationGrant.findUnique({
+        where: {
+          userId_stationId: {
+            userId: principal.ownerUserId,
+            stationId: queriedStationId,
+          },
+        },
+      }),
+    ]);
+    if (!stationIdIsValid || !scope || !grant) {
+      this.invalidKey();
+    }
+    return { ...principal, stationId };
   }
 
   private async createCredential(input: {
