@@ -92,7 +92,7 @@ export class WeatherClientService implements WeatherClient {
     search.set('limit', query.limit.toString());
     search.set('order', query.order);
     search.set('interval', query.interval);
-    search.set('aggregate', query.aggregate);
+    if (query.aggregate) search.set('aggregate', query.aggregate);
 
     const { body } = await this.getJson('/data/history', search);
     return parseUpstream(() => parseWeatherHistoryResponse(body).data);

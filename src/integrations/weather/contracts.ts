@@ -30,9 +30,21 @@ const weatherHistoryQuerySchema = latestWeatherQuerySchema
     limit: z.number().int().min(1).max(5000).default(100),
     order: z.enum(['asc', 'desc']).default('desc'),
     interval: z.enum(['raw', '1m', '5m', '10m', '30m', '1h', '6h', '1d', '1w']).default('raw'),
-    aggregate: z.enum(['mean', 'min', 'max', 'first', 'last', 'sum', 'count']).default('mean'),
+    aggregate: z.enum(['mean', 'min', 'max', 'first', 'last', 'sum', 'count']).optional(),
   })
   .strict()
+  .superRefine((value, context) => {
+    if (value.interval === 'raw' && value.aggregate !== undefined) {
+      context.addIssue({ code: 'custom', path: ['aggregate'], message: 'raw rejects aggregate' });
+    }
+    if (value.interval !== 'raw' && value.aggregate === undefined) {
+      context.addIssue({
+        code: 'custom',
+        path: ['aggregate'],
+        message: 'aggregate is required for non-raw intervals',
+      });
+    }
+  })
   .refine(
     (value) => !value.begin || !value.end || Date.parse(value.begin) <= Date.parse(value.end),
     { path: ['begin'], message: 'begin must not be after end' },

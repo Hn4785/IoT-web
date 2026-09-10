@@ -133,9 +133,49 @@ describe('WeatherClientService', () => {
 
       expect(history[0]?.history.soil?.[0]?.moisture).toBe(41.2);
       expect(upstream.requests[0]?.path).toBe(
-        '/api/v1/data/history?station=NODE01&begin=2026-07-17T00%3A00%3A00Z&end=2026-07-18T00%3A00%3A00Z&limit=100&order=asc&interval=raw&aggregate=mean',
+        '/api/v1/data/history?station=NODE01&begin=2026-07-17T00%3A00%3A00Z&end=2026-07-18T00%3A00%3A00Z&limit=100&order=asc&interval=raw',
       );
       expect(upstream.requests[0]?.headers['x-api-key']).toBe('server-only-key');
+    } finally {
+      await upstream.close();
+    }
+  });
+
+  it('encodes aggregate only for a non-raw history query', async () => {
+    const upstream = await startUpstreamServer([
+      {
+        status: 200,
+        body: {
+          success: true,
+          data: [
+            {
+              station: 'NODE01',
+              history: {
+                soil: [
+                  {
+                    ts: 1_784_012_400_000,
+                    time: '2026-07-18T00:00:00.000Z',
+                    moisture: 41.2,
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      },
+    ]);
+    const client = makeClient(`${upstream.baseUrl}/api/v1`);
+    const query = parseWeatherHistoryQuery({
+      station: ['NODE01'],
+      interval: '5m',
+      aggregate: 'mean',
+    });
+
+    try {
+      await client.getHistory(query);
+      expect(upstream.requests[0]?.path).toBe(
+        '/api/v1/data/history?station=NODE01&limit=100&order=desc&interval=5m&aggregate=mean',
+      );
     } finally {
       await upstream.close();
     }

@@ -42,8 +42,16 @@ describe('Weather API contracts', () => {
         limit,
         order: 'desc',
         interval: 'raw',
+      });
+    });
+
+    it('requires aggregate for non-raw intervals and rejects it for raw', () => {
+      expect(parseWeatherHistoryQuery({ interval: '5m', aggregate: 'mean' })).toMatchObject({
+        interval: '5m',
         aggregate: 'mean',
       });
+      expect(() => parseWeatherHistoryQuery({ interval: '5m' })).toThrow();
+      expect(() => parseWeatherHistoryQuery({ interval: 'raw', aggregate: 'mean' })).toThrow();
     });
 
     it('rejects history when begin is after end', () => {
@@ -54,7 +62,6 @@ describe('Weather API contracts', () => {
           limit: 100,
           order: 'asc',
           interval: 'raw',
-          aggregate: 'mean',
         }),
       ).toThrow();
     });
