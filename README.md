@@ -26,6 +26,24 @@ Admin đọc toàn bộ registry; Farmer chỉ đọc nông trại đang có mem
 nguyên không tồn tại và ngoài phạm vi đều trả cùng `404 NOT_FOUND`. Client
 Developer không dùng các route browser này và nhận `403 FORBIDDEN`.
 
+Phase B backend còn cung cấp dữ liệu đất đã chuẩn hóa:
+
+- Browser Bearer: `GET /api/v1/stations/:stationId/data/latest` và
+  `GET /api/v1/stations/:stationId/data/history`.
+- Client Developer API key: `GET /api/v1/client/stations`,
+  `GET /api/v1/client/data/latest?station=NODE01` và
+  `GET /api/v1/client/data/history?station=NODE01`.
+
+Frontend nên poll latest mỗi 30 giây. History raw tối đa 7 ngày; history tổng hợp
+(`interval=5m|30m|1h|1d` kèm `aggregate=mean|min|max|first|last`) tối đa 90
+ngày, phân trang bằng `nextCursor`. Client gửi `X-API-Key` và đọc các header
+`X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`.
+
+`unit`, `sensorId` và `depthCm` có thể là `null` vì thiết bị thật chưa được
+xác minh. Backend chỉ proxy/cache dữ liệu đo, không lưu measurement vào database.
+`CENTER` và một station thật vẫn phải qua Checkpoint B-device trước khi coi
+Phase B là live-verified.
+
 ## Chạy local
 
 Yêu cầu Node.js `>=24.19.0 <25`, pnpm `11.19.0`, Docker Desktop và PostgreSQL
@@ -96,6 +114,15 @@ curl.exe http://localhost:3000/api/v1/health
 ```
 
 `time` là thời điểm phản hồi thực tế ở định dạng ISO 8601 UTC.
+
+Ví dụ kiểm tra Phase B local (thay ID/token/key bằng giá trị local, không lưu
+credential vào Git):
+
+```powershell
+curl.exe -H "Authorization: Bearer <access-token>" "http://localhost:3000/api/v1/stations/<station-id>/data/latest?fields=moisture,ph"
+curl.exe -H "Authorization: Bearer <access-token>" "http://localhost:3000/api/v1/stations/<station-id>/data/history?begin=2026-09-01T00:00:00Z&end=2026-09-02T00:00:00Z&fields=moisture"
+curl.exe -H "X-API-Key: <api-key>" "http://localhost:3000/api/v1/client/data/latest?station=NODE01&fields=moisture,ph"
+```
 
 ## Identity và session contract
 

@@ -33,10 +33,14 @@
 - [x] Checkpoint B1: Review hierarchy ownership and scope denials
 - [x] SD-3: Expose validated latest measurements
 - [x] Checkpoint B2: Verify latest DTO and frontend adapter against approved sample JSON
-- [ ] SD-4: Expose bounded historical measurements
-- [ ] SD-5: Expose scoped Client Developer data access
+- [x] SD-4: Expose bounded historical measurements
+- [x] SD-5: Expose scoped Client Developer data access
 - [ ] Checkpoint B-core: Frontend replaces station and soil mocks against verified fake upstream data
 - [ ] Checkpoint B-device: Hardware metadata and one real station validate physical assumptions
+
+Backend B-core contract and fake-upstream verification are complete. The
+Checkpoint B-core checkbox remains open until the frontend replaces and verifies
+its station/soil mocks. B-device remains open until live hardware is reachable.
 
 Integration note: the upstream API is temporarily unavailable during device
 installation, so implementation uses the API Guide response JSON as its sample
