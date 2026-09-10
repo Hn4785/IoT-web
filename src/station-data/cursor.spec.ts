@@ -43,4 +43,20 @@ describe('station-data cursor codec', () => {
       expect.objectContaining({ code: 'VALIDATION_ERROR' }),
     );
   });
+
+  it('round-trips a bounded soil history cursor', () => {
+    const hash = 'a'.repeat(64);
+    const cursor = encodeCursor({
+      v: 1,
+      kind: 'soil-history',
+      queryFingerprint: hash,
+      boundaryTime: '2026-09-01T00:00:00Z',
+      boundaryFingerprint: hash,
+      boundaryOccurrence: 1,
+    });
+    expect(decodeCursor(cursor, 'soil-history')).toMatchObject({
+      queryFingerprint: hash,
+      boundaryOccurrence: 1,
+    });
+  });
 });
