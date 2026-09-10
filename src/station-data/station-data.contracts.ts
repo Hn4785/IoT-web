@@ -207,6 +207,16 @@ export const stationOpenApiSchema: SchemaObject = {
   },
 };
 
+export const cursorPageOpenApiSchema = (item: SchemaObject): SchemaObject => ({
+  type: 'object',
+  additionalProperties: false,
+  required: ['items', 'nextCursor'],
+  properties: {
+    items: { type: 'array', items: item },
+    nextCursor: { type: 'string', nullable: true, maxLength: 2048 },
+  },
+});
+
 function invalidRequest(message: string): AppError {
   return new AppError('VALIDATION_ERROR', 400, message);
 }
@@ -226,5 +236,14 @@ export function parseSoilHistoryQuery(value: unknown): SoilHistoryQuery {
 export function parseUuid(value: unknown): string {
   const parsed = z.uuid().safeParse(value);
   if (!parsed.success) throw invalidRequest('Identifier is invalid');
+  return parsed.data;
+}
+
+export const STATION_CODE_PATTERN = /^[A-Za-z0-9_-]{1,64}$/;
+const stationCodeSchema = z.string().regex(STATION_CODE_PATTERN);
+
+export function parseStationCode(value: unknown): string {
+  const parsed = stationCodeSchema.safeParse(value);
+  if (!parsed.success) throw invalidRequest('Station code is invalid');
   return parsed.data;
 }

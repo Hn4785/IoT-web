@@ -44,6 +44,9 @@ describe('OpenAPI contract', () => {
       '/api/v1/stations/{stationId}',
       '/api/v1/stations/{stationId}/data/latest',
       '/api/v1/stations/{stationId}/data/history',
+      '/api/v1/client/stations',
+      '/api/v1/client/data/latest',
+      '/api/v1/client/data/history',
     ]);
     expect(response.body).not.toContain('WEATHER_API_KEY');
     expect(response.body).toContain('X-API-Key');

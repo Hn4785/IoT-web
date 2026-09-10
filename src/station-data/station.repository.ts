@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
+import type { ApiKeyPrincipal } from '../api-keys/api-key.service.js';
 import type { CurrentPrincipalValue } from '../authorization/current-principal.js';
 import { AppError } from '../common/errors/app-error.js';
 import { PrismaService } from '../database/prisma.service.js';
@@ -152,6 +153,60 @@ export class StationRepository {
     stationId: string,
   ): Promise<AuthorizedStation | null> {
     const station = await this.findAuthorizedStation(principal, stationId);
+    if (!station) return null;
+    return { ...this.toStationDto(station), upstreamCode: station.upstreamCode };
+  }
+
+  async listClientStations(
+    principal: ApiKeyPrincipal,
+    query: HierarchyQuery,
+  ): Promise<CursorPage<StationDto>> {
+    const cursor = query.cursor ? decodeCursor(query.cursor, 'client-station') : undefined;
+    const scope: Prisma.StationWhereInput = {
+      clientGrants: { some: { userId: principal.ownerUserId } },
+      apiKeyScopes: { some: { apiKeyId: principal.apiKeyId } },
+    };
+    const rows = await this.prisma.station.findMany({
+      where: { AND: [scope, ...(cursor ? [keyset(cursor.name, cursor.id)] : [])] },
+      select: {
+        id: true,
+        plotId: true,
+        name: true,
+        upstreamCode: true,
+        plot: { select: { farmId: true } },
+      },
+      orderBy: [{ name: 'asc' }, { id: 'asc' }],
+      take: query.limit + 1,
+    });
+    const items = rows.slice(0, query.limit).map((row) => this.toStationDto(row));
+    const lastRow = rows[Math.min(query.limit, rows.length) - 1];
+    return {
+      items,
+      nextCursor:
+        rows.length > query.limit && lastRow
+          ? encodeCursor({ v: 1, kind: 'client-station', name: lastRow.name, id: lastRow.id })
+          : null,
+    };
+  }
+
+  async getClientStationByCode(
+    principal: ApiKeyPrincipal,
+    code: string,
+  ): Promise<AuthorizedStation | null> {
+    const station = await this.prisma.station.findFirst({
+      where: {
+        upstreamCode: code,
+        clientGrants: { some: { userId: principal.ownerUserId } },
+        apiKeyScopes: { some: { apiKeyId: principal.apiKeyId } },
+      },
+      select: {
+        id: true,
+        plotId: true,
+        name: true,
+        upstreamCode: true,
+        plot: { select: { farmId: true } },
+      },
+    });
     if (!station) return null;
     return { ...this.toStationDto(station), upstreamCode: station.upstreamCode };
   }

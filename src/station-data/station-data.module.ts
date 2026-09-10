@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 
+import { ApiKeyModule } from '../api-keys/api-key.module.js';
 import { AuthModule } from '../auth/auth.module.js';
 import { RUNTIME_CONFIG } from '../config/runtime-config.module.js';
 import type { RuntimeConfig } from '../config/runtime-config.js';
@@ -12,6 +13,8 @@ import {
   type StationDataClock,
 } from './bounded-cache.js';
 import { BrowserStationController } from './browser.controller.js';
+import { ClientRateLimitGuard, ClientRateLimitStore } from './client-rate-limit.guard.js';
+import { ClientController } from './client.controller.js';
 import { HierarchyService } from './hierarchy.service.js';
 import {
   SOIL_METADATA_PROVIDER,
@@ -22,12 +25,14 @@ import { StationDataService } from './station-data.service.js';
 import { StationRepository } from './station.repository.js';
 
 @Module({
-  imports: [AuthModule, WeatherModule],
-  controllers: [BrowserStationController],
+  imports: [AuthModule, WeatherModule, ApiKeyModule],
+  controllers: [BrowserStationController, ClientController],
   providers: [
     StationRepository,
     HierarchyService,
     StationDataService,
+    ClientRateLimitStore,
+    ClientRateLimitGuard,
     {
       provide: STATION_DATA_CLOCK,
       useValue: { now: () => new Date() },
