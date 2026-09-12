@@ -11,8 +11,15 @@ import UserManagement from "@/pages/admin/UserManagement";
 import IoTConfiguration from "@/pages/admin/IoTConfiguration";
 import DeviceManagement from "@/pages/admin/DeviceManagement";
 import AuditLogs from "@/pages/admin/AuditLogs";
+import DeviceHealth from "@/pages/admin/DeviceHealth";
+import StationDetail from "../pages/admin/StationDetail";
+import AdminAlertCenter from "@/pages/admin/AdminAlertCenter";
+import ConfigurationProposals from "@/pages/admin/ConfigurationProposals";
 
 import FarmDashboard from "@/pages/farm-owner/FarmDashboard";
+import RealtimeSoilMonitoring from "@/pages/farm-owner/RealtimeSoilMonitoring";
+import HistoricalAnalysis from "@/pages/farm-owner/HistoricalAnalysis";
+import AgriculturalAlerts from "@/pages/farm-owner/AgriculturalAlerts";
 import HistoryReport from "@/pages/farm-owner/HistoryReport";
 import NotificationSettings from "@/pages/farm-owner/NotificationSettings";
 import AlertActionCenter from "@/pages/farm-owner/AlertActionCenter";
@@ -72,6 +79,29 @@ export const protectedRoutes: AppRoute[] = [
     roles: ["ADMIN"],
     element: <AuditLogs />,
   },
+  {
+  path: "/admin/device-health",
+  roles: ["ADMIN"],
+  element: <DeviceHealth />,
+},
+
+{
+  path: "/admin/stations/:stationId",
+  roles: ["ADMIN"],
+  element: <StationDetail />,
+},
+
+{
+  path: "/admin/alert-center",
+  roles: ["ADMIN"],
+  element: <AdminAlertCenter />,
+},
+
+{
+  path: "/admin/config-proposals",
+  roles: ["ADMIN"],
+  element: <ConfigurationProposals />,
+},
 
   // =========================
   // FARM OWNER
@@ -80,6 +110,16 @@ export const protectedRoutes: AppRoute[] = [
     path: "/farm-owner/dashboard",
     roles: ["FARMER"],
     element: <FarmDashboard />,
+  },
+  {
+  path: "/farm-owner/soil-dashboard",
+  roles: ["FARMER"],
+  element: <RealtimeSoilMonitoring />,
+  },
+  {
+  path: "/farm-owner/historical-analysis",
+  roles: ["FARMER"],
+  element: <HistoricalAnalysis />,
   },
   {
     path: "/farm-owner/history-reports",
@@ -95,6 +135,11 @@ export const protectedRoutes: AppRoute[] = [
     path: "/farm-owner/alert-center",
     roles: ["FARMER"],
     element: <AlertActionCenter />,
+  },
+  {
+  path: "/farm-owner/alerts",
+  roles: ["FARMER"],
+  element: <AgriculturalAlerts />,
   },
 
   // =========================

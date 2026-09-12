@@ -1,0 +1,468 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-5);
+  padding: var(--spacing-6);
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+}
+
+/* =========================
+   HERO
+========================= */
+
+.hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  padding: 20px;
+
+  background: var(--color-bg-surface);
+
+  border:
+    1px solid var(--color-border-default);
+
+  border-radius: var(--radius-xl);
+
+  box-shadow: var(--shadow-sm);
+}
+
+.heroIdentity {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.stationAvatar {
+  width: 48px;
+  height: 48px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 14px;
+
+  background: var(--color-primary-light);
+
+  color: var(--color-primary-dark);
+}
+
+.idLine {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.mono {
+  font-family: var(--font-family-mono);
+}
+
+.hero h2 {
+  margin: 5px 0 2px;
+
+  font-size: 20px;
+}
+
+.hero p {
+  margin: 0;
+
+  color: var(--color-text-tertiary);
+
+  font-size: 13px;
+}
+
+.lastSeen {
+  text-align: right;
+}
+
+.lastSeen span {
+  color: var(--color-text-tertiary);
+
+  font-size: 12px;
+}
+
+.lastSeen strong {
+  display: block;
+
+  margin-top: 5px;
+
+  color: var(--color-text-primary);
+
+  font-size: 13px;
+}
+
+/* =========================
+   INFO GRID
+========================= */
+
+.grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(6, 1fr);
+
+  gap: 12px;
+}
+
+.infoCard {
+  min-height: 125px;
+
+  padding: 16px;
+
+  background: var(--color-bg-surface);
+
+  border:
+    1px solid var(--color-border-default);
+
+  border-radius: var(--radius-xl);
+
+  box-shadow: var(--shadow-sm);
+}
+
+.infoIcon {
+  height: 24px;
+
+  color: var(--color-primary-dark);
+}
+
+.infoCard > span {
+  display: block;
+
+  margin-top: 10px;
+
+  color: var(--color-text-tertiary);
+
+  font-size: 12px;
+}
+
+.infoCard strong {
+  display: block;
+
+  margin-top: 4px;
+
+  font-size: 17px;
+}
+
+.infoCard small {
+  display: block;
+
+  margin-top: 4px;
+
+  color: var(--color-text-tertiary);
+
+  font-size: 11px;
+}
+
+/* =========================
+   PANEL
+========================= */
+
+.panel {
+  overflow: hidden;
+
+  background: var(--color-bg-surface);
+
+  border:
+    1px solid var(--color-border-default);
+
+  border-radius: var(--radius-xl);
+
+  box-shadow: var(--shadow-sm);
+}
+
+.sectionHeader {
+  padding: 18px 20px 12px;
+}
+
+.sectionHeader h2 {
+  margin: 0;
+
+  font-size: 16px;
+}
+
+.sectionHeader p {
+  margin: 4px 0 0;
+
+  color: var(--color-text-tertiary);
+
+  font-size: 12px;
+}
+
+/* =========================
+   TABLE
+========================= */
+
+.tableWrap {
+  overflow-x: auto;
+}
+
+.tableWrap table {
+  width: 100%;
+
+  min-width: 800px;
+
+  border-collapse: collapse;
+}
+
+.tableWrap th,
+.tableWrap td {
+  padding: 13px 16px;
+
+  text-align: left;
+
+  border-bottom:
+    1px solid var(--color-border-subtle);
+
+  font-size: 13px;
+}
+
+.tableWrap th {
+  color: var(--color-text-tertiary);
+
+  font-weight: 600;
+
+  background: var(--color-bg-subtle);
+}
+
+.tableWrap tbody tr:hover {
+  background: var(--color-bg-subtle);
+}
+
+.emptyCell {
+  padding: 35px !important;
+
+  text-align: center !important;
+
+  color: var(--color-text-tertiary);
+}
+
+/* =========================
+   TWO COLUMN
+========================= */
+
+.twoCol {
+  display: grid;
+
+  grid-template-columns: 1fr 1fr;
+
+  gap: var(--spacing-5);
+}
+
+/* =========================
+   CALIBRATION RECORDS
+========================= */
+
+.records {
+  padding: 0 20px 16px;
+}
+
+.record {
+  display: flex;
+
+  gap: 12px;
+
+  padding: 14px 0;
+
+  border-bottom:
+    1px solid var(--color-border-subtle);
+}
+
+.record:last-child {
+  border-bottom: 0;
+}
+
+.recordIcon {
+  width: 32px;
+  height: 32px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex: none;
+
+  border-radius: 9px;
+
+  background: var(--color-bg-subtle);
+
+  color: var(--color-primary-dark);
+}
+
+.recordBody {
+  flex: 1;
+}
+
+.recordTop {
+  display: flex;
+
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 10px;
+}
+
+.recordBody > span {
+  display: block;
+
+  margin-top: 4px;
+
+  color: var(--color-text-tertiary);
+
+  font-size: 12px;
+}
+
+.empty {
+  padding: 25px 0;
+
+  text-align: center;
+
+  color: var(--color-text-tertiary);
+
+  font-size: 13px;
+}
+
+/* =========================
+   TIMELINE
+========================= */
+
+.timeline {
+  padding: 4px 20px 18px;
+}
+
+.timelineItem {
+  position: relative;
+
+  display: flex;
+
+  gap: 14px;
+
+  padding: 14px 0;
+
+  border-bottom:
+    1px solid var(--color-border-subtle);
+}
+
+.timelineItem:last-child {
+  border-bottom: 0;
+}
+
+.dot {
+  width: 9px;
+  height: 9px;
+
+  margin-top: 5px;
+
+  flex: none;
+
+  border-radius: 50%;
+
+  background: var(--color-primary);
+
+  box-shadow:
+    0 0 0 4px
+    var(--color-primary-light);
+}
+
+.timelineItem strong {
+  font-size: 13px;
+}
+
+.timelineItem time {
+  display: block;
+
+  margin-top: 3px;
+
+  color: var(--color-text-tertiary);
+
+  font-size: 11px;
+}
+
+.timelineItem p {
+  margin: 5px 0 0;
+
+  color: var(--color-text-secondary);
+
+  font-size: 12px;
+}
+
+/* =========================
+   NOT FOUND
+========================= */
+
+.notFound {
+  padding: 50px;
+
+  text-align: center;
+
+  background: var(--color-bg-surface);
+
+  border:
+    1px solid var(--color-border-default);
+
+  border-radius: var(--radius-xl);
+}
+
+.notFound h1 {
+  margin: 0 0 8px;
+}
+
+.notFound p {
+  margin: 0;
+
+  color: var(--color-text-tertiary);
+}
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media (max-width: 1200px) {
+  .grid {
+    grid-template-columns:
+      repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 800px) {
+  .hero {
+    display: grid;
+
+    gap: 16px;
+  }
+
+  .lastSeen {
+    text-align: left;
+  }
+
+  .twoCol {
+    grid-template-columns: 1fr;
+  }
+
+  .grid {
+    grid-template-columns:
+      repeat(2, 1fr);
+  }
+
+  .actions {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 560px) {
+  .page {
+    padding: var(--spacing-4);
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .actions {
+    width: 100%;
+  }
+}

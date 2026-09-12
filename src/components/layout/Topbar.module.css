@@ -117,3 +117,206 @@
   font-size: 13px;
   font-weight: 600;
 }
+
+/* ============================================================
+   USER MENU
+   ============================================================ */
+
+.userMenu {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.avatarButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+
+  width: 32px;
+  height: 32px;
+
+  padding: 0;
+
+  border: 0;
+  border-radius: 50%;
+
+  background: transparent;
+
+  cursor: pointer;
+}
+
+.avatarButton:hover {
+  background: var(--color-bg-subtle);
+}
+
+.avatarButton:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.avatarFallback {
+  width: 28px;
+  height: 28px;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 50%;
+
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
+}
+
+/* ============================================================
+   DROPDOWN
+   ============================================================ */
+
+.userDropdown {
+  position: absolute;
+  z-index: 1000;
+
+  top: calc(100% + 8px);
+  right: 0;
+
+  width: 220px;
+
+  padding: 7px;
+
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 8px;
+
+  background: var(--color-bg-surface);
+  box-shadow: var(--shadow-lg);
+}
+
+/* ============================================================
+   DROPDOWN HEADER
+   ============================================================ */
+
+.userDropdownHeader {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+
+  padding: 9px;
+}
+
+.dropdownAvatar {
+  width: 30px;
+  height: 30px;
+
+  flex-shrink: 0;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 50%;
+
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.dropdownUserInfo {
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dropdownUserInfo strong {
+  overflow: hidden;
+
+  color: var(--color-text-primary);
+
+  font-size: 10px;
+  font-weight: 600;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dropdownUserInfo span {
+  overflow: hidden;
+
+  color: var(--color-text-tertiary);
+
+  font-size: 8px;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dropdownDivider {
+  height: 1px;
+
+  margin: 4px 2px;
+
+  background: var(--color-border-subtle);
+}
+
+/* ============================================================
+   DROPDOWN ITEM
+   ============================================================ */
+
+.dropdownItem {
+  width: 100%;
+
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  min-height: 34px;
+
+  padding: 7px 9px;
+
+  border: 0;
+  border-radius: 5px;
+
+  background: transparent;
+
+  color: var(--color-text-primary);
+
+  font-family: inherit;
+  font-size: 9px;
+  font-weight: 500;
+
+  text-align: left;
+
+  cursor: pointer;
+}
+
+.dropdownItem:hover {
+  background: var(--color-bg-subtle);
+}
+
+.dropdownItem:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+.dropdownItem svg {
+  flex-shrink: 0;
+
+  color: var(--color-text-tertiary);
+}
+
+.logoutItem {
+  color: var(--color-error);
+}
+
+.logoutItem svg {
+  color: var(--color-error);
+}

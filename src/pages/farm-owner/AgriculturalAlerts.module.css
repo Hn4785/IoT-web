@@ -1,0 +1,277 @@
+.page {
+  padding: 20px;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+.filterBar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 8px;
+  margin-bottom: 10px;
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-default);
+  border-radius: 8px;
+  color: var(--color-text-tertiary);
+}
+
+.filter {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.filter > span {
+  font-size: 9px;
+}
+
+.selectWrap {
+  position: relative;
+}
+
+.selectWrap select,
+.dateFilter {
+  height: 29px;
+  min-width: 105px;
+  padding: 0 24px 0 8px;
+  appearance: none;
+  border: 1px solid var(--color-border-default);
+  border-radius: 5px;
+  background: var(--color-bg-surface);
+  color: var(--color-text-secondary);
+  font-size: 9px;
+}
+
+.selectWrap svg {
+  position: absolute;
+  top: 50%;
+  right: 7px;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.dateFilter {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 82px;
+  padding-right: 7px;
+}
+
+.dateFilter svg {
+  margin-left: auto;
+}
+
+.search {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: auto;
+  height: 29px;
+  min-width: 170px;
+  padding: 0 8px;
+  border: 1px solid var(--color-border-default);
+  border-radius: 5px;
+}
+
+.search input {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--color-text-primary);
+  font-size: 9px;
+}
+
+.kpiGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.kpiCard {
+  min-height: 75px;
+  padding: 10px;
+  border: 1px solid var(--color-border-default);
+  border-radius: 8px;
+  background: var(--color-bg-surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.kpiCard span,
+.kpiCard small {
+  display: block;
+  color: var(--color-text-tertiary);
+  font-size: 9px;
+}
+
+.kpiCard strong {
+  display: block;
+  margin: 5px 0 2px;
+  color: var(--color-text-primary);
+  font-size: 21px;
+}
+
+.kpiCard.warning {
+  background: #fffef0;
+  border-color: #fde68a;
+}
+
+.kpiCard.warning strong {
+  color: #a16207;
+}
+
+.kpiCard.critical {
+  background: #fff5f5;
+  border-color: #fecaca;
+}
+
+.kpiCard.critical strong {
+  color: var(--color-error-dark);
+}
+
+.kpiCard.info {
+  background: #f5f9ff;
+  border-color: #bfdbfe;
+}
+
+.kpiCard.info strong {
+  color: var(--color-info-dark);
+}
+
+.tableCard {
+  overflow-x: auto;
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-default);
+  border-radius: 8px;
+  box-shadow: var(--shadow-sm);
+}
+
+.tableHeader,
+.tableRow {
+  display: grid;
+  grid-template-columns:
+    minmax(180px, 2fr)
+    75px
+    95px
+    100px
+    90px
+    85px
+    130px
+    90px
+    65px;
+  min-width: 930px;
+}
+
+.tableHeader {
+  min-height: 40px;
+  align-items: center;
+  padding: 0 12px;
+  background: var(--color-bg-subtle);
+  border-bottom: 1px solid var(--color-border-default);
+  color: var(--color-text-tertiary);
+  font-size: 8px;
+  font-weight: 600;
+  text-transform: none;
+}
+
+.tableRow {
+  min-height: 62px;
+  align-items: center;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--color-border-subtle);
+  color: var(--color-text-secondary);
+  font-size: 9px;
+}
+
+.tableRow:last-child {
+  border-bottom: 0;
+}
+
+.alertCell {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding-right: 8px;
+}
+
+.alertCell strong {
+  color: var(--color-text-primary);
+  font-size: 9px;
+}
+
+.alertCell span {
+  overflow: hidden;
+  color: var(--color-text-tertiary);
+  font-size: 8px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.value {
+  color: var(--color-text-primary);
+  font-weight: 600;
+}
+
+.date {
+  color: var(--color-text-tertiary);
+  font-size: 8px;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ackButton,
+.detailButton {
+  height: 22px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 8px;
+}
+
+.ackButton {
+  padding: 0 6px;
+  border: 1px solid var(--color-primary);
+  background: var(--color-primary-light);
+  color: var(--color-primary-dark);
+  font-weight: 600;
+}
+
+.detailButton {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  padding: 0;
+  border: 1px solid var(--color-border-default);
+  background: var(--color-bg-surface);
+  color: var(--color-text-tertiary);
+}
+
+.ackButton:hover {
+  background: var(--color-primary);
+  color: white;
+}
+
+.empty {
+  padding: 50px;
+  text-align: center;
+  color: var(--color-text-tertiary);
+  font-size: 11px;
+}
+
+@media (max-width: 900px) {
+  .kpiGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .search {
+    width: 100%;
+    margin-left: 0;
+  }
+}

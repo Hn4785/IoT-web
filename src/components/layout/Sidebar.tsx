@@ -7,6 +7,12 @@ import {
   History,
   Activity,
   Leaf,
+  ShieldCheck,
+  Radio,
+  BellRing,
+  GitPullRequest,
+  Droplets,
+  BarChart3,
   type LucideIcon,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
@@ -22,6 +28,10 @@ interface NavItem {
 const NAV_CONFIG: Record<UserRole, NavItem[]> = {
   ADMIN: [
     { label: 'Dashboard', path: '/admin', icon: LayoutDashboard },
+    { label: "Device Health", path: "/admin/device-health", icon: ShieldCheck},
+    { label: "Stations", path: "/admin/devices", icon: Radio},
+    { label: "Alert Center", path: "/admin/alert-center", icon: BellRing},
+    { label: "Config Proposals", path: "/admin/config-proposals", icon: GitPullRequest},
     { label: 'Users', path: '/admin/users', icon: Users },
     { label: 'IoT Config', path: '/admin/configuration', icon: Settings },
     { label: 'Devices', path: '/admin/devices', icon: Monitor },
@@ -29,8 +39,11 @@ const NAV_CONFIG: Record<UserRole, NavItem[]> = {
   ],
   FARMER: [
     { label: 'Dashboard', path: '/farm-owner/dashboard', icon: LayoutDashboard },
+    { label: 'Soil Dashboard', path: '/farm-owner/soil-dashboard', icon: Droplets},
+    { label: 'Historical Analysis', path: '/farm-owner/historical-analysis', icon: BarChart3 },
     { label: 'History Report', path: '/farm-owner/history-reports', icon: History },
     { label: 'Notifications', path: '/farm-owner/notifications', icon: Settings },
+    { label: 'Alerts', path: '/farm-owner/alerts', icon: Activity},
     { label: 'Alert Center', path: '/farm-owner/alert-center', icon: Activity },
   ],
   CLIENT_DEVELOPER: [

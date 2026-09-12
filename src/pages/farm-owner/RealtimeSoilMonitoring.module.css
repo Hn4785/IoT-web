@@ -1,0 +1,327 @@
+.page {
+  padding: 20px;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+.liveBar {
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  margin-bottom: 10px;
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-default);
+  border-radius: 8px;
+}
+
+.liveStatus,
+.connectionStatus {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-text-secondary);
+  font-size: 11px;
+}
+
+.liveStatus strong {
+  color: var(--color-primary-dark);
+  font-size: 11px;
+}
+
+.liveDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-light);
+}
+
+.connectionStatus {
+  color: var(--color-primary-dark);
+}
+
+.filterBar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 8px;
+  margin-bottom: 12px;
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-default);
+  border-radius: 8px;
+}
+
+.filterItem {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+
+.filterItem > span {
+  color: var(--color-text-tertiary);
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.selectWrapper,
+.staticSelect {
+  position: relative;
+  min-width: 115px;
+}
+
+.selectWrapper select,
+.staticSelect {
+  width: 100%;
+  height: 30px;
+  appearance: none;
+  padding: 0 25px 0 9px;
+  border: 1px solid var(--color-border-default);
+  border-radius: 6px;
+  background: var(--color-bg-surface);
+  color: var(--color-text-primary);
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.selectWrapper svg,
+.staticSelect svg {
+  position: absolute;
+  right: 7px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: var(--color-text-tertiary);
+}
+
+.staticSelect {
+  display: flex;
+  align-items: center;
+}
+
+.staticSelect span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.metricGrid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 7px;
+  margin-bottom: 10px;
+}
+
+.metricCard {
+  min-width: 0;
+  padding: 9px 10px;
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-default);
+  border-radius: 8px;
+  box-shadow: var(--shadow-sm);
+}
+
+.metricLabel {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--color-text-secondary);
+  font-size: 9px;
+}
+
+.metricValue {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  margin-top: 4px;
+  color: var(--color-text-primary);
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.metricValue small {
+  color: var(--color-text-tertiary);
+  font-size: 8px;
+  font-weight: 500;
+}
+
+.qualityBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-top: 4px;
+  padding: 2px 5px;
+  border-radius: 4px;
+  color: var(--color-primary-dark);
+  background: var(--color-primary-light);
+  font-size: 8px;
+  font-weight: 600;
+}
+
+.qualityBadge.warning {
+  color: var(--color-orange-dark);
+  background: var(--color-orange-light);
+}
+
+.metricUpdated {
+  display: block;
+  margin-top: 4px;
+  color: var(--color-text-placeholder);
+  font-size: 8px;
+}
+
+.chartGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.chartCard {
+  min-width: 0;
+  padding: 12px;
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-default);
+  border-radius: 8px;
+  box-shadow: var(--shadow-sm);
+}
+
+.chartHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 5px;
+}
+
+.chartHeader h2 {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.chartHeader > span {
+  color: var(--color-text-placeholder);
+  font-size: 8px;
+  white-space: nowrap;
+}
+
+.chartTitleWithIcon {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.chartTitleWithIcon svg {
+  color: var(--color-primary);
+}
+
+.npkCard {
+  grid-column: 1 / -1;
+}
+
+.legend {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--color-text-tertiary);
+  font-size: 8px;
+}
+
+.legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.legend i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+}
+
+.nitrogen {
+  background: var(--color-primary);
+}
+
+.phosphorus {
+  background: var(--color-info);
+}
+
+.potassium {
+  background: var(--color-warning);
+}
+
+.npkChart {
+  position: relative;
+  width: 100%;
+  height: 165px;
+  border-top: 1px solid var(--color-border-subtle);
+  border-bottom: 1px solid var(--color-border-subtle);
+  background:
+    linear-gradient(
+      to bottom,
+      transparent 24%,
+      var(--color-border-subtle) 25%,
+      transparent 26%,
+      transparent 49%,
+      var(--color-border-subtle) 50%,
+      transparent 51%,
+      transparent 74%,
+      var(--color-border-subtle) 75%,
+      transparent 76%
+    );
+}
+
+.npkSvg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.nitrogenLine {
+  stroke: var(--color-primary);
+}
+
+.phosphorusLine {
+  stroke: var(--color-info);
+}
+
+.potassiumLine {
+  stroke: var(--color-warning);
+}
+
+.noData {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 15px;
+  padding: 20px;
+  color: var(--color-text-tertiary);
+  border: 1px dashed var(--color-border-default);
+  border-radius: 8px;
+}
+
+@media (max-width: 1200px) {
+  .metricGrid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 850px) {
+  .metricGrid,
+  .chartGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .npkCard {
+    grid-column: auto;
+  }
+}
