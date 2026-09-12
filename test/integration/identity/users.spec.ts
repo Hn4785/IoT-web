@@ -142,8 +142,15 @@ describe('administrator user provisioning', () => {
     const missing = await app.inject({ method: 'GET', url: '/api/v1/admin/users' });
     expect(missing.statusCode).toBe(401);
 
-    const farmer = await prisma.user.findUniqueOrThrow({ where: { email: 'farmer@example.test' } });
-    await prisma.user.update({ where: { id: farmer.id }, data: { status: 'ACTIVE' } });
+    const farmer = await prisma.user.create({
+      data: {
+        email: 'authorization-farmer@example.test',
+        displayName: 'Authorization Farmer',
+        passwordHash: '$argon2id$test',
+        role: 'FARMER',
+        status: 'ACTIVE',
+      },
+    });
     const farmerResponse = await app.inject({
       method: 'GET',
       url: '/api/v1/admin/users',
@@ -153,6 +160,15 @@ describe('administrator user provisioning', () => {
   });
 
   it('rejects unknown fields and normalized duplicate emails', async () => {
+    await prisma.user.create({
+      data: {
+        email: 'duplicate@example.test',
+        displayName: 'Existing User',
+        passwordHash: '$argon2id$test',
+        role: 'FARMER',
+        status: 'ACTIVE',
+      },
+    });
     const unknownField = await app.inject({
       method: 'POST',
       url: '/api/v1/admin/users',
@@ -171,7 +187,7 @@ describe('administrator user provisioning', () => {
       url: '/api/v1/admin/users',
       headers: bearer(rootToken),
       payload: {
-        email: 'farmer@EXAMPLE.test',
+        email: 'duplicate@EXAMPLE.test',
         displayName: 'Duplicate Farmer',
         role: 'FARMER',
       },
@@ -180,8 +196,14 @@ describe('administrator user provisioning', () => {
   });
 
   it('revokes credentials atomically on role changes and protects the authority holder', async () => {
-    const farmer = await prisma.user.findUniqueOrThrow({
-      where: { email: 'farmer@example.test' },
+    const farmer = await prisma.user.create({
+      data: {
+        email: 'role-change-farmer@example.test',
+        displayName: 'Role Change Farmer',
+        passwordHash: '$argon2id$test',
+        role: 'FARMER',
+        status: 'ACTIVE',
+      },
     });
     await prisma.session.create({
       data: {
@@ -282,6 +304,15 @@ describe('administrator user provisioning', () => {
   });
 
   it('lists safe DTOs and resets a permitted password with no-store', async () => {
+    const client = await prisma.user.create({
+      data: {
+        email: 'reset-client@example.test',
+        displayName: 'Reset Client',
+        passwordHash: '$argon2id$test',
+        role: 'CLIENT_DEVELOPER',
+        status: 'ACTIVE',
+      },
+    });
     const list = await app.inject({
       method: 'GET',
       url: '/api/v1/admin/users?limit=2',
@@ -294,7 +325,6 @@ describe('administrator user provisioning', () => {
     expect(list.json<UserListResponse>().data.items).toHaveLength(2);
     expect(list.json<UserListResponse>().data.nextCursor).toMatch(/^[0-9a-f-]{36}$/);
 
-    const client = await prisma.user.findUniqueOrThrow({ where: { email: 'client@example.test' } });
     const reset = await app.inject({
       method: 'POST',
       url: `/api/v1/admin/users/${client.id}/reset-password`,
@@ -304,6 +334,56 @@ describe('administrator user provisioning', () => {
     expect(reset.headers['cache-control']).toBe('no-store');
     expect(reset.json<ProvisionResponse>().data.temporaryPassword).toMatch(/^.{20}$/);
     expect(reset.body).not.toContain('passwordHash');
+  });
+
+  it('allows only one concurrent password reset to issue a usable temporary password', async () => {
+    const client = await prisma.user.create({
+      data: {
+        email: 'concurrent-reset-client@example.test',
+        displayName: 'Concurrent Reset Client',
+        passwordHash: '$argon2id$test',
+        role: 'CLIENT_DEVELOPER',
+        status: 'ACTIVE',
+      },
+    });
+
+    const responses = await Promise.all(
+      Array.from({ length: 2 }, () =>
+        app.inject({
+          method: 'POST',
+          url: `/api/v1/admin/users/${client.id}/reset-password`,
+          headers: bearer(adminToken),
+          remoteAddress: '192.0.2.21',
+        }),
+      ),
+    );
+
+    expect(responses.map(({ statusCode }) => statusCode).sort()).toEqual([201, 409]);
+    const successful = responses.find(({ statusCode }) => statusCode === 201);
+    expect(successful?.json<ProvisionResponse>().data.temporaryPassword).toMatch(/^.{20}$/);
+  });
+
+  it('reissues a temporary password when the previous one was lost', async () => {
+    const client = await prisma.user.create({
+      data: {
+        email: 'lost-temporary-password@example.test',
+        displayName: 'Lost Temporary Password',
+        passwordHash: '$argon2id$test',
+        role: 'CLIENT_DEVELOPER',
+        status: 'PENDING_PASSWORD_CHANGE',
+        updatedAt: new Date(Date.now() - 60_000),
+      },
+    });
+
+    const response = await app.inject({
+      method: 'POST',
+      url: `/api/v1/admin/users/${client.id}/reset-password`,
+      headers: bearer(adminToken),
+      remoteAddress: '192.0.2.22',
+    });
+
+    expect(response.statusCode).toBe(201);
+    expect(response.json<ProvisionResponse>().data.temporaryPassword).toMatch(/^.{20}$/);
   });
 
   it('returns current farm and station assignments in user detail only', async () => {

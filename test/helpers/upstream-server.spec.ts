@@ -95,4 +95,38 @@ describe('startUpstreamServer', () => {
       await server.close();
     }
   });
+
+  it('can select a fixture from the captured request path', async () => {
+    const byPath = ({ path }: { path: string }) => ({ status: 200, rawBody: path });
+    const server = await startUpstreamServer([byPath, byPath]);
+
+    try {
+      const second = await fetch(`${server.baseUrl}/second`);
+      const first = await fetch(`${server.baseUrl}/first`);
+
+      expect(await second.text()).toBe('/second');
+      expect(await first.text()).toBe('/first');
+    } finally {
+      await server.close();
+    }
+  });
+
+  it('can terminate a response after a bounded partial body', async () => {
+    const server = await startUpstreamServer([
+      {
+        status: 200,
+        rawBody: '{"success":true,"data":[',
+        disconnectAfterBytes: 12,
+      },
+    ]);
+
+    try {
+      const response = await fetch(`${server.baseUrl}/cut-mid-body`);
+
+      await expect(response.text()).rejects.toThrow();
+      expect(server.requests.map(({ path }) => path)).toEqual(['/cut-mid-body']);
+    } finally {
+      await server.close();
+    }
+  });
 });

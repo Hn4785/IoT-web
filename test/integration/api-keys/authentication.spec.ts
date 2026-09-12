@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { createApp } from '../../../src/app/create-app.js';
 import { ApiKeyService } from '../../../src/api-keys/api-key.service.js';
@@ -53,6 +53,19 @@ describe('API-key authentication', () => {
     });
     app = await createApp(config);
     service = app.get(ApiKeyService);
+  });
+
+  beforeEach(async () => {
+    await prisma.user.update({ where: { id: client.id }, data: { status: 'ACTIVE' } });
+    await prisma.apiKey.update({
+      where: { prefix: 'AbCd1234' },
+      data: { expiresAt: new Date(Date.now() + 60_000), revokedAt: null },
+    });
+    await prisma.clientStationGrant.upsert({
+      where: { userId_stationId: { userId: client.id, stationId: station.id } },
+      create: { userId: client.id, stationId: station.id },
+      update: {},
+    });
   });
 
   it('authenticates a valid active key credential without a station', async () => {

@@ -36,10 +36,10 @@ describe('HTTP hardening', () => {
   });
 
   it('returns the safe error envelope when the global request limit is exceeded', async () => {
-    let response = await app.inject({ method: 'GET', url: '/api/v1/health' });
+    let response = await app.inject({ method: 'POST', url: '/api/v1/auth/login', payload: {} });
 
     for (let requestNumber = 2; requestNumber <= 101; requestNumber += 1) {
-      response = await app.inject({ method: 'GET', url: '/api/v1/health' });
+      response = await app.inject({ method: 'POST', url: '/api/v1/auth/login', payload: {} });
     }
 
     const body = response.json<RateLimitedBody>();

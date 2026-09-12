@@ -206,4 +206,20 @@ describe('Client Developer API-key lifecycle', () => {
       expect(revoked.statusCode).toBe(200);
     }
   });
+
+  it('allows only one concurrent rotation of the same API key', async () => {
+    const created = await createKey('Concurrent rotation');
+    const original = created.json<CreatedKeyResponse>().data;
+    const responses = await Promise.all(
+      Array.from({ length: 2 }, () =>
+        app.inject({
+          method: 'POST',
+          url: `/api/v1/developer/api-keys/${original.apiKey.id}/rotate`,
+          headers: { authorization: `Bearer ${clientToken}` },
+        }),
+      ),
+    );
+
+    expect(responses.map(({ statusCode }) => statusCode).sort()).toEqual([201, 409]);
+  });
 });

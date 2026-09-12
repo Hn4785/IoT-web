@@ -69,12 +69,20 @@ describe('Weather API contracts', () => {
     it.each([
       [{ limit: 0 }],
       [{ limit: 5001 }],
+      [{ begin: '2026-01-01Z' }],
+      [{ begin: '2026-02-31T00:00:00Z' }],
       [{ begin: '2026-08-31T07:00:00+07:00' }],
       [{ interval: '2m' }],
       [{ aggregate: 'median' }],
       [{ unexpected: true }],
     ])('rejects an unsafe history query %#', (input) => {
       expect(() => parseWeatherHistoryQuery(input)).toThrow();
+    });
+
+    it('accepts a real UTC leap-day timestamp', () => {
+      expect(parseWeatherHistoryQuery({ begin: '2028-02-29T23:59:59.123Z' })).toMatchObject({
+        begin: '2028-02-29T23:59:59.123Z',
+      });
     });
   });
 

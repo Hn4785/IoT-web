@@ -37,6 +37,8 @@ describe('soil history query', () => {
       aggregate: 'mean',
     },
     { begin: '2026-09-02T00:00:00Z', end: '2026-09-01T00:00:00Z' },
+    { begin: '2026-01-01Z', end: '2026-09-02T00:00:00Z' },
+    { begin: '2026-02-31T00:00:00Z', end: '2026-09-02T00:00:00Z' },
     { begin: '2026-09-01T00:00:00+07:00', end: '2026-09-02T00:00:00Z' },
     { begin: '2026-09-01T00:00:00Z', end: '2026-09-02T00:00:00Z', fields: 'ph,ph' },
     { begin: '2026-09-01T00:00:00Z', end: '2026-09-02T00:00:00Z', extra: true },
@@ -44,6 +46,15 @@ describe('soil history query', () => {
     expect(() => parseSoilHistoryQuery(query)).toThrow(
       expect.objectContaining({ code: 'VALIDATION_ERROR', statusCode: 400 }),
     );
+  });
+
+  it('accepts a real UTC leap-day range', () => {
+    expect(
+      parseSoilHistoryQuery({
+        begin: '2028-02-29T00:00:00Z',
+        end: '2028-02-29T23:59:59.999Z',
+      }),
+    ).toMatchObject({ begin: '2028-02-29T00:00:00Z', end: '2028-02-29T23:59:59.999Z' });
   });
 });
 

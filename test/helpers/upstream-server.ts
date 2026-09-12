@@ -6,6 +6,7 @@ export interface UpstreamResponse {
   rawBody?: string;
   headers?: Readonly<Record<string, string>>;
   delayMs?: number;
+  disconnectAfterBytes?: number;
 }
 
 export interface CapturedRequest {
@@ -14,6 +15,8 @@ export interface CapturedRequest {
   headers: Readonly<Record<string, string | string[] | undefined>>;
 }
 
+export type UpstreamFixture = UpstreamResponse | ((request: CapturedRequest) => UpstreamResponse);
+
 export interface UpstreamServer {
   baseUrl: string;
   requests: CapturedRequest[];
@@ -21,25 +24,30 @@ export interface UpstreamServer {
 }
 
 export async function startUpstreamServer(
-  responses: readonly UpstreamResponse[],
+  responses: readonly UpstreamFixture[],
 ): Promise<UpstreamServer> {
   const requests: CapturedRequest[] = [];
   let responseIndex = 0;
   const server = createServer((request, response) => {
-    requests.push({
+    const capturedRequest: CapturedRequest = {
       method: request.method ?? '',
       path: request.url ?? '',
       headers: { ...request.headers },
-    });
+    };
+    requests.push(capturedRequest);
 
-    const fixture = responses[responseIndex];
+    const configuredFixture = responses[responseIndex];
     responseIndex += 1;
 
-    if (!fixture) {
+    if (!configuredFixture) {
       response.statusCode = 500;
       response.end('unexpected request');
       return;
     }
+    const fixture =
+      typeof configuredFixture === 'function'
+        ? configuredFixture(capturedRequest)
+        : configuredFixture;
 
     const sendFixture = () => {
       response.statusCode = fixture.status;
@@ -48,6 +56,15 @@ export async function startUpstreamServer(
       }
 
       if (fixture.rawBody !== undefined) {
+        if (fixture.disconnectAfterBytes !== undefined) {
+          const body = Buffer.from(fixture.rawBody);
+          const cutoff = Math.max(0, Math.min(fixture.disconnectAfterBytes, body.length));
+          response.setHeader('content-length', body.length);
+          response.flushHeaders();
+          response.write(body.subarray(0, cutoff));
+          setTimeout(() => response.destroy(), 5);
+          return;
+        }
         response.end(fixture.rawBody);
         return;
       }

@@ -2,6 +2,7 @@ import type { SchemaObject } from '@nestjs/swagger';
 import { z } from 'zod';
 
 import { AppError } from '../common/errors/app-error.js';
+import { utcTimestampSchema } from '../common/validation/utc-timestamp.js';
 
 export const SOIL_FIELDS = [
   'temperature',
@@ -118,9 +119,7 @@ const hierarchyQuerySchema = z.strictObject({
   cursor: z.string().min(1).max(2048).optional(),
 });
 
-const utcTimestamp = z
-  .string()
-  .refine((value) => value.endsWith('Z') && !Number.isNaN(Date.parse(value)), 'UTC required');
+const utcTimestamp = utcTimestampSchema;
 
 const historyFields = z
   .string()

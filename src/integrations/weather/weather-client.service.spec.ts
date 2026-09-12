@@ -286,6 +286,92 @@ describe('WeatherClientService', () => {
     }
   });
 
+  it('maps a connection cut during the response body to a safe dependency error', async () => {
+    const rawBody = '{"success":true,"data":["NODE01"]}';
+    const apiKey = 'never-leak-this-key';
+    const upstream = await startUpstreamServer([
+      { status: 200, rawBody, disconnectAfterBytes: 18 },
+    ]);
+    const client = makeClient(`${upstream.baseUrl}/api/v1`, apiKey);
+
+    try {
+      let thrown: unknown;
+      try {
+        await client.listStations();
+      } catch (error) {
+        thrown = error;
+      }
+
+      expect(thrown).toMatchObject({
+        code: 'UPSTREAM_UNAVAILABLE',
+        statusCode: 502,
+        safeMessage: 'Weather service is unavailable',
+      });
+      expect(JSON.stringify(thrown)).not.toContain(apiKey);
+      expect(JSON.stringify(thrown)).not.toContain(rawBody);
+    } finally {
+      await upstream.close();
+    }
+  });
+
+  it('does not disclose a bounded large upstream response rejected by the schema', async () => {
+    const marker = 'large-upstream-marker';
+    const rawBody = JSON.stringify({
+      success: true,
+      data: [`${marker}-${'x'.repeat(1_100_000)}`],
+    });
+    const upstream = await startUpstreamServer([{ status: 200, rawBody }]);
+    const client = makeClient(`${upstream.baseUrl}/api/v1`);
+
+    try {
+      let thrown: unknown;
+      try {
+        await client.listStations();
+      } catch (error) {
+        thrown = error;
+      }
+
+      expect(thrown).toMatchObject({
+        code: 'UPSTREAM_UNAVAILABLE',
+        statusCode: 502,
+        safeMessage: 'Weather service is unavailable',
+      });
+      expect(JSON.stringify(thrown)).not.toContain(marker);
+    } finally {
+      await upstream.close();
+    }
+  });
+
+  it('rejects an otherwise valid upstream response larger than one MiB', async () => {
+    const record = {
+      station: 'NODE01',
+      latest: {
+        soil: {
+          ts: 1_784_271_234_567,
+          time: '2026-07-21T10:30:15.123Z',
+          _fieldTs: { moisture: 1_784_271_234_567 },
+          moisture: 42.5,
+        },
+      },
+    };
+    const rawBody = JSON.stringify({
+      success: true,
+      data: Array.from({ length: 10_000 }, () => record),
+    });
+    const upstream = await startUpstreamServer([{ status: 200, rawBody }]);
+    const client = makeClient(`${upstream.baseUrl}/api/v1`);
+
+    try {
+      await expect(client.getLatest(parseLatestWeatherQuery({}))).rejects.toMatchObject({
+        code: 'UPSTREAM_UNAVAILABLE',
+        statusCode: 502,
+        safeMessage: 'Weather service is unavailable',
+      });
+    } finally {
+      await upstream.close();
+    }
+  });
+
   it('maps an invalid stations schema without exposing the upstream body', async () => {
     const body = { success: true, data: 7 };
     const upstream = await startUpstreamServer([{ status: 200, body }]);

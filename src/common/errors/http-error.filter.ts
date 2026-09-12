@@ -13,6 +13,20 @@ function isDatabaseUnavailable(exception: unknown): boolean {
   );
 }
 
+function httpErrorCode(status: number): AppErrorCode {
+  if (status === 400 || status === 413 || status === 415) return 'VALIDATION_ERROR';
+  if (status === 404) return 'NOT_FOUND';
+  return 'INTERNAL_ERROR';
+}
+
+function httpErrorMessage(status: number): string {
+  if (status === 400) return 'Request is invalid';
+  if (status === 413) return 'Request body is too large';
+  if (status === 415) return 'Content type is not supported';
+  if (status === 404) return 'Resource not found';
+  return 'An unexpected error occurred';
+}
+
 @Catch()
 export class HttpErrorFilter implements ExceptionFilter {
   private readonly logger = new Logger(HttpErrorFilter.name);
@@ -35,19 +49,13 @@ export class HttpErrorFilter implements ExceptionFilter {
         ? exception.code
         : databaseUnavailable
           ? 'DATABASE_UNAVAILABLE'
-          : status === 404
-            ? 'NOT_FOUND'
-            : status === 400
-              ? 'VALIDATION_ERROR'
-              : 'INTERNAL_ERROR';
+          : httpErrorCode(status);
     const message =
       exception instanceof AppError
         ? exception.safeMessage
         : databaseUnavailable
           ? 'Database is temporarily unavailable'
-          : status === 404
-            ? 'Resource not found'
-            : 'An unexpected error occurred';
+          : httpErrorMessage(status);
 
     this.logger.error({ requestId: request.id, code, status });
     void reply.status(status).send({

@@ -1,4 +1,5 @@
 import { Controller, Get, Inject } from '@nestjs/common';
+import { RouteConfig } from '@nestjs/platform-fastify';
 import { ApiOkResponse, ApiProperty, ApiTags } from '@nestjs/swagger';
 
 import { RUNTIME_CONFIG } from '../config/runtime-config.module.js';
@@ -35,6 +36,7 @@ export class HealthController {
   constructor(@Inject(RUNTIME_CONFIG) private readonly config: RuntimeConfig) {}
 
   @Get()
+  @RouteConfig({ rateLimit: false })
   @ApiOkResponse({
     description: 'Service is alive and ready to receive requests',
     type: HealthResponse,

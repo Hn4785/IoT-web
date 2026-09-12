@@ -5,7 +5,12 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createApp } from '../../../src/app/create-app.js';
 import { TokenHashService } from '../../../src/auth/token-hash.service.js';
 import { makeTestRuntimeConfig } from '../../helpers/runtime-config.js';
-import { startUpstreamServer, type UpstreamServer } from '../../helpers/upstream-server.js';
+import {
+  startUpstreamServer,
+  type CapturedRequest,
+  type UpstreamResponse,
+  type UpstreamServer,
+} from '../../helpers/upstream-server.js';
 import { createTestPrismaClient, prepareTestDatabase } from '../../helpers/database.js';
 
 describe('client developer HTTP API', () => {
@@ -20,48 +25,49 @@ describe('client developer HTTP API', () => {
     await prepareTestDatabase();
     const prisma = createTestPrismaClient();
 
-    upstream = await startUpstreamServer([
-      {
-        status: 200,
-        body: {
-          success: true,
-          data: [
-            {
-              station: 'NODE01',
-              latest: {
-                soil: {
+    const latestResponse: UpstreamResponse = {
+      status: 200,
+      body: {
+        success: true,
+        data: [
+          {
+            station: 'NODE01',
+            latest: {
+              soil: {
+                ts: 1785469178997,
+                time: '2026-07-31T03:39:38.997Z',
+                _fieldTs: { moisture: 1784276866000, temperature: 1784276866000 },
+                moisture: 43,
+                temperature: 25.5,
+              },
+            },
+          },
+        ],
+      },
+    };
+    const historyResponse: UpstreamResponse = {
+      status: 200,
+      body: {
+        success: true,
+        data: [
+          {
+            station: 'NODE01',
+            history: {
+              soil: [
+                {
                   ts: 1785469178997,
                   time: '2026-07-31T03:39:38.997Z',
-                  _fieldTs: { moisture: 1784276866000, temperature: 1784276866000 },
                   moisture: 43,
-                  temperature: 25.5,
                 },
-              },
+              ],
             },
-          ],
-        },
+          },
+        ],
       },
-      {
-        status: 200,
-        body: {
-          success: true,
-          data: [
-            {
-              station: 'NODE01',
-              history: {
-                soil: [
-                  {
-                    ts: 1785469178997,
-                    time: '2026-07-31T03:39:38.997Z',
-                    moisture: 43,
-                  },
-                ],
-              },
-            },
-          ],
-        },
-      },
-    ]);
+    };
+    const responseForPath = ({ path }: CapturedRequest): UpstreamResponse =>
+      path.startsWith('/data/latest') ? latestResponse : historyResponse;
+    upstream = await startUpstreamServer([responseForPath, responseForPath]);
 
     const config = makeTestRuntimeConfig({ weatherApiBaseUrl: upstream.baseUrl });
     const tokenHash = new TokenHashService(config.credentialPepper);

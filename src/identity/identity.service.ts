@@ -20,6 +20,7 @@ import { toUserDto } from './user-dto.js';
 
 const TEMPORARY_PASSWORD_ALPHABET =
   'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%';
+const PASSWORD_RESET_COOLDOWN_MS = 30_000;
 
 function temporaryPassword(): string {
   return Array.from({ length: 20 }, () =>
@@ -195,42 +196,68 @@ export class IdentityService {
     requestId: string,
   ): Promise<{ user: UserDto; temporaryPassword: string }> {
     const plaintext = temporaryPassword();
-    const passwordHash = await this.passwords.hash(plaintext);
-    const user = await this.repository.transaction(async (transaction) => {
-      const [target, authority] = await Promise.all([
-        transaction.user.findUnique({ where: { id: userId }, select: safeUserSelect }),
-        transaction.systemAuthority.findUnique({
-          where: { authority: 'SUPER_ADMIN' },
-          select: { holderUserId: true },
-        }),
-      ]);
-      if (!target) throw new AppError('NOT_FOUND', 404, 'User not found');
-      const actorIsSuperAdmin = authority?.holderUserId === actor.userId;
-      if (actorIsSuperAdmin && target.id === actor.userId) {
-        throw new AppError(
-          'CONFLICT',
-          409,
-          'Use the emergency recovery command to reset the Super Admin password',
-        );
+    const user = await (async () => {
+      try {
+        return await this.repository.transaction(async (transaction) => {
+          const [lock] = await transaction.$queryRaw<Array<{ acquired: boolean }>>`
+            SELECT pg_try_advisory_xact_lock(hashtextextended(${userId}, 0)) AS acquired
+          `;
+          if (!lock?.acquired) {
+            throw new AppError('CONFLICT', 409, 'Password reset is already in progress');
+          }
+
+          const [target, authority] = await Promise.all([
+            transaction.user.findUnique({
+              where: { id: userId },
+              select: safeUserSelect,
+            }),
+            transaction.systemAuthority.findUnique({
+              where: { authority: 'SUPER_ADMIN' },
+              select: { holderUserId: true },
+            }),
+          ]);
+          if (!target) throw new AppError('NOT_FOUND', 404, 'User not found');
+          const actorIsSuperAdmin = authority?.holderUserId === actor.userId;
+          if (actorIsSuperAdmin && target.id === actor.userId) {
+            throw new AppError(
+              'CONFLICT',
+              409,
+              'Use the emergency recovery command to reset the Super Admin password',
+            );
+          }
+          if (!actorIsSuperAdmin && (target.id === actor.userId || target.role === 'ADMIN')) {
+            throw new AppError('FORBIDDEN', 403, 'This password cannot be reset by an Admin');
+          }
+          if (
+            target.status === 'PENDING_PASSWORD_CHANGE' &&
+            Date.now() - target.updatedAt.getTime() < PASSWORD_RESET_COOLDOWN_MS
+          ) {
+            throw new AppError('CONFLICT', 409, 'Password reset was issued recently');
+          }
+
+          const passwordHash = await this.passwords.hash(plaintext);
+          await this.sessions.revokeAll(transaction, userId, 'PASSWORD_RESET');
+          const changed = await transaction.user.update({
+            where: { id: userId },
+            data: { passwordHash, status: 'PENDING_PASSWORD_CHANGE', passwordChangedAt: null },
+            select: safeUserSelect,
+          });
+          await this.audits.record(transaction, {
+            actorUserId: actor.userId,
+            action: 'PASSWORD_RESET',
+            targetType: 'User',
+            targetId: userId,
+            requestId,
+          });
+          return changed;
+        });
+      } catch (error) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2034') {
+          throw new AppError('CONFLICT', 409, 'Password reset is already pending');
+        }
+        throw error;
       }
-      if (!actorIsSuperAdmin && (target.id === actor.userId || target.role === 'ADMIN')) {
-        throw new AppError('FORBIDDEN', 403, 'This password cannot be reset by an Admin');
-      }
-      await this.sessions.revokeAll(transaction, userId, 'PASSWORD_RESET');
-      const changed = await transaction.user.update({
-        where: { id: userId },
-        data: { passwordHash, status: 'PENDING_PASSWORD_CHANGE', passwordChangedAt: null },
-        select: safeUserSelect,
-      });
-      await this.audits.record(transaction, {
-        actorUserId: actor.userId,
-        action: 'PASSWORD_RESET',
-        targetType: 'User',
-        targetId: userId,
-        requestId,
-      });
-      return changed;
-    });
+    })();
     return { user: toUserDto(user), temporaryPassword: plaintext };
   }
 
@@ -241,7 +268,7 @@ export class IdentityService {
     assigned: boolean,
     requestId: string,
   ): Promise<{ assigned: boolean }> {
-    return this.repository.transaction(async (transaction) => {
+    return this.repository.retryingIdempotentTransaction(async (transaction) => {
       const [target, farm] = await Promise.all([
         transaction.user.findUnique({ where: { id: userId }, select: { role: true } }),
         transaction.farm.findUnique({ where: { id: farmId }, select: { id: true } }),
@@ -277,7 +304,7 @@ export class IdentityService {
     assigned: boolean,
     requestId: string,
   ): Promise<{ assigned: boolean }> {
-    return this.repository.transaction(async (transaction) => {
+    return this.repository.retryingIdempotentTransaction(async (transaction) => {
       const [target, station] = await Promise.all([
         transaction.user.findUnique({ where: { id: userId }, select: { role: true } }),
         transaction.station.findUnique({ where: { id: stationId }, select: { id: true } }),

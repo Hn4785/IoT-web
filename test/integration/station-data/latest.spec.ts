@@ -10,6 +10,7 @@ import { StationDataService } from '../../../src/station-data/station-data.servi
 import type { WeatherClientService } from '../../../src/integrations/weather/weather-client.service.js';
 import type { AuthorizedStation } from '../../../src/station-data/station.repository.js';
 import type { LatestSoilDataDto } from '../../../src/station-data/station-data.contracts.js';
+import { AppError } from '../../../src/common/errors/app-error.js';
 
 type ErrorResponse = { error: { code: string } };
 
@@ -81,6 +82,42 @@ describe('StationDataService unit behavior', () => {
     const result2 = await service.getLatest(testStation, { fields: ['moisture', 'temperature'] });
     expect(result2.isFromCache).toBe(true);
     expect(getLatestSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('serves an expired latest value as stale during a bounded upstream outage', async () => {
+    let now = new Date('2026-07-31T03:45:00.000Z');
+    const config = makeTestRuntimeConfig({
+      soilLatestCacheTtlMs: 10,
+      soilStaleIfErrorMs: 100,
+    });
+    const weather = {
+      getLatest: vi
+        .fn()
+        .mockResolvedValueOnce([
+          {
+            station: 'NODE01',
+            latest: {
+              soil: makeNode01Soil({
+                ts: now.getTime(),
+                time: now.toISOString(),
+                _fieldTs: { moisture: now.getTime() },
+              }),
+            },
+          },
+        ])
+        .mockRejectedValueOnce(new AppError('UPSTREAM_TIMEOUT', 504, 'Weather service timed out')),
+    } as unknown as WeatherClientService;
+    const service = new StationDataService(config, weather, undefined, {
+      now: () => now,
+    });
+
+    const fresh = await service.getLatest(testStation, { fields: ['moisture'] });
+    now = new Date(now.getTime() + 11);
+    const stale = await service.getLatest(testStation, { fields: ['moisture'] });
+
+    expect(fresh).toMatchObject({ isFromCache: false, isStale: false });
+    expect(stale).toMatchObject({ isFromCache: true, isStale: true });
+    expect(stale.fields).toEqual(fresh.fields);
   });
 });
 

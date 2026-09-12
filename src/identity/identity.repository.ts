@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
 import { PrismaService } from '../database/prisma.service.js';
-import type { Prisma } from '../generated/prisma/client.js';
+import { Prisma } from '../generated/prisma/client.js';
 import type { ListUsersQuery } from './identity.contracts.js';
 
 export const safeUserSelect = {
@@ -40,7 +40,24 @@ export class IdentityRepository {
 
   transaction<T>(operation: (transaction: Prisma.TransactionClient) => Promise<T>): Promise<T> {
     return this.prisma.$transaction(operation, {
-      isolationLevel: 'Serializable',
+      isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
     });
+  }
+
+  async retryingIdempotentTransaction<T>(
+    operation: (transaction: Prisma.TransactionClient) => Promise<T>,
+    maxAttempts = 5,
+  ): Promise<T> {
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      try {
+        return await this.transaction(operation);
+      } catch (error) {
+        const canRetry =
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          (error.code === 'P2002' || error.code === 'P2034');
+        if (!canRetry || attempt === maxAttempts) throw error;
+      }
+    }
+    throw new Error('Idempotent transaction retry loop exhausted');
   }
 }

@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { utcTimestampSchema } from '../../common/validation/utc-timestamp.js';
+
 const stationCode = z.string().regex(/^[A-Za-z0-9_-]{1,64}$/);
 const fieldName = z.string().regex(/^[A-Za-z][A-Za-z0-9_]{0,63}$/);
 const measurement = z.enum(['weather', 'water', 'soil']);
@@ -16,12 +18,7 @@ const latestWeatherQuerySchema = z.strictObject({
   fields: uniqueList(fieldName).optional(),
 });
 
-const utcTimestamp = z
-  .string()
-  .refine(
-    (value) => value.endsWith('Z') && !Number.isNaN(Date.parse(value)),
-    'UTC timestamp required',
-  );
+const utcTimestamp = utcTimestampSchema;
 
 const weatherHistoryQuerySchema = latestWeatherQuerySchema
   .extend({

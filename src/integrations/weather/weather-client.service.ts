@@ -17,6 +17,7 @@ import {
 import type { WeatherClient } from './weather-client.js';
 
 type WeatherPath = '/health' | '/stations' | '/data/latest' | '/data/history';
+const MAX_UPSTREAM_RESPONSE_BYTES = 1024 * 1024;
 
 interface RateLimitMetadata {
   limit: string | null;
@@ -56,6 +57,37 @@ function mapUpstreamStatus(status: number): AppError {
     return new AppError('RATE_LIMITED', 503, 'Weather service rate limit exceeded');
   }
   return upstreamUnavailable();
+}
+
+async function readBoundedJson(response: Response): Promise<unknown> {
+  const declaredLength = response.headers.get('content-length');
+  if (
+    declaredLength !== null &&
+    Number.isFinite(Number(declaredLength)) &&
+    Number(declaredLength) > MAX_UPSTREAM_RESPONSE_BYTES
+  ) {
+    await response.body?.cancel().catch(() => undefined);
+    throw upstreamUnavailable();
+  }
+  if (!response.body) throw upstreamUnavailable();
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder('utf-8', { fatal: true });
+  let bytesRead = 0;
+  let json = '';
+
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    bytesRead += value.byteLength;
+    if (bytesRead > MAX_UPSTREAM_RESPONSE_BYTES) {
+      await reader.cancel().catch(() => undefined);
+      throw upstreamUnavailable();
+    }
+    json += decoder.decode(value, { stream: true });
+  }
+  json += decoder.decode();
+  return JSON.parse(json) as unknown;
 }
 
 @Injectable()
@@ -121,7 +153,7 @@ export class WeatherClientService implements WeatherClient {
 
     let body: unknown;
     try {
-      body = (await response.json()) as unknown;
+      body = await readBoundedJson(response);
     } catch (error) {
       throw upstreamUnavailable(error);
     }

@@ -27,7 +27,7 @@ describe('HttpErrorFilter', () => {
     expect(reply.status).toHaveBeenCalledWith(400);
     expect(reply.send).toHaveBeenCalledWith({
       success: false,
-      error: { code: 'VALIDATION_ERROR', message: 'An unexpected error occurred' },
+      error: { code: 'VALIDATION_ERROR', message: 'Request is invalid' },
       requestId: 'req-123',
     });
   });
@@ -42,6 +42,25 @@ describe('HttpErrorFilter', () => {
       success: false,
       error: { code: 'INTERNAL_ERROR', message: 'An unexpected error occurred' },
       requestId: 'req-456',
+    });
+  });
+
+  it.each([
+    [413, 'Request body is too large'],
+    [415, 'Content type is not supported'],
+  ] as const)('maps HTTP %i to a safe validation error', (status, message) => {
+    const reply = { status: vi.fn().mockReturnThis(), send: vi.fn() };
+
+    new HttpErrorFilter().catch(
+      new HttpException('unsafe framework detail', status),
+      createHost('req-boundary', reply),
+    );
+
+    expect(reply.status).toHaveBeenCalledWith(status);
+    expect(reply.send).toHaveBeenCalledWith({
+      success: false,
+      error: { code: 'VALIDATION_ERROR', message },
+      requestId: 'req-boundary',
     });
   });
 

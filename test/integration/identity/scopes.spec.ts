@@ -131,6 +131,50 @@ describe('resource scope administration', () => {
     expect(incompatible.statusCode).toBe(409);
   });
 
+  it('keeps concurrent farm membership assignment idempotent', async () => {
+    const farm = await prisma.farm.create({ data: { name: 'Concurrent Membership Farm' } });
+    const url = `/api/v1/admin/users/${farmer.id}/farm-memberships/${farm.id}`;
+
+    const responses = await Promise.all(
+      Array.from({ length: 4 }, () =>
+        app.inject({
+          method: 'PUT',
+          url,
+          headers: { authorization: `Bearer ${adminToken}` },
+        }),
+      ),
+    );
+
+    expect(responses.map(({ statusCode }) => statusCode)).toEqual([200, 200, 200, 200]);
+    await expect(
+      prisma.farmMembership.count({ where: { userId: farmer.id, farmId: farm.id } }),
+    ).resolves.toBe(1);
+  });
+
+  it('keeps concurrent station grant assignment idempotent', async () => {
+    const farm = await prisma.farm.create({ data: { name: 'Concurrent Grant Farm' } });
+    const plot = await prisma.plot.create({ data: { farmId: farm.id, name: 'Concurrent Plot' } });
+    const station = await prisma.station.create({
+      data: { plotId: plot.id, upstreamCode: 'concurrent-grant', name: 'Concurrent Station' },
+    });
+    const url = `/api/v1/admin/users/${client.id}/station-grants/${station.id}`;
+
+    const responses = await Promise.all(
+      Array.from({ length: 4 }, () =>
+        app.inject({
+          method: 'PUT',
+          url,
+          headers: { authorization: `Bearer ${adminToken}` },
+        }),
+      ),
+    );
+
+    expect(responses.map(({ statusCode }) => statusCode)).toEqual([200, 200, 200, 200]);
+    await expect(
+      prisma.clientStationGrant.count({ where: { userId: client.id, stationId: station.id } }),
+    ).resolves.toBe(1);
+  });
+
   it('removes key scopes when an account-level station grant is removed', async () => {
     const url = `/api/v1/admin/users/${client.id}/station-grants/${firstStation.id}`;
     const granted = await app.inject({
