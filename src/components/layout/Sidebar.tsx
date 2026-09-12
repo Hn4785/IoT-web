@@ -3,7 +3,6 @@ import {
   LayoutDashboard,
   Users,
   Settings,
-  Monitor,
   History,
   Activity,
   Leaf,
@@ -29,12 +28,11 @@ const NAV_CONFIG: Record<UserRole, NavItem[]> = {
   ADMIN: [
     { label: 'Dashboard', path: '/admin', icon: LayoutDashboard },
     { label: "Device Health", path: "/admin/device-health", icon: ShieldCheck},
-    { label: "Stations", path: "/admin/devices", icon: Radio},
+    { label: "Stations & Devices", path: "/admin/devices", icon: Radio},
     { label: "Alert Center", path: "/admin/alert-center", icon: BellRing},
     { label: "Config Proposals", path: "/admin/config-proposals", icon: GitPullRequest},
     { label: 'Users', path: '/admin/users', icon: Users },
     { label: 'IoT Config', path: '/admin/configuration', icon: Settings },
-    { label: 'Devices', path: '/admin/devices', icon: Monitor },
     { label: 'Audit Log', path: '/admin/audit-logs', icon: History },
   ],
   FARMER: [
@@ -52,7 +50,7 @@ const NAV_CONFIG: Record<UserRole, NavItem[]> = {
     { label: 'API Permissions', path: '/developer/api-permissions', icon: Users },
     { label: 'API Docs', path: '/developer/api-docs', icon: History },
     { label: 'API Explorer', path: '/developer/api-explorer', icon: Activity },
-    { label: 'API Metrics', path: '/developer/api-metrics', icon: Monitor },
+    { label: 'API Metrics', path: '/developer/api-metrics', icon: Activity },
   ],
 };
 

@@ -1,0 +1,27 @@
+import { lazy } from "react";
+
+export const Login = lazy(() => import("@/pages/auth/Login"));
+export const ForgotPassword = lazy(() => import("@/pages/auth/ForgotPassword"));
+export const ChangePassword = lazy(() => import("@/pages/auth/ChangePassword"));
+export const AdminDashboard = lazy(() => import("@/pages/admin/AdminDashboard"));
+export const UserManagement = lazy(() => import("@/pages/admin/UserManagement"));
+export const IoTConfiguration = lazy(() => import("@/pages/admin/IoTConfiguration"));
+export const DeviceManagement = lazy(() => import("@/pages/admin/DeviceManagement"));
+export const AuditLogs = lazy(() => import("@/pages/admin/AuditLogs"));
+export const DeviceHealth = lazy(() => import("@/pages/admin/DeviceHealth"));
+export const StationDetail = lazy(() => import("@/pages/admin/StationDetail"));
+export const AdminAlertCenter = lazy(() => import("@/pages/admin/AdminAlertCenter"));
+export const ConfigurationProposals = lazy(() => import("@/pages/admin/ConfigurationProposals"));
+export const FarmDashboard = lazy(() => import("@/pages/farm-owner/FarmDashboard"));
+export const RealtimeSoilMonitoring = lazy(() => import("@/pages/farm-owner/RealtimeSoilMonitoring"));
+export const HistoricalAnalysis = lazy(() => import("@/pages/farm-owner/HistoricalAnalysis"));
+export const AgriculturalAlerts = lazy(() => import("@/pages/farm-owner/AgriculturalAlerts"));
+export const HistoryReport = lazy(() => import("@/pages/farm-owner/HistoryReport"));
+export const NotificationSettings = lazy(() => import("@/pages/farm-owner/NotificationSettings"));
+export const AlertActionCenter = lazy(() => import("@/pages/farm-owner/AlertActionCenter"));
+export const DeveloperDashboard = lazy(() => import("@/pages/developer/DeveloperDashboard"));
+export const ApiKeys = lazy(() => import("@/pages/developer/ApiKeys"));
+export const ApiPermissions = lazy(() => import("@/pages/developer/ApiPermissions"));
+export const ApiDocs = lazy(() => import("@/pages/developer/ApiDocs"));
+export const ApiExplorer = lazy(() => import("@/pages/developer/ApiExplorer"));
+export const ApiMetrics = lazy(() => import("@/pages/developer/ApiMetrics"));

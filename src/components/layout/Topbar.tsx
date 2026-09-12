@@ -59,6 +59,7 @@ export default function Topbar({
           <input
             type="text"
             className={styles.searchInput}
+            aria-label="Global search"
             placeholder="Global search devices, stations..."
             onChange={(event) =>
               onSearch?.(event.target.value)

@@ -65,7 +65,7 @@
 
 .tableWrap table {
   width: 100%;
-  min-width: 1200px;
+  min-width: 1080px;
   border-collapse: collapse;
 }
 
@@ -87,6 +87,20 @@
   background: var(--color-bg-subtle);
 }
 
+.tableWrap th:last-child,
+.tableWrap td:last-child {
+  position: sticky;
+  right: 0;
+  z-index: 1;
+  min-width: 166px;
+  background: var(--color-bg-surface);
+  box-shadow: -8px 0 12px -12px rgb(15 23 42 / 35%);
+}
+
+.tableWrap tbody tr:hover td:last-child {
+  background: var(--color-bg-subtle);
+}
+
 .userCell {
   display: flex;
   align-items: center;
@@ -99,9 +113,12 @@
 }
 
 .userCell small {
+  max-width: 175px;
+  overflow: hidden;
   margin-top: 3px;
   color: var(--color-text-tertiary);
   font-size: var(--font-size-caption);
+  text-overflow: ellipsis;
 }
 
 .avatar {
@@ -130,7 +147,27 @@
 .actions {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 6px;
+}
+
+.actions button {
+  border: 1px solid var(--color-border-default);
+  background: var(--color-bg-surface);
+}
+
+.actions button:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+.actions button:disabled {
+  opacity: 0.42;
+}
+
+.superAdminAction:not(:disabled) {
+  border-color: var(--color-warning);
+  color: var(--color-warning-dark);
+  background: var(--color-warning-light);
 }
 
 .form {
@@ -236,4 +273,125 @@
   gap: var(--spacing-3);
   padding: var(--spacing-4);
   color: var(--color-text-secondary);
+}
+
+.credentialOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  display: grid;
+  place-items: center;
+  padding: var(--spacing-4);
+  background: rgb(15 23 42 / 56%);
+}
+
+.credentialModal {
+  width: min(100%, 480px);
+  display: grid;
+  gap: var(--spacing-5);
+  padding: var(--spacing-6);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-surface);
+  box-shadow: var(--shadow-lg);
+}
+
+.credentialModal h2,
+.credentialModal p {
+  margin: 0;
+}
+
+.credentialModal p {
+  margin-top: var(--spacing-2);
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+}
+
+.credentialEyebrow {
+  color: var(--color-warning-dark);
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.08em;
+}
+
+.credentialSecret {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-3);
+  padding: var(--spacing-3);
+  border: 1px solid var(--color-warning);
+  border-radius: var(--radius-md);
+  background: var(--color-warning-light);
+}
+
+.credentialSecret code {
+  overflow-wrap: anywhere;
+  font-size: var(--font-size-body-lg);
+}
+
+.credentialConfirmation {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-2);
+  color: var(--color-text-primary);
+}
+
+.credentialConfirmation input {
+  margin-top: 3px;
+}
+
+.credentialActions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.transferForm {
+  display: grid;
+  gap: var(--spacing-4);
+}
+
+.transferForm > label {
+  display: grid;
+  gap: var(--spacing-2);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-body-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.transferForm input[type="password"] {
+  min-height: var(--height-input-md);
+  padding: 0 var(--spacing-3);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+}
+
+.transferWarning {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-3);
+  padding: var(--spacing-3);
+  border: 1px solid var(--color-warning);
+  border-radius: var(--radius-md);
+  color: var(--color-warning-dark);
+  background: var(--color-warning-light);
+  line-height: 1.5;
+}
+
+.transferConfirmation {
+  grid-template-columns: auto 1fr;
+  align-items: flex-start;
+  color: var(--color-text-primary) !important;
+  font-weight: var(--font-weight-regular) !important;
+}
+
+.transferConfirmation input {
+  margin-top: 3px;
+}
+
+@media (max-width: 520px) {
+  .credentialSecret {
+    align-items: stretch;
+    flex-direction: column;
+  }
 }

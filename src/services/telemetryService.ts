@@ -11,14 +11,16 @@ import type {
   LatestDataQueryParams,
   LatestTelemetryData,
 } from "@/types/clientApi";
+import type { ApiSuccessEnvelope } from "@/types/api";
+import { unwrapApiResponse } from "@/types/api";
 
 /**
  * Service dành cho Client Developer API.
  *
  * Endpoints:
  *
- * GET /api/v1/data/latest
- * GET /api/v1/data/history
+ * GET /api/v1/client/data/latest
+ * GET /api/v1/client/data/history
  *
  * Authentication:
  * X-API-Key
@@ -32,7 +34,7 @@ export const telemetryService = {
     params?: LatestDataQueryParams
   ): Promise<LatestTelemetryData> {
     const response =
-      await clientApiClient.get<LatestTelemetryData>(
+      await clientApiClient.get<ApiSuccessEnvelope<LatestTelemetryData>>(
         API_ENDPOINTS.clientApi.data.latest,
         {
           ...createClientApiConfig(apiKey),
@@ -40,7 +42,7 @@ export const telemetryService = {
         }
       );
 
-    return response.data;
+    return unwrapApiResponse(response.data);
   },
 
   /**
@@ -51,7 +53,7 @@ export const telemetryService = {
     params?: HistoryDataQueryParams
   ): Promise<HistoryDataResponse> {
     const response =
-      await clientApiClient.get<HistoryDataResponse>(
+      await clientApiClient.get<ApiSuccessEnvelope<HistoryDataResponse>>(
         API_ENDPOINTS.clientApi.data.history,
         {
           ...createClientApiConfig(apiKey),
@@ -59,6 +61,6 @@ export const telemetryService = {
         }
       );
 
-    return response.data;
+    return unwrapApiResponse(response.data);
   },
 };

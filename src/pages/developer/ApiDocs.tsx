@@ -32,76 +32,82 @@ const endpoints: Endpoint[] = [
   {
     id: "stations",
     method: "GET",
-    path: "/api/v1/stations",
+    path: "/api/v1/client/stations",
     title: "List Stations",
     description: "Return stations available to the API key.",
     auth: true,
-    parameters: ["status", "farmId"],
+    parameters: ["cursor", "limit"],
   },
   {
     id: "latest",
     method: "GET",
-    path: "/api/v1/data/latest",
+    path: "/api/v1/client/data/latest",
     title: "Latest Data",
     description: "Retrieve the latest telemetry for authorized stations.",
     auth: true,
-    parameters: ["station", "type", "fields"],
+    parameters: ["station", "fields"],
   },
   {
     id: "history",
     method: "GET",
-    path: "/api/v1/data/history",
+    path: "/api/v1/client/data/history",
     title: "Historical Data",
     description: "Retrieve historical telemetry and supported aggregates.",
     auth: true,
     parameters: [
       "station",
-      "type",
       "fields",
       "begin",
       "end",
       "interval",
       "aggregate",
+      "order",
+      "limit",
+      "cursor",
     ],
   },
 ];
 
 const responseExamples: Record<string, string> = {
   health: `{
-  "status": "ok",
+  "success": true,
+  "data": {
   "service": "iot-api",
-  "version": "1.0"
+  "version": "0.1.0",
+  "status": "healthy",
+  "environment": "development",
+  "time": "2026-09-12T05:00:00.000Z"
+  }
 }`,
   stations: `{
-  "data": [
-    {
-      "stationId": "NODE01",
-      "name": "North Field Station",
-      "status": "online"
-    }
-  ]
+  "success": true,
+  "data": {
+    "items": [{ "id": "...", "farmId": "...", "plotId": "...", "name": "Center", "code": "CENTER" }],
+    "nextCursor": null
+  }
 }`,
   latest: `{
+  "success": true,
   "data": {
-    "stationId": "NODE01",
-    "sensorId": "SOIL-NPK-20CM",
-    "measuredAt": "2026-08-21T02:15:30.125Z",
-    "moisture": {
-      "value": 43,
-      "unit": "percent",
-      "quality": "good"
-    }
+    "station": { "id": "...", "name": "Center", "code": "CENTER" },
+    "measurement": "soil",
+    "fields": [{ "field": "moisture", "value": 43, "unit": "%", "observedAt": "2026-09-12T05:00:00.000Z", "quality": "good", "sensorId": null, "depthCm": null }],
+    "fetchedAt": "2026-09-12T05:00:01.000Z",
+    "isFromCache": false,
+    "isStale": false
   }
 }`,
   history: `{
-  "data": [
-    {
-      "timestamp": "2026-08-21T02:15:30.125Z",
-      "value": 43,
-      "unit": "percent",
-      "quality": "good"
-    }
-  ]
+  "success": true,
+  "data": {
+    "stationId": "...",
+    "measurement": "soil",
+    "series": [{ "field": "moisture", "unit": "%", "sensorId": null, "depthCm": null, "points": [] }],
+    "page": { "nextCursor": null },
+    "fetchedAt": "2026-09-12T05:00:01.000Z",
+    "isFromCache": false,
+    "isStale": false
+  }
 }`,
 };
 
@@ -123,10 +129,10 @@ export default function ApiDocs() {
           </p>
         </div>
 
-        <button className={styles.externalButton}>
+        <a className={styles.externalButton} href="http://localhost:3000/docs" target="_blank" rel="noreferrer">
           <ExternalLink size={16} />
           API Reference
-        </button>
+        </a>
       </div>
 
       <div className={styles.docsLayout}>
@@ -221,6 +227,7 @@ export default function ApiDocs() {
 
             <div className={styles.codeBlock}>
               <button
+                aria-label="Copy request headers"
                 onClick={() =>
                   void navigator.clipboard?.writeText(
                     "X-API-Key: YOUR_API_KEY",
@@ -245,6 +252,7 @@ export default function ApiDocs() {
 
             <div className={styles.codeBlock}>
               <button
+                aria-label="Copy example response"
                 onClick={() =>
                   void navigator.clipboard?.writeText(
                     responseExamples[selected.id],
@@ -265,9 +273,8 @@ export default function ApiDocs() {
       <div className={styles.notice}>
         <strong>Contract status:</strong>
         <span>
-          Endpoint names and authentication requirements are based on the SRS.
-          Detailed production request/response schemas are{" "}
-          <b>CHƯA XÁC NHẬN</b>.
+          Endpoint names, parameters, and response examples match the current
+          Backend OpenAPI contract.
         </span>
       </div>
     </div>

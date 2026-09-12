@@ -105,15 +105,12 @@ export default function DonutChart({
   const center = size / 2;
   const radius = (size - strokeWidth) / 2;
 
-  let currentAngle = 0;
-
   const segments = data.map((item, index) => {
     const percentage = item.value / total;
-    const startAngle = currentAngle;
-    const endAngle =
-      currentAngle + percentage * 360;
-
-    currentAngle = endAngle;
+    const startAngle = data
+      .slice(0, index)
+      .reduce((angle, precedingItem) => angle + (precedingItem.value / total) * 360, 0);
+    const endAngle = startAngle + percentage * 360;
 
     return {
       ...item,

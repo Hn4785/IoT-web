@@ -320,3 +320,18 @@
 .logoutItem svg {
   color: var(--color-error);
 }
+
+@media (max-width: 768px) {
+  .topbar {
+    gap: 8px;
+    padding: 0 12px;
+  }
+
+  .right {
+    gap: 8px;
+  }
+
+  .searchBox {
+    display: none;
+  }
+}

@@ -54,24 +54,32 @@ const STATUS_CONFIG: Record<
   },
 };
 
-function getIcon(
+function renderIcon(
   variant: AlertBadgeVariant,
   value: AlertSeverity | AlertStatus,
+  size: "sm" | "md",
 ) {
+  const props = {
+    className: styles.icon,
+    size: size === "sm" ? 13 : 14,
+    strokeWidth: 2,
+    "aria-hidden": true as const,
+  };
+
   if (variant === "severity") {
-    return value === "critical" ? ShieldAlert : AlertCircle;
+    return value === "critical" ? <ShieldAlert {...props} /> : <AlertCircle {...props} />;
   }
 
   switch (value) {
     case "resolved":
-      return CheckCircle2;
+      return <CheckCircle2 {...props} />;
     case "acknowledged":
-      return Clock3;
+      return <Clock3 {...props} />;
     case "assigned":
-      return ShieldAlert;
+      return <ShieldAlert {...props} />;
     case "open":
     default:
-      return AlertCircle;
+      return <AlertCircle {...props} />;
   }
 }
 
@@ -91,8 +99,6 @@ export default function AlertBadge({
     return null;
   }
 
-  const Icon = getIcon(variant, value);
-
   return (
     <span
       className={[
@@ -104,14 +110,7 @@ export default function AlertBadge({
         .filter(Boolean)
         .join(" ")}
     >
-      {showIcon && (
-        <Icon
-          className={styles.icon}
-          size={size === "sm" ? 13 : 14}
-          strokeWidth={2}
-          aria-hidden="true"
-        />
-      )}
+      {showIcon && renderIcon(variant, value, size)}
 
       <span>{config.label}</span>
     </span>

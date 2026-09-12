@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   CalendarDays,
   ChevronDown,
@@ -7,17 +7,20 @@ import {
 } from "lucide-react";
 
 import PageHeader from "@/components/layout/PageHeader";
+import ErrorState from "@/components/common/ErrorState";
+import Loading from "@/components/common/Loading";
 
-import { farms } from "@/data/farms";
-import { plots } from "@/data/plots";
-import { stations } from "@/data/stations";
-import { soilHistory } from "@/data/soilData";
-
+import { useStationHierarchy } from "@/hooks/useStationHierarchy";
+import {
+  stationBrowserService,
+  type SoilHistoryData,
+} from "@/services/stationBrowserService";
+import { normalizeApiError } from "@/utils/apiError";
 import type { SoilField } from "@/types/soil";
 
 import styles from "./HistoricalAnalysis.module.css";
 
-const FARM_OWNER_ID = "USR-006";
+const EMPTY_HISTORY: Record<string, SoilHistoryData> = {};
 
 const metricOptions: {
   value: SoilField;
@@ -46,8 +49,6 @@ const metricOptions: {
   },
 ];
 
-const depths = [20, 40];
-
 function SelectBox({
   label,
   value,
@@ -71,30 +72,6 @@ function SelectBox({
       </div>
     </label>
   );
-}
-
-function buildSeries(
-  stationIndex: number,
-  depth: number,
-  metric: SoilField,
-) {
-  const source = soilHistory[metric] ?? [];
-
-  return source.map((point, index) => {
-    const depthOffset =
-      depth === 40 ? -index * 0.18 : index * 0.08;
-
-    const stationOffset =
-      stationIndex === 0
-        ? 0
-        : stationIndex === 1
-          ? 1.2
-          : 2.1;
-
-    return Number(
-      (point.value + depthOffset + stationOffset).toFixed(2),
-    );
-  });
 }
 
 function linePoints(values: number[]) {
@@ -127,74 +104,108 @@ function linePoints(values: number[]) {
 }
 
 export default function HistoricalAnalysis() {
-  const ownedFarms = useMemo(
-    () =>
-      farms.filter(
-        (farm) =>
-          farm.ownerId === FARM_OWNER_ID &&
-          farm.status === "active",
-      ),
-    [],
-  );
-
-  const [selectedFarmId, setSelectedFarmId] = useState(
-    ownedFarms[0]?.id ?? "",
-  );
-
-  const farmPlots = plots.filter(
-    (plot) => plot.farmId === selectedFarmId,
-  );
-
-  const [selectedPlotId, setSelectedPlotId] = useState(
-    farmPlots[0]?.id ?? "",
-  );
-
-  const plotStations = stations.filter(
-    (station) =>
-      station.farmId === selectedFarmId &&
-      station.plotId === selectedPlotId,
-  );
+  const hierarchy = useStationHierarchy();
+  const [historyState, setHistoryState] = useState<{
+    key: string;
+    data: Record<string, SoilHistoryData>;
+    error: string;
+  } | null>(null);
 
   const [selectedMetric, setSelectedMetric] =
     useState<SoilField>("moisture");
 
-  const [selectedDepths, setSelectedDepths] = useState<
-    number[]
-  >([20, 40]);
+  const [selectedDepths, setSelectedDepths] = useState<number[]>([]);
 
   const metric =
     metricOptions.find(
       (item) => item.value === selectedMetric,
     ) ?? metricOptions[0];
 
-  const series = useMemo(() => {
-    const stationList =
-      plotStations.length > 0
-        ? plotStations
-        : stations.filter(
-            (station) =>
-              station.farmId === selectedFarmId,
-          );
+  const historyKey = `${selectedMetric}:${hierarchy.stations.map((station) => station.id).join(",")}`;
 
-    return stationList
-      .slice(0, 2)
-      .flatMap((station, stationIndex) =>
-        selectedDepths.map((depth) => ({
-          id: `${station.id}-${depth}`,
-          label: `${station.id} (${depth}cm)`,
-          values: buildSeries(
-            stationIndex,
-            depth,
-            selectedMetric,
-          ),
-        })),
-      );
-  }, [
-    plotStations,
-    selectedFarmId,
-    selectedDepths,
-    selectedMetric,
-  ]);
+  useEffect(() => {
+    let active = true;
+    if (hierarchy.stations.length === 0) return () => { active = false; };
+
+    const end = new Date();
+    const begin = new Date(end.getTime() - 30 * 24 * 60 * 60 * 1000);
+    Promise.all(hierarchy.stations.map(async (station) => [
+      station.id,
+      await stationBrowserService.getHistory(station.id, {
+        fields: [selectedMetric],
+        begin: begin.toISOString(),
+        end: end.toISOString(),
+        interval: "1d",
+        aggregate: "mean",
+        limit: 500,
+      }),
+    ] as const)).then(
+      (entries) => {
+        if (!active) return;
+        setHistoryState({ key: historyKey, data: Object.fromEntries(entries), error: "" });
+      },
+      (reason) => {
+        if (!active) return;
+        setHistoryState({ key: historyKey, data: {}, error: normalizeApiError(reason).message });
+      },
+    );
+    return () => { active = false; };
+  }, [hierarchy.stations, historyKey, selectedMetric]);
+
+  const currentHistory = historyState?.key === historyKey ? historyState : null;
+  const historyByStation = currentHistory?.data ?? EMPTY_HISTORY;
+  const historyError = currentHistory?.error ?? "";
+  const historyLoading = hierarchy.stations.length > 0 && !currentHistory;
+
+  const availableDepths = useMemo(() => Array.from(new Set(
+    Object.values(historyByStation).flatMap((history) =>
+      history.series.flatMap((item) => item.depthCm == null ? [] : [item.depthCm]),
+    ),
+  )).sort((left, right) => left - right), [historyByStation]);
+
+  const series = useMemo(() => hierarchy.stations.flatMap((station) =>
+    (historyByStation[station.id]?.series ?? [])
+      .filter((item) => item.field === selectedMetric)
+      .filter((item) => item.depthCm == null || selectedDepths.length === 0 || selectedDepths.includes(item.depthCm))
+      .map((item, index) => {
+        const depthLabel = item.depthCm == null ? "N/A" : `${item.depthCm}cm`;
+        return {
+        id: `${station.id}-${item.sensorId ?? index}-${item.depthCm ?? "na"}`,
+        stationLabel: station.code,
+        depthLabel,
+        label: `${station.code} (${depthLabel})`,
+        points: item.points,
+        values: item.points.map((point) => point.value),
+      };}),
+  ), [hierarchy.stations, historyByStation, selectedDepths, selectedMetric]);
+
+  const exportCsv = () => {
+    const safeCell = (value: string | number) => {
+      const text = String(value);
+      const guarded = /^[=+\-@]/.test(text) ? `'${text}` : text;
+      return `"${guarded.replaceAll('"', '""')}"`;
+    };
+    const rows = [
+      ["station", "depth", "metric", "observedAt", "value", "unit"],
+      ...series.flatMap((item) => item.points.map((point) => [
+        item.stationLabel,
+        item.depthLabel,
+        selectedMetric,
+        point.observedAt,
+        point.value,
+        metric.unit,
+      ])),
+    ];
+    const blob = new Blob([rows.map((row) => row.map(safeCell).join(",")).join("\n")], {
+      type: "text/csv;charset=utf-8",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `soil-history-${selectedMetric}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
 
   const allValues = series.flatMap(
     (item) => item.values,
@@ -241,29 +252,27 @@ export default function HistoricalAnalysis() {
         title="Historical Analysis & Correlation"
         description="Compare soil profiles across depths and multiple stations."
         actions={
-          <button className={styles.exportButton}>
+          <button className={styles.exportButton} disabled={series.length === 0} onClick={exportCsv}>
             <Download size={13} />
             Export CSV
           </button>
         }
       />
 
+      {hierarchy.loading && <Loading label="Loading authorized stations..." />}
+      {historyLoading && <Loading label="Loading soil history..." />}
+      {hierarchy.error && <ErrorState description={hierarchy.error} onRetry={hierarchy.reload} />}
+      {historyError && <ErrorState description={historyError} />}
+
       <section className={styles.filterBar}>
         <SelectBox
           label="Farm"
-          value={selectedFarmId}
+          value={hierarchy.selectedFarmId}
           onChange={(event) => {
-            const farmId = event.target.value;
-            setSelectedFarmId(farmId);
-
-            const nextPlot = plots.find(
-              (plot) => plot.farmId === farmId,
-            );
-
-            setSelectedPlotId(nextPlot?.id ?? "");
+            hierarchy.setSelectedFarmId(event.target.value);
           }}
         >
-          {ownedFarms.map((farm) => (
+          {hierarchy.farms.map((farm) => (
             <option key={farm.id} value={farm.id}>
               {farm.name}
             </option>
@@ -272,12 +281,12 @@ export default function HistoricalAnalysis() {
 
         <SelectBox
           label="Plot"
-          value={selectedPlotId}
+          value={hierarchy.selectedPlotId}
           onChange={(event) =>
-            setSelectedPlotId(event.target.value)
+            hierarchy.setSelectedPlotId(event.target.value)
           }
         >
-          {farmPlots.map((plot) => (
+          {hierarchy.plots.map((plot) => (
             <option key={plot.id} value={plot.id}>
               {plot.name}
             </option>
@@ -287,8 +296,8 @@ export default function HistoricalAnalysis() {
         <div className={styles.filter}>
           <span>Stations:</span>
           <div className={styles.staticFilter}>
-            {plotStations.length > 0
-              ? plotStations.map((station) => station.id).join(", ")
+            {hierarchy.stations.length > 0
+              ? hierarchy.stations.map((station) => station.code).join(", ")
               : "All Stations"}
           </div>
         </div>
@@ -297,7 +306,8 @@ export default function HistoricalAnalysis() {
           <span>Depths:</span>
 
           <div className={styles.depthSelector}>
-            {depths.map((depth) => (
+            {availableDepths.length === 0 && <span>Not provided by source</span>}
+            {availableDepths.map((depth) => (
               <button
                 key={depth}
                 type="button"
@@ -458,13 +468,10 @@ export default function HistoricalAnalysis() {
 
                 const std = Math.sqrt(variance);
 
-                const [stationId, depthText] =
-                  item.label.split(" ");
-
                 return (
                   <tr key={item.id}>
-                    <td>{stationId}</td>
-                    <td>{depthText?.replace(/[()]/g, "")}</td>
+                    <td>{item.stationLabel}</td>
+                    <td>{item.depthLabel}</td>
                     <td>{avg.toFixed(1)}{metric.unit}</td>
                     <td>{min.toFixed(1)}{metric.unit}</td>
                     <td>{max.toFixed(1)}{metric.unit}</td>

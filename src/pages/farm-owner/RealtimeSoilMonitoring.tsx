@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Activity,
   CheckCircle2,
@@ -9,17 +9,23 @@ import {
 
 import PageHeader from "@/components/layout/PageHeader";
 import LineChart from "@/components/charts/LineChart";
+import ErrorState from "@/components/common/ErrorState";
+import Loading from "@/components/common/Loading";
 
-import { farms } from "@/data/farms";
-import { plots } from "@/data/plots";
-import { stations } from "@/data/stations";
-import { latestSoilData, soilHistory } from "@/data/soilData";
-
-import type { SoilField, SoilValue } from "@/types/soil";
+import { useStationHierarchy } from "@/hooks/useStationHierarchy";
+import {
+  stationBrowserService,
+  type SoilHistoryData,
+} from "@/services/stationBrowserService";
+import { normalizeApiError } from "@/utils/apiError";
+import {
+  adaptLatestSoilData,
+  type LatestSoilDataDto,
+  type SoilField,
+  type SoilValue,
+} from "@/types/soil";
 
 import styles from "./RealtimeSoilMonitoring.module.css";
-
-const FARM_OWNER_ID = "USR-006";
 
 type MetricConfig = {
   field: SoilField;
@@ -105,130 +111,83 @@ function qualityLabel(quality?: string) {
     .join(" ");
 }
 
-function buildChartData(field: SoilField) {
-  return (soilHistory[field] ?? []).map((point) => ({
-    label: new Date(point.timestamp).toLocaleTimeString([], {
+function buildChartData(history: SoilHistoryData | null, field: SoilField) {
+  const points = history?.series.find((series) => series.field === field)?.points ?? [];
+  return points.map((point) => ({
+    label: new Date(point.observedAt).toLocaleTimeString([], {
       hour: "2-digit",
       minute: "2-digit",
     }),
     value: point.value,
-    timestamp: point.timestamp,
+    timestamp: point.observedAt,
     quality: point.quality,
   }));
 }
 
 export default function RealtimeSoilMonitoring() {
-  const ownedFarms = useMemo(
-    () =>
-      farms.filter(
-        (farm) =>
-          farm.ownerId === FARM_OWNER_ID &&
-          farm.status === "active",
-      ),
-    [],
-  );
+  const hierarchy = useStationHierarchy();
+  const [dataState, setDataState] = useState<{
+    stationId: string;
+    latest: LatestSoilDataDto | null;
+    history: SoilHistoryData | null;
+    error: string;
+  } | null>(null);
 
-  const [selectedFarmId, setSelectedFarmId] = useState(
-    ownedFarms[0]?.id ?? "",
-  );
+  useEffect(() => {
+    let active = true;
+    if (!hierarchy.selectedStationId) return () => { active = false; };
 
-  const farm = ownedFarms.find(
-    (item) => item.id === selectedFarmId,
-  );
-
-  const farmPlots = useMemo(
-    () =>
-      plots.filter(
-        (plot) => plot.farmId === selectedFarmId,
-      ),
-    [selectedFarmId],
-  );
-
-  const [selectedPlotId, setSelectedPlotId] = useState(
-    farmPlots[0]?.id ?? "",
-  );
-
-  const selectedPlot =
-    farmPlots.find((plot) => plot.id === selectedPlotId) ??
-    farmPlots[0];
-
-  const farmStations = useMemo(
-    () =>
-      stations.filter(
-        (station) =>
-          station.farmId === selectedFarmId &&
-          (!selectedPlot?.id || station.plotId === selectedPlot.id),
-      ),
-    [selectedFarmId, selectedPlot?.id],
-  );
-
-  const [selectedStationId, setSelectedStationId] = useState(
-    farmStations[0]?.id ?? "",
-  );
-
-  const selectedStation =
-    farmStations.find(
-      (station) => station.id === selectedStationId,
-    ) ?? farmStations[0];
-
-  const stationData =
-    latestSoilData.find(
-      (item) =>
-        item.stationId === selectedStation?.id &&
-        item.farmId === selectedFarmId,
-    ) ??
-    latestSoilData.find(
-      (item) => item.farmId === selectedFarmId,
+    const end = new Date();
+    const begin = new Date(end.getTime() - 24 * 60 * 60 * 1000);
+    Promise.all([
+      stationBrowserService.getLatest(hierarchy.selectedStationId),
+      stationBrowserService.getHistory(hierarchy.selectedStationId, {
+        fields: METRICS.map((metric) => metric.field),
+        begin: begin.toISOString(),
+        end: end.toISOString(),
+        interval: "1h",
+        aggregate: "mean",
+        limit: 500,
+      }),
+    ]).then(
+      ([nextLatest, nextHistory]) => {
+        if (!active) return;
+        setDataState({
+          stationId: hierarchy.selectedStationId,
+          latest: nextLatest,
+          history: nextHistory,
+          error: "",
+        });
+      },
+      (reason) => {
+        if (!active) return;
+        setDataState({
+          stationId: hierarchy.selectedStationId,
+          latest: null,
+          history: null,
+          error: normalizeApiError(reason).message,
+        });
+      },
     );
+    return () => { active = false; };
+  }, [hierarchy.selectedStationId]);
 
-  const currentDepth = stationData?.depth ?? 20;
-
-  const handleFarmChange = (
-    event: React.ChangeEvent<HTMLSelectElement>,
-  ) => {
-    const farmId = event.target.value;
-
-    setSelectedFarmId(farmId);
-
-    const nextPlot = plots.find(
-      (plot) => plot.farmId === farmId,
-    );
-
-    setSelectedPlotId(nextPlot?.id ?? "");
-
-    const nextStation = stations.find(
-      (station) =>
-        station.farmId === farmId &&
-        station.plotId === nextPlot?.id,
-    );
-
-    setSelectedStationId(nextStation?.id ?? "");
+  const currentData = dataState?.stationId === hierarchy.selectedStationId ? dataState : null;
+  const latest = currentData?.latest ?? null;
+  const history = currentData?.history ?? null;
+  const dataError = currentData?.error ?? "";
+  const dataLoading = Boolean(hierarchy.selectedStationId && !currentData);
+  const latestView = useMemo(() => latest ? adaptLatestSoilData(latest) : null, [latest]);
+  const currentDepth = latest?.fields.find((field) => field.depthCm != null)?.depthCm;
+  const getMetricValue = (field: SoilField): SoilValue | undefined => {
+    const reading = latestView?.fields[field];
+    return reading ? {
+      value: reading.value,
+      unit: reading.unit ?? "",
+      quality: reading.quality,
+      measuredAt: reading.observedAt,
+    } : undefined;
   };
-
-  const handlePlotChange = (
-    event: React.ChangeEvent<HTMLSelectElement>,
-  ) => {
-    const plotId = event.target.value;
-
-    setSelectedPlotId(plotId);
-
-    const nextStation = stations.find(
-      (station) =>
-        station.farmId === selectedFarmId &&
-        station.plotId === plotId,
-    );
-
-    setSelectedStationId(nextStation?.id ?? "");
-  };
-
-  const handleStationChange = (
-    event: React.ChangeEvent<HTMLSelectElement>,
-  ) => {
-    setSelectedStationId(event.target.value);
-  };
-
-  const getMetricValue = (field: SoilField) =>
-    stationData?.telemetry[field];
 
   const chartCards = [
     {
@@ -260,19 +219,23 @@ export default function RealtimeSoilMonitoring() {
         description="Live telemetry streaming directly from active Plot soil probes."
       />
 
+      {hierarchy.loading && <Loading label="Loading authorized stations..." />}
+      {hierarchy.error && (
+        <ErrorState description={hierarchy.error} onRetry={hierarchy.reload} />
+      )}
+      {dataError && <ErrorState description={dataError} />}
+
       <div className={styles.liveBar}>
         <div className={styles.liveStatus}>
           <span className={styles.liveDot} />
-          <strong>Live</strong>
-          <span>Updated {formatUpdatedAt(stationData?.lastUpdated ?? new Date().toISOString())}</span>
+          <strong>{latest ? "Live" : "Waiting"}</strong>
+          <span>{latest ? `Updated ${formatUpdatedAt(latest.fetchedAt)}` : "No measurement loaded"}</span>
         </div>
 
         <div className={styles.connectionStatus}>
           <Wifi size={13} />
           <span>
-            {selectedStation?.status === "online"
-              ? "Connected"
-              : "Disconnected"}
+            {dataLoading ? "Loading" : latest?.isStale ? "Stale" : latest ? "Connected" : "Unavailable"}
           </span>
         </div>
       </div>
@@ -280,9 +243,9 @@ export default function RealtimeSoilMonitoring() {
       <section className={styles.filterBar}>
         <FilterSelect
           label="Farm"
-          value={selectedFarmId}
-          onChange={handleFarmChange}
-          options={ownedFarms.map((item) => ({
+          value={hierarchy.selectedFarmId}
+          onChange={(event) => hierarchy.setSelectedFarmId(event.target.value)}
+          options={hierarchy.farms.map((item) => ({
             value: item.id,
             label: item.name,
           }))}
@@ -290,9 +253,9 @@ export default function RealtimeSoilMonitoring() {
 
         <FilterSelect
           label="Plot"
-          value={selectedPlot?.id ?? ""}
-          onChange={handlePlotChange}
-          options={farmPlots.map((item) => ({
+          value={hierarchy.selectedPlotId}
+          onChange={(event) => hierarchy.setSelectedPlotId(event.target.value)}
+          options={hierarchy.plots.map((item) => ({
             value: item.id,
             label: item.name,
           }))}
@@ -300,18 +263,18 @@ export default function RealtimeSoilMonitoring() {
 
         <FilterSelect
           label="Station"
-          value={selectedStation?.id ?? ""}
-          onChange={handleStationChange}
-          options={farmStations.map((item) => ({
+          value={hierarchy.selectedStationId}
+          onChange={(event) => hierarchy.setSelectedStationId(event.target.value)}
+          options={hierarchy.stations.map((item) => ({
             value: item.id,
-            label: item.id,
+            label: `${item.code} — ${item.name}`,
           }))}
         />
 
         <div className={styles.filterItem}>
           <span>Depth:</span>
           <div className={styles.staticSelect}>
-            <span>{currentDepth}cm</span>
+            <span>{currentDepth == null ? "N/A" : `${currentDepth}cm`}</span>
             <ChevronDown size={13} />
           </div>
         </div>
@@ -340,7 +303,7 @@ export default function RealtimeSoilMonitoring() {
             </div>
 
             <LineChart
-              data={buildChartData(chart.field)}
+              data={buildChartData(history, chart.field)}
               height={210}
               showDots={false}
               showArea={false}
@@ -378,30 +341,24 @@ export default function RealtimeSoilMonitoring() {
 
           <div className={styles.npkChart}>
             <NpkLine
-              values={(soilHistory.nitrogen ?? []).map(
-                (point) => point.value,
-              )}
+              values={buildChartData(history, "nitrogen").map((point) => point.value)}
               className={styles.nitrogenLine}
             />
 
             <NpkLine
-              values={(soilHistory.phosphorus ?? []).map(
-                (point) => point.value,
-              )}
+              values={buildChartData(history, "phosphorus").map((point) => point.value)}
               className={styles.phosphorusLine}
             />
 
             <NpkLine
-              values={(soilHistory.potassium ?? []).map(
-                (point) => point.value,
-              )}
+              values={buildChartData(history, "potassium").map((point) => point.value)}
               className={styles.potassiumLine}
             />
           </div>
         </article>
       </section>
 
-      {!farm && (
+      {!hierarchy.loading && !hierarchy.selectedFarm && (
         <div className={styles.noData}>
           <Circle size={16} />
           No active farm is currently available.

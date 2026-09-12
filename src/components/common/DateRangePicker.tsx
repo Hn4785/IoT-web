@@ -105,10 +105,6 @@ export function DateRangePicker({
   const [draftRange, setDraftRange] = useState<DateRange | undefined>(value);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    setDraftRange(value);
-  }, [value]);
-
   // Close on outside click
   useEffect(() => {
     if (!isOpen) return;
@@ -161,7 +157,10 @@ export function DateRangePicker({
       <button
         type="button"
         className={`${styles.trigger} ${isOpen ? styles.triggerOpen : ""}`}
-        onClick={() => setIsOpen((open) => !open)}
+        onClick={() => {
+          if (!isOpen) setDraftRange(value);
+          setIsOpen((open) => !open);
+        }}
         aria-haspopup="dialog"
         aria-expanded={isOpen}
       >

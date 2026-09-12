@@ -95,13 +95,16 @@ export default function RealtimeChart({
       return;
     }
 
-    setIsRecentlyUpdated(true);
+    const animationFrame = window.requestAnimationFrame(() => {
+      setIsRecentlyUpdated(true);
+    });
 
     const timeout = window.setTimeout(() => {
       setIsRecentlyUpdated(false);
     }, 800);
 
     return () => {
+      window.cancelAnimationFrame(animationFrame);
       window.clearTimeout(timeout);
     };
   }, [lastUpdated]);

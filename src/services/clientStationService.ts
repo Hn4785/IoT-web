@@ -9,11 +9,13 @@ import type {
   ClientStationListResponse,
   ClientStationQueryParams,
 } from "@/types/clientApi";
+import type { ApiSuccessEnvelope } from "@/types/api";
+import { unwrapApiResponse } from "@/types/api";
 
 /**
  * Service dành cho:
  *
- * GET /api/v1/stations
+ * GET /api/v1/client/stations
  *
  * Authentication:
  * X-API-Key
@@ -24,7 +26,7 @@ export const clientStationService = {
     params?: ClientStationQueryParams
   ): Promise<ClientStationListResponse> {
     const response =
-      await clientApiClient.get<ClientStationListResponse>(
+      await clientApiClient.get<ApiSuccessEnvelope<ClientStationListResponse>>(
         API_ENDPOINTS.clientApi.stations,
         {
           ...createClientApiConfig(apiKey),
@@ -32,6 +34,6 @@ export const clientStationService = {
         }
       );
 
-    return response.data;
+    return unwrapApiResponse(response.data);
   },
 };

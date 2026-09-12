@@ -214,8 +214,9 @@
 
 @media (max-width: 768px) {
   .sidebar {
-    width: 64px;
-    min-width: 64px;
+    width: 56px;
+    min-width: 56px;
+    height: 100dvh;
   }
 
   .brand {

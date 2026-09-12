@@ -31,7 +31,18 @@ export const API_ENDPOINTS = {
   stations: {
     base: "/stations",
     byId: (id: string) => `/stations/${id}`,
+    byPlot: (plotId: string) => `/plots/${plotId}/stations`,
     latest: (id: string) => `/stations/${id}/data/latest`,
+    history: (id: string) => `/stations/${id}/data/history`,
+  },
+
+  superAdmin: {
+    transfer: "/admin/super-admin/transfer",
+  },
+
+  farms: {
+    base: "/farms",
+    plots: (farmId: string) => `/farms/${farmId}/plots`,
   },
 
   sensors: {
@@ -56,13 +67,13 @@ export const API_ENDPOINTS = {
    */
 
   clientApi: {
-    health: "/api/v1/health",
+    health: "/health",
 
-    stations: "/api/v1/stations",
+    stations: "/client/stations",
 
     data: {
-      latest: "/api/v1/data/latest",
-      history: "/api/v1/data/history",
+      latest: "/client/data/latest",
+      history: "/client/data/history",
     },
   },
 } as const;

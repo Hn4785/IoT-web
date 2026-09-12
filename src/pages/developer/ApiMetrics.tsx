@@ -20,7 +20,7 @@ const requestData = [
 const requestLogs = [
   {
     timestamp: "17:02:41",
-    endpoint: "/api/v1/data/latest",
+    endpoint: "/api/v1/client/data/latest",
     method: "GET",
     status: 200,
     responseTime: "142 ms",
@@ -30,7 +30,7 @@ const requestLogs = [
   },
   {
     timestamp: "17:01:58",
-    endpoint: "/api/v1/stations",
+    endpoint: "/api/v1/client/stations",
     method: "GET",
     status: 200,
     responseTime: "96 ms",
@@ -40,7 +40,7 @@ const requestLogs = [
   },
   {
     timestamp: "16:59:32",
-    endpoint: "/api/v1/data/history",
+    endpoint: "/api/v1/client/data/history",
     method: "GET",
     status: 200,
     responseTime: "284 ms",
@@ -50,7 +50,7 @@ const requestLogs = [
   },
   {
     timestamp: "16:57:11",
-    endpoint: "/api/v1/data/latest",
+    endpoint: "/api/v1/client/data/latest",
     method: "GET",
     status: 429,
     responseTime: "31 ms",

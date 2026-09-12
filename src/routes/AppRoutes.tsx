@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 
 import { useAuth } from "@/hooks/useAuth";
@@ -18,6 +19,7 @@ export default function AppRoutes() {
   const { user } = useAuth();
 
   return (
+    <Suspense fallback={<div role="status">Loading page…</div>}>
     <Routes>
       {/* ========================================
           PUBLIC ROUTES
@@ -107,5 +109,6 @@ export default function AppRoutes() {
         }
       />
     </Routes>
+    </Suspense>
   );
 }

@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import {
+  Crown,
   Edit3,
+  Copy,
   KeyRound,
-  MoreHorizontal,
   Plus,
   Shield,
   UserCheck,
@@ -15,6 +16,7 @@ import SearchInput from "@/components/common/SearchInput";
 import StatusBadge from "@/components/common/StatusBadge";
 import Drawer from "@/components/common/Drawer";
 import { ConfirmDialog } from "@/components/common/Modal";
+import { Modal } from "@/components/common/Modal";
 import type {
   User,
   UserRole,
@@ -22,6 +24,14 @@ import type {
 } from "@/types/user";
 import { userService } from "@/services/userService";
 import { normalizeApiError } from "@/utils/apiError";
+import { useAuth } from "@/hooks/useAuth";
+import { authorityService } from "@/services/authorityService";
+import { authService } from "@/services/authService";
+import {
+  canResetCredentials,
+  canTransferSuperAdminTo,
+  requiresSensitiveChangeConfirmation,
+} from "./userManagementPolicy";
 
 import styles from "./UserManagement.module.css";
 
@@ -37,10 +47,37 @@ const statusLabels: Record<UserStatus, string> = {
   PENDING_PASSWORD_CHANGE: "Password change required",
 };
 
+type PendingSave = {
+  displayName: string;
+  email: string;
+  role: UserRole;
+  status: UserStatus;
+};
+
+function formatDateTime(value?: string) {
+  if (!value) return "Never";
+  return new Intl.DateTimeFormat("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZone: "Asia/Ho_Chi_Minh",
+  }).format(new Date(value));
+}
+
 export default function UserManagement() {
+  const { user: currentUser, setUser } = useAuth();
   const [items, setItems] = useState<User[]>([]);
   const [operationError, setOperationError] = useState("");
-  const [temporaryPassword, setTemporaryPassword] = useState("");
+  const [temporaryCredential, setTemporaryCredential] = useState<{
+    email: string;
+    password: string;
+    action: "created" | "reset";
+  } | null>(null);
+  const [credentialConfirmed, setCredentialConfirmed] = useState(false);
+  const [credentialCopied, setCredentialCopied] = useState(false);
 
   const [query, setQuery] = useState("");
   const [role, setRole] = useState<UserRole | "all">("all");
@@ -54,6 +91,14 @@ export default function UserManagement() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [confirmUser, setConfirmUser] = useState<User | null>(null);
+  const [selectedRole, setSelectedRole] = useState<UserRole>("FARMER");
+  const [selectedStatus, setSelectedStatus] = useState<UserStatus>("ACTIVE");
+  const [pendingRole, setPendingRole] = useState<UserRole | null>(null);
+  const [pendingSave, setPendingSave] = useState<PendingSave | null>(null);
+  const [transferTarget, setTransferTarget] = useState<User | null>(null);
+  const [transferPassword, setTransferPassword] = useState("");
+  const [transferAcknowledged, setTransferAcknowledged] = useState(false);
+  const [transferring, setTransferring] = useState(false);
 
   const pageSize = 20;
 
@@ -96,54 +141,93 @@ export default function UserManagement() {
 
   const openCreate = () => {
     setEditingUser(null);
+    setSelectedRole("FARMER");
+    setSelectedStatus("ACTIVE");
     setDrawerOpen(true);
   };
 
-  const openEdit = (user: User) => {
+  const openEdit = async (user: User) => {
     setEditingUser(user);
+    setSelectedRole(user.role);
+    setSelectedStatus(user.status);
     setDrawerOpen(true);
+    setOperationError("");
+    try {
+      const detail = await userService.getUserById(user.id);
+      setEditingUser(detail);
+      setSelectedRole(detail.role);
+      setSelectedStatus(detail.status);
+    } catch (error) {
+      setOperationError(normalizeApiError(error).message);
+    }
   };
 
-  const saveUser = async (
-    event: React.FormEvent<HTMLFormElement>,
-  ) => {
-    event.preventDefault();
-
-    const form = new FormData(event.currentTarget);
-
-    const dName = String(
-      form.get("displayName") ?? "",
-    ).trim();
-
-    const email = String(
-      form.get("email") ?? "",
-    ).trim();
-
-    const nextRole = String(
-      form.get("role") ?? "FARMER",
-    ) as UserRole;
-
-    const nextStatus = String(
-      form.get("status") ?? "ACTIVE",
-    ) as UserStatus;
-
+  const persistUser = async (input: PendingSave) => {
     setOperationError("");
     try {
       if (editingUser) {
         const updated = await userService.updateUser(editingUser.id, {
-          displayName: dName,
-          role: nextRole,
-          status: nextStatus,
+          displayName: input.displayName,
+          role: input.role,
+          status: input.status,
         });
         setItems((current) => current.map((user) => user.id === updated.id ? updated : user));
       } else {
-        const created = await userService.createUser({ email, displayName: dName, role: nextRole });
+        const created = await userService.createUser({
+          email: input.email,
+          displayName: input.displayName,
+          role: input.role,
+        });
         setItems((current) => [...current, created.user]);
-        setTemporaryPassword(created.temporaryPassword);
+        setTemporaryCredential({ email: created.user.email, password: created.temporaryPassword, action: "created" });
+        setCredentialConfirmed(false);
+        setCredentialCopied(false);
       }
       setDrawerOpen(false);
     } catch (error) {
       setOperationError(normalizeApiError(error).message);
+    }
+  };
+
+  const saveUser = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const input: PendingSave = {
+      displayName: String(form.get("displayName") ?? "").trim(),
+      email: String(form.get("email") ?? "").trim(),
+      role: selectedRole,
+      status: selectedStatus,
+    };
+
+    if (editingUser && requiresSensitiveChangeConfirmation(editingUser, input)) {
+      setPendingSave(input);
+      return;
+    }
+    void persistUser(input);
+  };
+
+  const openTransfer = (target: User) => {
+    setTransferTarget(target);
+    setTransferPassword("");
+    setTransferAcknowledged(false);
+    setOperationError("");
+  };
+
+  const transferSuperAdmin = async () => {
+    if (!transferTarget || !transferAcknowledged) return;
+    setTransferring(true);
+    setOperationError("");
+    try {
+      await authorityService.transfer(transferTarget.id, transferPassword);
+      setTransferTarget(null);
+      setDrawerOpen(false);
+      authService.clearSession();
+      setUser(null);
+      window.location.assign("/login?authority-transferred=1");
+    } catch (error) {
+      setOperationError(normalizeApiError(error).message);
+    } finally {
+      setTransferring(false);
     }
   };
 
@@ -168,7 +252,9 @@ export default function UserManagement() {
     try {
       const result = await userService.resetPassword(user.id);
       setItems((current) => current.map((item) => item.id === result.user.id ? result.user : item));
-      setTemporaryPassword(result.temporaryPassword);
+      setTemporaryCredential({ email: result.user.email, password: result.temporaryPassword, action: "reset" });
+      setCredentialConfirmed(false);
+      setCredentialCopied(false);
     } catch (error) {
       setOperationError(normalizeApiError(error).message);
     }
@@ -190,13 +276,6 @@ export default function UserManagement() {
       />
 
       {operationError && <div role="alert">{operationError}</div>}
-      {temporaryPassword && (
-        <div role="status">
-          Temporary password (shown once): <code>{temporaryPassword}</code>{" "}
-          <Button size="sm" variant="ghost" onClick={() => setTemporaryPassword("")}>Dismiss</Button>
-        </div>
-      )}
-
       <section className={styles.stats}>
         <div>
           <span>Total Users</span>
@@ -301,10 +380,10 @@ export default function UserManagement() {
                 <th>Role</th>
                 <th>Status</th>
                 <th>Assigned Farms</th>
-                <th>Assigned Plots</th>
+                <th>Assigned Stations</th>
                 <th>Last Login</th>
                 <th>Created At</th>
-                <th />
+                <th>Actions</th>
               </tr>
             </thead>
 
@@ -337,8 +416,8 @@ export default function UserManagement() {
 
                   <td>
                     <span className={styles.role}>
-                      <Shield size={13} />
-                      {roleLabels[user.role]}
+                      {user.isSuperAdmin ? <Crown size={15} /> : <Shield size={15} />}
+                      {user.isSuperAdmin ? "Super Admin" : roleLabels[user.role]}
                     </span>
                   </td>
 
@@ -357,16 +436,14 @@ export default function UserManagement() {
                     {user.assignedFarmIds.length}
                   </td>
 
+                  <td>{user.assignedStationIds.length}</td>
+
                   <td>
-                    {user.assignedPlotIds.length}
+                    {formatDateTime(user.lastLogin)}
                   </td>
 
                   <td>
-                    {user.lastLogin ?? "Never"}
-                  </td>
-
-                  <td>
-                    {user.createdAt}
+                    {formatDateTime(user.createdAt)}
                   </td>
 
                   <td>
@@ -380,7 +457,7 @@ export default function UserManagement() {
                           openEdit(user)
                         }
                       >
-                        <Edit3 size={15} />
+                        <Edit3 size={18} />
                       </Button>
 
                       <Button
@@ -388,14 +465,16 @@ export default function UserManagement() {
                         variant="ghost"
                         size="sm"
                         aria-label="Enable or disable user"
+                        title={user.isSuperAdmin ? "Transfer Super Admin authority before changing this account" : "Enable or disable account"}
+                        disabled={user.isSuperAdmin}
                         onClick={() =>
                           setConfirmUser(user)
                         }
                       >
                         {user.status === "ACTIVE" ? (
-                          <UserX size={15} />
+                          <UserX size={18} />
                         ) : (
-                          <UserCheck size={15} />
+                          <UserCheck size={18} />
                         )}
                       </Button>
 
@@ -403,19 +482,31 @@ export default function UserManagement() {
                         iconOnly
                         variant="ghost"
                         size="sm"
-                        aria-label="Reset credentials"
+                        aria-label={canResetCredentials(currentUser, user) ? "Reset credentials" : "Reset credentials unavailable"}
+                        title={user.isSuperAdmin ? "Transfer Super Admin authority before resetting this account" : "Reset credentials"}
+                        disabled={!canResetCredentials(currentUser, user)}
                         onClick={() => void resetPassword(user)}
                       >
-                        <KeyRound size={15} />
+                        <KeyRound size={18} />
                       </Button>
 
                       <Button
                         iconOnly
                         variant="ghost"
                         size="sm"
-                        aria-label="More actions"
+                        aria-label={user.isSuperAdmin ? "Current Super Admin" : `Make ${user.displayName} Super Admin`}
+                        title={
+                          user.isSuperAdmin
+                            ? "Current Super Admin"
+                            : canTransferSuperAdminTo(currentUser, user)
+                              ? "Transfer Super Admin authority"
+                              : "Account must be a different active Admin"
+                        }
+                        disabled={!canTransferSuperAdminTo(currentUser, user)}
+                        className={styles.superAdminAction}
+                        onClick={() => openTransfer(user)}
                       >
-                        <MoreHorizontal size={15} />
+                        <Crown size={18} />
                       </Button>
                     </div>
                   </td>
@@ -508,10 +599,13 @@ export default function UserManagement() {
 
               <select
                 name="role"
-                defaultValue={
-                  editingUser?.role ??
-                  "FARMER"
-                }
+                value={selectedRole}
+                disabled={Boolean(editingUser?.isSuperAdmin)}
+                onChange={(event) => {
+                  const nextRole = event.target.value as UserRole;
+                  if (editingUser && nextRole !== selectedRole) setPendingRole(nextRole);
+                  else setSelectedRole(nextRole);
+                }}
               >
                 {Object.entries(
                   roleLabels,
@@ -533,10 +627,9 @@ export default function UserManagement() {
 
               <select
                 name="status"
-                defaultValue={
-                  editingUser?.status ??
-                  "ACTIVE"
-                }
+                value={selectedStatus}
+                disabled={Boolean(editingUser?.isSuperAdmin)}
+                onChange={(event) => setSelectedStatus(event.target.value as UserStatus)}
               >
                 {Object.entries(
                   statusLabels,
@@ -554,9 +647,14 @@ export default function UserManagement() {
             </label>
           </div>
 
-          <div className={styles.authBox} role="note">
-            Farm and station access cannot be edited here until the backend exposes each user's current assignments.
-          </div>
+          {editingUser && (
+            <div className={styles.authBox} role="note">
+              <strong>Current resource access</strong>
+              <span>Farms: {editingUser.assignedFarmIds.join(", ") || "None"}</span>
+              <span>Stations: {editingUser.assignedStationIds.join(", ") || "None"}</span>
+              <small>Assignment editing needs a dedicated selector before it can be enabled safely.</small>
+            </div>
+          )}
         </form>
       </Drawer>
 
@@ -586,6 +684,119 @@ export default function UserManagement() {
             : "primary"
         }
       />
+
+      <ConfirmDialog
+        isOpen={Boolean(pendingRole)}
+        onClose={() => setPendingRole(null)}
+        onConfirm={() => {
+          if (pendingRole) setSelectedRole(pendingRole);
+        }}
+        title="Change account role?"
+        description={`Changing this account to ${pendingRole ? roleLabels[pendingRole] : "another role"} can revoke sessions, API keys, and incompatible resource access. This is confirmation 1 of 2.`}
+        confirmText="Use this role"
+        variant="warning"
+      />
+
+      <ConfirmDialog
+        isOpen={Boolean(pendingSave)}
+        onClose={() => setPendingSave(null)}
+        onConfirm={async () => {
+          if (pendingSave) await persistUser(pendingSave);
+        }}
+        title="Save sensitive account changes?"
+        description="This is confirmation 2 of 2. Saving a role or status change immediately revokes active sessions and API keys for the affected account."
+        confirmText="Save Changes"
+        variant="danger"
+      />
+
+      <Modal
+        isOpen={Boolean(transferTarget)}
+        onClose={() => {
+          if (!transferring) setTransferTarget(null);
+        }}
+        title="Transfer Super Admin authority?"
+        description="This action leaves exactly one Super Admin and signs both accounts out."
+        size="sm"
+        closeOnEsc={!transferring}
+        closeOnOverlayClick={!transferring}
+        showCloseButton={!transferring}
+        footer={
+          <>
+            <Button variant="outline" disabled={transferring} onClick={() => setTransferTarget(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              loading={transferring}
+              disabled={!transferAcknowledged || transferPassword.length < 12}
+              onClick={() => void transferSuperAdmin()}
+            >
+              Transfer and sign out
+            </Button>
+          </>
+        }
+      >
+        <div className={styles.transferForm}>
+          <div className={styles.transferWarning} role="alert">
+            <Crown size={22} aria-hidden="true" />
+            <span>
+              <strong>{transferTarget?.displayName}</strong> will become the only Super Admin.
+              Your current session will be revoked immediately.
+            </span>
+          </div>
+          <label>
+            Current Super Admin password
+            <input
+              type="password"
+              value={transferPassword}
+              minLength={12}
+              maxLength={128}
+              autoComplete="current-password"
+              onChange={(event) => setTransferPassword(event.target.value)}
+            />
+          </label>
+          <label className={styles.transferConfirmation}>
+            <input
+              type="checkbox"
+              checked={transferAcknowledged}
+              onChange={(event) => setTransferAcknowledged(event.target.checked)}
+            />
+            I understand that I will lose Super Admin authority and must sign in again.
+          </label>
+        </div>
+      </Modal>
+
+      {temporaryCredential && (
+        <div className={styles.credentialOverlay}>
+          <section className={styles.credentialModal} role="dialog" aria-modal="true" aria-labelledby="temporary-password-title">
+            <div>
+              <span className={styles.credentialEyebrow}>ONE-TIME CREDENTIAL</span>
+              <h2 id="temporary-password-title">
+                {temporaryCredential.action === "created" ? "Account created" : "Password reset complete"}
+              </h2>
+              <p>Give this temporary password to <strong>{temporaryCredential.email}</strong> through a private channel. It cannot be shown again.</p>
+            </div>
+            <div className={styles.credentialSecret}>
+              <code>{temporaryCredential.password}</code>
+              <Button variant="outline" size="sm" icon={<Copy size={15} />} onClick={async () => {
+                try {
+                  await navigator.clipboard.writeText(temporaryCredential.password);
+                  setCredentialCopied(true);
+                } catch {
+                  setOperationError("Could not copy automatically. Select and copy the password manually.");
+                }
+              }}>{credentialCopied ? "Copied" : "Copy"}</Button>
+            </div>
+            <label className={styles.credentialConfirmation}>
+              <input type="checkbox" checked={credentialConfirmed} onChange={(event) => setCredentialConfirmed(event.target.checked)} />
+              I have securely saved this temporary password.
+            </label>
+            <div className={styles.credentialActions}>
+              <Button disabled={!credentialConfirmed} onClick={() => setTemporaryCredential(null)}>Done</Button>
+            </div>
+          </section>
+        </div>
+      )}
     </div>
   );
 }

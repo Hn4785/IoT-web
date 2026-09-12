@@ -9,13 +9,18 @@ export interface BackendUser {
   isSuperAdmin: boolean;
   createdAt: string;
   updatedAt: string;
+  assignments?: {
+    farmIds: string[];
+    stationIds: string[];
+  };
 }
 
 export function normalizeBackendUser(user: BackendUser): User {
+  const { assignments, ...base } = user;
   return {
-    ...user,
-    assignedFarmIds: [],
+    ...base,
+    assignedFarmIds: assignments?.farmIds ?? [],
     assignedPlotIds: [],
-    assignedStationIds: [],
+    assignedStationIds: assignments?.stationIds ?? [],
   };
 }

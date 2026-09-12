@@ -63,15 +63,12 @@
 
   /* ------------------------------------------------------------
      2. TYPOGRAPHY
-     Inter: main UI font.
-     JetBrains Mono: Developer Portal, API endpoints, code
-     blocks, JSON responses only.
-     Fonts are loaded via <link> tags in index.html (Google Fonts
-     CDN). See index.html for the <link> tags.
+     System fonts keep the dashboard readable when the IoT network
+     has no public Internet access.
      ------------------------------------------------------------ */
 
-  --font-family-base: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-family-mono: 'JetBrains Mono', 'Courier New', monospace;
+  --font-family-base: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+  --font-family-mono: Consolas, 'Courier New', monospace;
 
   /* Font sizes */
   --font-size-display: 32px;   /* H1 / Display */

@@ -190,7 +190,7 @@ export default function AlertActionCenter() {
       new Date().toISOString();
 
     const event = {
-      id: `${alert.id}-${action}-${Date.now()}`,
+      id: `${alert.id}-${action}-${crypto.randomUUID()}`,
       alertId: alert.id,
       action,
       userId: farmOwnerId,

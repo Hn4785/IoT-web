@@ -1,6 +1,7 @@
 import { create } from "zustand";
 
 import { restoreAuthenticatedUser } from "@/auth/restoreAuthenticatedUser";
+import { createSingleFlight } from "@/api/refreshCoordinator";
 import { authService } from "@/services/authService";
 import type { User } from "@/types/user";
 
@@ -14,6 +15,14 @@ interface AuthState {
   setUser: (user: User | null) => void;
   restoreSession: () => Promise<void>;
 }
+
+const restoreSessionOnce = createSingleFlight(() =>
+  restoreAuthenticatedUser(
+    authService.refresh,
+    authService.getCurrentUser,
+    authService.clearSession,
+  ),
+);
 
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
@@ -45,11 +54,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   restoreSession: async () => {
-    const user = await restoreAuthenticatedUser(
-      authService.refresh,
-      authService.getCurrentUser,
-      authService.clearSession,
-    );
+    const user = await restoreSessionOnce();
     set({
       user,
       isAuthenticated: user !== null,

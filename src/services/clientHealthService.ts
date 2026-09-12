@@ -1,30 +1,27 @@
 import {
   clientApiClient,
-  createClientApiConfig,
 } from "@/api/clientApiClient";
 
 import { API_ENDPOINTS } from "@/api/endpoints";
 
 import type { ClientApiHealth } from "@/types/clientApi";
+import type { ApiSuccessEnvelope } from "@/types/api";
+import { unwrapApiResponse } from "@/types/api";
 
 /**
  * Service dành cho:
  *
  * GET /api/v1/health
  *
- * Authentication:
- * X-API-Key
+ * Public endpoint; no API key is required.
  */
 export const clientHealthService = {
-  async getHealth(
-    apiKey: string
-  ): Promise<ClientApiHealth> {
+  async getHealth(): Promise<ClientApiHealth> {
     const response =
-      await clientApiClient.get<ClientApiHealth>(
-        API_ENDPOINTS.clientApi.health,
-        createClientApiConfig(apiKey)
+      await clientApiClient.get<ApiSuccessEnvelope<ClientApiHealth>>(
+        API_ENDPOINTS.clientApi.health
       );
 
-    return response.data;
+    return unwrapApiResponse(response.data);
   },
 };

@@ -89,7 +89,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           )}
           <span className={`${styles.content} ${loading ? styles.labelHidden : ""}`}>
             {icon && <span className={styles.iconLeft} aria-hidden="true">{icon}</span>}
-            {!iconOnly && children}
+            {children}
             {iconRight && <span className={styles.iconRight} aria-hidden="true">{iconRight}</span>}
           </span>
         </span>

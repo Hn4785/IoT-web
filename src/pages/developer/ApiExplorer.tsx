@@ -27,24 +27,24 @@ const endpointOptions: EndpointOption[] = [
     method: "GET",
   },
   {
-    value: "/api/v1/stations",
+    value: "/api/v1/client/stations",
     label: "List Stations",
     method: "GET",
   },
   {
-    value: "/api/v1/data/latest",
+    value: "/api/v1/client/data/latest",
     label: "Latest Data",
     method: "GET",
   },
   {
-    value: "/api/v1/data/history",
+    value: "/api/v1/client/data/history",
     label: "Historical Data",
     method: "GET",
   },
 ];
 
 export default function ApiExplorer() {
-  const [endpoint, setEndpoint] = useState("/api/v1/data/latest");
+  const [endpoint, setEndpoint] = useState("/api/v1/client/data/latest");
   const [apiKey, setApiKey] = useState("");
 
   const [station, setStation] = useState("NODE01");
@@ -61,7 +61,7 @@ export default function ApiExplorer() {
   );
 
   const handleSend = async () => {
-    if (!apiKey.trim()) {
+    if (endpoint !== "/api/v1/health" && !apiKey.trim()) {
       setResponse(
         JSON.stringify(
           {
@@ -90,32 +90,38 @@ export default function ApiExplorer() {
 
       switch (endpoint) {
         case "/api/v1/health":
-          result = await clientHealthService.getHealth(apiKey);
+          result = await clientHealthService.getHealth();
           break;
 
-        case "/api/v1/stations":
+        case "/api/v1/client/stations":
           result = await clientStationService.getStations(apiKey);
           break;
 
-        case "/api/v1/data/latest":
+        case "/api/v1/client/data/latest":
           result = await telemetryService.getLatestData(
             apiKey,
             {
-              stationId: station || undefined,
-              metric: fields || undefined,
+              station,
+              fields: fields || undefined,
             }
           );
           break;
 
-        case "/api/v1/data/history":
+        case "/api/v1/client/data/history": {
+          const end = new Date();
+          const begin = new Date(end.getTime() - 24 * 60 * 60 * 1000);
           result = await telemetryService.getHistoryData(
             apiKey,
             {
-              stationId: station || undefined,
-              metric: fields || undefined,
+              station,
+              fields: fields || undefined,
+              begin: begin.toISOString(),
+              end: end.toISOString(),
+              interval: "raw",
             }
           );
           break;
+        }
 
         default:
           throw new Error("Unsupported endpoint.");
@@ -278,7 +284,7 @@ export default function ApiExplorer() {
             </label>
 
             <label className={styles.field}>
-              <span>fields / metric</span>
+              <span>fields</span>
 
               <input
                 value={fields}
@@ -369,9 +375,8 @@ export default function ApiExplorer() {
         <strong>API contract status</strong>
 
         <span>
-          Endpoint names and authentication requirements follow the SRS.
-          Detailed production request/response contracts are still subject to
-          Backend API specification.
+          Requests follow the current Backend OpenAPI contract. Health is public;
+          station and soil-data endpoints require an X-API-Key.
         </span>
       </section>
 

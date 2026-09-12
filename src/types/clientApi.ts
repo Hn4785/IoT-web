@@ -1,32 +1,5 @@
-/**
- * ========================================
- * CLIENT DEVELOPER API TYPES
- * ========================================
- *
- * Types dành cho các API:
- *
- * GET /api/v1/health
- * GET /api/v1/stations
- * GET /api/v1/data/latest
- * GET /api/v1/data/history
- *
- * Lưu ý:
- * SRS hiện xác nhận endpoint nhưng chưa cung cấp
- * JSON response schema chính thức.
- *
- * Các type dưới đây là frontend contract tạm thời
- * và có thể cập nhật khi Backend API specification hoàn chỉnh.
- */
-
-/**
- * Generic API response wrapper.
- *
- * Có thể không cần nếu Backend trả data trực tiếp.
- */
-export interface ClientApiResponse<T> {
-  data: T;
-  message?: string;
-}
+import type { CursorPage } from "./api";
+import type { LatestSoilDataDto } from "./soil";
 
 /**
  * ========================================
@@ -41,13 +14,11 @@ export type ApiHealthStatus =
   | "unknown";
 
 export interface ClientApiHealth {
+  service: string;
   status: ApiHealthStatus;
-
-  timestamp?: string;
-
-  version?: string;
-
-  uptime?: number;
+  version: string;
+  environment: string;
+  time: string;
 }
 
 /**
@@ -58,47 +29,18 @@ export interface ClientApiHealth {
 
 export interface ClientApiStation {
   id: string;
-
   name: string;
-
-  farmId?: string;
-
-  plotId?: string;
-
-  status?: string;
-
-  lastSeen?: string;
-
-  gatewayId?: string;
-
-  firmware?: string;
-
-  battery?: number;
-
-  rssi?: number;
+  farmId: string;
+  plotId: string;
+  code: string;
 }
 
 export interface ClientStationQueryParams {
-  page?: number;
-
   limit?: number;
-
-  farmId?: string;
-
-  plotId?: string;
-
-  status?: string;
+  cursor?: string;
 }
 
-export interface ClientStationListResponse {
-  items: ClientApiStation[];
-
-  total?: number;
-
-  page?: number;
-
-  limit?: number;
-}
+export type ClientStationListResponse = CursorPage<ClientApiStation>;
 
 /**
  * ========================================
@@ -107,28 +49,11 @@ export interface ClientStationListResponse {
  */
 
 export interface LatestDataQueryParams {
-  stationId?: string;
-
-  sensorId?: string;
-
-  metric?: string;
+  station: string;
+  fields?: string;
 }
 
-export interface LatestTelemetryData {
-  stationId: string;
-
-  sensorId?: string;
-
-  metric: string;
-
-  value: number;
-
-  unit?: string;
-
-  timestamp: string;
-
-  quality?: string;
-}
+export type LatestTelemetryData = LatestSoilDataDto;
 
 /**
  * ========================================
@@ -137,37 +62,37 @@ export interface LatestTelemetryData {
  */
 
 export interface HistoryDataQueryParams {
-  stationId?: string;
-
-  sensorId?: string;
-
-  metric?: string;
-
-  from?: string;
-
-  to?: string;
-
-  interval?: string;
+  station: string;
+  fields?: string;
+  begin: string;
+  end: string;
+  interval?: "raw" | "5m" | "30m" | "1h" | "1d";
+  aggregate?: "mean" | "min" | "max" | "first" | "last";
+  order?: "asc" | "desc";
+  limit?: number;
+  cursor?: string;
 }
 
-export interface HistoricalTelemetryData {
-  stationId: string;
-
-  sensorId?: string;
-
-  metric: string;
-
+export interface SoilHistoryPointDto {
+  observedAt: string;
   value: number;
+  quality: "good" | "stale" | "unknown";
+}
 
-  unit?: string;
-
-  timestamp: string;
-
-  quality?: string;
+export interface SoilHistorySeriesDto {
+  field: string;
+  unit: string | null;
+  sensorId: string | null;
+  depthCm: number | null;
+  points: SoilHistoryPointDto[];
 }
 
 export interface HistoryDataResponse {
-  items: HistoricalTelemetryData[];
-
-  total?: number;
+  stationId: string;
+  measurement: "soil";
+  series: SoilHistorySeriesDto[];
+  page: { nextCursor: string | null };
+  fetchedAt: string;
+  isFromCache: boolean;
+  isStale: boolean;
 }
