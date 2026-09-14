@@ -11,6 +11,7 @@ import { useState } from "react";
 import { clientHealthService } from "@/services/clientHealthService";
 import { clientStationService } from "@/services/clientStationService";
 import { telemetryService } from "@/services/telemetryService";
+import { copyText, normalizeApiKey } from "@/utils/credentialInput";
 
 import styles from "./ApiExplorer.module.css";
 
@@ -55,13 +56,15 @@ export default function ApiExplorer() {
   const [responseTime, setResponseTime] = useState<number | null>(null);
 
   const [isLoading, setIsLoading] = useState(false);
+  const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "failed">("idle");
 
   const selected = endpointOptions.find(
     (item) => item.value === endpoint
   );
 
   const handleSend = async () => {
-    if (endpoint !== "/api/v1/health" && !apiKey.trim()) {
+    const normalizedApiKey = normalizeApiKey(apiKey);
+    if (endpoint !== "/api/v1/health" && !normalizedApiKey) {
       setResponse(
         JSON.stringify(
           {
@@ -84,6 +87,7 @@ export default function ApiExplorer() {
     setResponse("");
     setStatus(null);
     setResponseTime(null);
+    setCopyStatus("idle");
 
     try {
       let result: unknown;
@@ -94,12 +98,12 @@ export default function ApiExplorer() {
           break;
 
         case "/api/v1/client/stations":
-          result = await clientStationService.getStations(apiKey);
+          result = await clientStationService.getStations(normalizedApiKey);
           break;
 
         case "/api/v1/client/data/latest":
           result = await telemetryService.getLatestData(
-            apiKey,
+            normalizedApiKey,
             {
               station,
               fields: fields || undefined,
@@ -111,7 +115,7 @@ export default function ApiExplorer() {
           const end = new Date();
           const begin = new Date(end.getTime() - 24 * 60 * 60 * 1000);
           result = await telemetryService.getHistoryData(
-            apiKey,
+            normalizedApiKey,
             {
               station,
               fields: fields || undefined,
@@ -179,6 +183,7 @@ export default function ApiExplorer() {
     setStatus(null);
     setResponseTime(null);
     setIsLoading(false);
+    setCopyStatus("idle");
   };
 
   return (
@@ -341,12 +346,10 @@ export default function ApiExplorer() {
 
             {response && (
               <button
-                onClick={() =>
-                  void navigator.clipboard?.writeText(response)
-                }
+                onClick={async () => setCopyStatus(await copyText(response) ? "copied" : "failed")}
               >
                 <Copy size={14} />
-                Copy
+                {copyStatus === "copied" ? "Copied" : copyStatus === "failed" ? "Select manually" : "Copy"}
               </button>
             )}
           </div>

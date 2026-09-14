@@ -261,6 +261,14 @@
   cursor: pointer;
 }
 
+.copyStatus {
+  position: absolute;
+  top: 15px;
+  right: 48px;
+  color: var(--color-text-inverse);
+  font-size: var(--font-size-tiny);
+}
+
 .empty {
   padding: 15px;
   border: 1px dashed var(--color-border-default);

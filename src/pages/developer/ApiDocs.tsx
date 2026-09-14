@@ -7,6 +7,7 @@ import {
   LockKeyhole,
 } from "lucide-react";
 import { useState } from "react";
+import { copyText } from "@/utils/credentialInput";
 import styles from "./ApiDocs.module.css";
 
 interface Endpoint {
@@ -113,6 +114,10 @@ const responseExamples: Record<string, string> = {
 
 export default function ApiDocs() {
   const [selectedId, setSelectedId] = useState("health");
+  const [copyStatus, setCopyStatus] = useState<{
+    target: "headers" | "response";
+    result: "copied" | "failed";
+  } | null>(null);
 
   const selected =
     endpoints.find((endpoint) => endpoint.id === selectedId) ?? endpoints[0];
@@ -148,7 +153,7 @@ export default function ApiDocs() {
               className={`${styles.endpointButton} ${
                 selected.id === endpoint.id ? styles.selected : ""
               }`}
-              onClick={() => setSelectedId(endpoint.id)}
+              onClick={() => { setSelectedId(endpoint.id); setCopyStatus(null); }}
             >
               <div>
                 <span className={styles.method}>GET</span>
@@ -228,14 +233,17 @@ export default function ApiDocs() {
             <div className={styles.codeBlock}>
               <button
                 aria-label="Copy request headers"
-                onClick={() =>
-                  void navigator.clipboard?.writeText(
-                    "X-API-Key: YOUR_API_KEY",
-                  )
-                }
+                title={copyStatus?.target === "headers" && copyStatus.result === "copied" ? "Copied" : "Copy request headers"}
+                onClick={async () => setCopyStatus({ target: "headers", result: await copyText(selected.auth ? "X-API-Key: YOUR_API_KEY\nAccept: application/json" : "Accept: application/json") ? "copied" : "failed" })}
               >
                 <Copy size={15} />
               </button>
+
+              {copyStatus?.target === "headers" && (
+                <span className={styles.copyStatus} role="status">
+                  {copyStatus.result === "copied" ? "Copied" : "Select and copy manually"}
+                </span>
+              )}
 
               <pre>
                 <code>
@@ -253,14 +261,17 @@ export default function ApiDocs() {
             <div className={styles.codeBlock}>
               <button
                 aria-label="Copy example response"
-                onClick={() =>
-                  void navigator.clipboard?.writeText(
-                    responseExamples[selected.id],
-                  )
-                }
+                title={copyStatus?.target === "response" && copyStatus.result === "copied" ? "Copied" : "Copy example response"}
+                onClick={async () => setCopyStatus({ target: "response", result: await copyText(responseExamples[selected.id]) ? "copied" : "failed" })}
               >
                 <Copy size={15} />
               </button>
+
+              {copyStatus?.target === "response" && (
+                <span className={styles.copyStatus} role="status">
+                  {copyStatus.result === "copied" ? "Copied" : "Select and copy manually"}
+                </span>
+              )}
 
               <pre>
                 <code>{responseExamples[selected.id]}</code>

@@ -24,6 +24,7 @@ export const API_ENDPOINTS = {
 
   apiKeys: {
     base: "/developer/api-keys",
+    availableStations: "/developer/api-keys/available-stations",
     rotate: (id: string) => `/developer/api-keys/${id}/rotate`,
     revoke: (id: string) => `/developer/api-keys/${id}/revoke`,
   },

@@ -24,6 +24,7 @@ import type {
 } from "@/types/user";
 import { userService } from "@/services/userService";
 import { normalizeApiError } from "@/utils/apiError";
+import { copyText } from "@/utils/credentialInput";
 import { useAuth } from "@/hooks/useAuth";
 import { authorityService } from "@/services/authorityService";
 import { authService } from "@/services/authService";
@@ -78,6 +79,7 @@ export default function UserManagement() {
   } | null>(null);
   const [credentialConfirmed, setCredentialConfirmed] = useState(false);
   const [credentialCopied, setCredentialCopied] = useState(false);
+  const [credentialCopyFailed, setCredentialCopyFailed] = useState(false);
 
   const [query, setQuery] = useState("");
   const [role, setRole] = useState<UserRole | "all">("all");
@@ -182,6 +184,7 @@ export default function UserManagement() {
         setTemporaryCredential({ email: created.user.email, password: created.temporaryPassword, action: "created" });
         setCredentialConfirmed(false);
         setCredentialCopied(false);
+        setCredentialCopyFailed(false);
       }
       setDrawerOpen(false);
     } catch (error) {
@@ -255,6 +258,7 @@ export default function UserManagement() {
       setTemporaryCredential({ email: result.user.email, password: result.temporaryPassword, action: "reset" });
       setCredentialConfirmed(false);
       setCredentialCopied(false);
+      setCredentialCopyFailed(false);
     } catch (error) {
       setOperationError(normalizeApiError(error).message);
     }
@@ -777,16 +781,17 @@ export default function UserManagement() {
               <p>Give this temporary password to <strong>{temporaryCredential.email}</strong> through a private channel. It cannot be shown again.</p>
             </div>
             <div className={styles.credentialSecret}>
-              <code>{temporaryCredential.password}</code>
+              <code tabIndex={0}>{temporaryCredential.password}</code>
               <Button variant="outline" size="sm" icon={<Copy size={15} />} onClick={async () => {
-                try {
-                  await navigator.clipboard.writeText(temporaryCredential.password);
+                if (await copyText(temporaryCredential.password)) {
                   setCredentialCopied(true);
-                } catch {
-                  setOperationError("Could not copy automatically. Select and copy the password manually.");
+                  setCredentialCopyFailed(false);
+                } else {
+                  setCredentialCopyFailed(true);
                 }
               }}>{credentialCopied ? "Copied" : "Copy"}</Button>
             </div>
+            {credentialCopyFailed && <p role="alert">Could not copy automatically. Select and copy the password manually.</p>}
             <label className={styles.credentialConfirmation}>
               <input type="checkbox" checked={credentialConfirmed} onChange={(event) => setCredentialConfirmed(event.target.checked)} />
               I have securely saved this temporary password.

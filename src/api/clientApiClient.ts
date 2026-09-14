@@ -1,6 +1,7 @@
 import axios from "axios";
 
 import { env } from "@/config/env";
+import { normalizeApiKey } from "@/utils/credentialInput";
 
 /**
  * HTTP client dành riêng cho Client Developer API.
@@ -29,7 +30,7 @@ export const clientApiClient = axios.create({
 export function createClientApiConfig(apiKey: string) {
   return {
     headers: {
-      "X-API-Key": apiKey,
+      "X-API-Key": normalizeApiKey(apiKey),
     },
   };
 }
