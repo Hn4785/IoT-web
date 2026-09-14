@@ -180,6 +180,32 @@ describe('Client Developer API-key lifecycle', () => {
     expect(response.body).not.toMatch(/iot_live_[A-Za-z0-9_-]+/);
   });
 
+  it('lists only stations currently granted to the Client Developer', async () => {
+    const response = await app.inject({
+      method: 'GET',
+      url: '/api/v1/developer/api-keys/available-stations',
+      headers: { authorization: `Bearer ${clientToken}` },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.headers['cache-control']).toBe('no-store');
+    expect(response.json<{ data: { items: unknown[] } }>().data.items).toEqual([
+      {
+        id: grantedStation.id,
+        name: 'Granted',
+        code: 'granted',
+      },
+    ]);
+    expect(response.body).not.toContain(ungrantedStation.id);
+
+    const farmerResponse = await app.inject({
+      method: 'GET',
+      url: '/api/v1/developer/api-keys/available-stations',
+      headers: { authorization: `Bearer ${farmerToken}` },
+    });
+    expect(farmerResponse.statusCode).toBe(403);
+  });
+
   it('rotates atomically and revokes keys idempotently for owner or Admin', async () => {
     const created = await createKey('Rotate me');
     const original = created.json<CreatedKeyResponse>().data;

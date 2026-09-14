@@ -37,6 +37,12 @@ export type ApiKeyPrincipal = Readonly<{
   requestsPerMinute: number;
 }>;
 
+export type AvailableApiKeyStation = Readonly<{
+  id: string;
+  name: string;
+  code: string;
+}>;
+
 @Injectable()
 export class ApiKeyService {
   constructor(
@@ -54,6 +60,24 @@ export class ApiKeyService {
       take: 100,
     });
     return keys.map(toApiKeyDto);
+  }
+
+  async listAvailableStations(
+    principal: CurrentPrincipalValue,
+  ): Promise<readonly AvailableApiKeyStation[]> {
+    this.requireClientDeveloper(principal);
+    const grants = await this.prisma.clientStationGrant.findMany({
+      where: { userId: principal.userId },
+      select: {
+        station: { select: { id: true, name: true, upstreamCode: true } },
+      },
+      orderBy: { stationId: 'asc' },
+    });
+    return grants.map(({ station }) => ({
+      id: station.id,
+      name: station.name,
+      code: station.upstreamCode,
+    }));
   }
 
   async create(

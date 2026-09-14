@@ -31,6 +31,15 @@ import { ApiKeyService } from './api-key.service.js';
 export class ApiKeyController {
   constructor(private readonly apiKeys: ApiKeyService) {}
 
+  @Get('available-stations')
+  @Header('Cache-Control', 'no-store')
+  async listAvailableStations(@CurrentPrincipal() principal: CurrentPrincipalValue) {
+    return {
+      success: true,
+      data: { items: await this.apiKeys.listAvailableStations(principal) },
+    };
+  }
+
   @Get()
   @Header('Cache-Control', 'no-store')
   async list(@CurrentPrincipal() principal: CurrentPrincipalValue) {
