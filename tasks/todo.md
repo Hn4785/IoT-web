@@ -56,9 +56,9 @@ NODE01/NODE02 subset. Until upstream access is restored, B-core evidence is
 ## Phase C: Alerts and in-app notifications
 
 - [x] AC-1: Approve the `alert-config` design spec
-- [ ] C0: Add production-safe demo metadata boundary
-- [ ] C1: Add Phase C persistence invariants and migration
-- [ ] Checkpoint C-foundation: Review demo isolation and database constraints
+- [x] C0: Add production-safe demo metadata boundary
+- [x] C1: Add Phase C persistence invariants and migration
+- [x] Checkpoint C-foundation: Demo isolation and database constraints verified
 - [ ] AC-2a: Implement alert-rule contracts and validation
 - [ ] AC-2b: Implement scoped alert-rule APIs
 - [ ] AC-3a: Implement pure evaluator, durable progress and scheduler lease

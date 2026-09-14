@@ -24,6 +24,12 @@ export function makeTestRuntimeConfig(overrides: Partial<RuntimeConfig> = {}): R
     soilStaleAfterMs: 900_000,
     soilStaleIfErrorMs: 300_000,
     soilCacheMaxEntries: 500,
+    alertEvaluationIntervalMs: 60_000,
+    alertEvaluationBatchSize: 50,
+    alertEvaluatorLeaseMs: 55_000,
+    alertIdempotencyRetentionHours: 168,
+    alertDemoMetadataEnabled: false,
+    alertDemoStationCodes: [],
     ...overrides,
   };
 }

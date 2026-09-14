@@ -29,6 +29,62 @@ enum AuditResult {
   FAILURE
 }
 
+enum SoilAlertField {
+  TEMPERATURE
+  MOISTURE
+  EC
+  PH
+  NITROGEN
+  PHOSPHORUS
+  POTASSIUM
+  LIGHT
+}
+
+enum AlertRuleSeverity {
+  WARNING
+  CRITICAL
+}
+
+enum AlertEvaluationStatus {
+  READY
+  DISABLED
+  BLOCKED_METADATA
+}
+
+enum AlertStatus {
+  OPEN
+  ACKNOWLEDGED
+  RESOLVED
+}
+
+enum AlertResolutionReason {
+  RECOVERED
+  MANUAL
+  RULE_DISABLED
+  METADATA_CHANGED
+}
+
+enum AlertLifecycleEventType {
+  OPENED
+  ACKNOWLEDGED
+  RESOLVED
+}
+
+enum AlertEvaluationResult {
+  BREACH
+  NORMAL
+  MISSING
+  STALE
+  INVALID
+  METADATA_BLOCKED
+  UPSTREAM_ERROR
+}
+
+enum IdempotencyClaimStatus {
+  IN_PROGRESS
+  COMPLETED
+}
+
 model User {
   id                  String     @id @default(uuid()) @db.Uuid
   email               String     @unique @db.Citext
@@ -44,12 +100,14 @@ model User {
   createdAt           DateTime   @default(now()) @db.Timestamptz(3)
   updatedAt           DateTime   @updatedAt @db.Timestamptz(3)
 
-  heldAuthority       SystemAuthority?     @relation("AuthorityHolder")
+  heldAuthority       SystemAuthority?      @relation("AuthorityHolder")
   sessions            Session[]
   farmMemberships     FarmMembership[]
   clientStationGrants ClientStationGrant[]
   apiKeys             ApiKey[]
-  auditEvents         SecurityAuditEvent[] @relation("AuditActor")
+  auditEvents         SecurityAuditEvent[]  @relation("AuditActor")
+  alertEvents         AlertLifecycleEvent[] @relation("AlertEventActor")
+  notifications       InAppNotification[]   @relation("NotificationRecipient")
 
   @@index([role, status])
 }
@@ -119,6 +177,7 @@ model Station {
   plot         Plot                 @relation(fields: [plotId], references: [id], onDelete: Restrict)
   clientGrants ClientStationGrant[]
   apiKeyScopes ApiKeyStationScope[]
+  alertRules   AlertRule[]
 
   @@index([plotId])
 }
@@ -194,4 +253,123 @@ model SecurityAuditEvent {
   @@index([actorUserId, createdAt])
   @@index([targetType, targetId, createdAt])
   @@index([createdAt])
+}
+
+model AlertRule {
+  id                      String                @id @default(uuid()) @db.Uuid
+  stationId               String                @db.Uuid
+  field                   SoilAlertField
+  unit                    String                @db.VarChar(32)
+  metadataRevision        String                @db.VarChar(160)
+  condition               Json
+  severity                AlertRuleSeverity
+  requiredBreachSamples   Int                   @default(2)
+  requiredRecoverySamples Int                   @default(2)
+  isEnabled               Boolean               @default(true)
+  evaluationStatus        AlertEvaluationStatus @default(READY)
+  revision                Int                   @default(1)
+  activeKey               String?               @unique @db.VarChar(128)
+  createdAt               DateTime              @default(now()) @db.Timestamptz(3)
+  updatedAt               DateTime              @updatedAt @db.Timestamptz(3)
+
+  station         Station               @relation(fields: [stationId], references: [id], onDelete: Restrict)
+  evaluationState AlertEvaluationState?
+  alerts          Alert[]
+
+  @@index([stationId, createdAt, id])
+  @@index([isEnabled, id])
+}
+
+model AlertEvaluationState {
+  ruleId                   String                 @id @db.Uuid
+  lastObservedAt           DateTime?              @db.Timestamptz(3)
+  lastValue                Decimal?               @db.Decimal(18, 6)
+  lastEvaluatedAt          DateTime?              @db.Timestamptz(3)
+  lastResult               AlertEvaluationResult?
+  consecutiveBreachCount   Int                    @default(0)
+  consecutiveRecoveryCount Int                    @default(0)
+  updatedAt                DateTime               @updatedAt @db.Timestamptz(3)
+
+  rule AlertRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+}
+
+model Alert {
+  id               String                 @id @default(uuid()) @db.Uuid
+  ruleId           String                 @db.Uuid
+  unresolvedRuleId String?                @unique @db.Uuid
+  status           AlertStatus
+  openedValue      Decimal                @db.Decimal(18, 6)
+  openedObservedAt DateTime               @db.Timestamptz(3)
+  latestValue      Decimal                @db.Decimal(18, 6)
+  latestObservedAt DateTime               @db.Timestamptz(3)
+  openedAt         DateTime               @default(now()) @db.Timestamptz(3)
+  acknowledgedAt   DateTime?              @db.Timestamptz(3)
+  acknowledgedBy   String?                @db.Uuid
+  resolvedAt       DateTime?              @db.Timestamptz(3)
+  resolvedBy       String?                @db.Uuid
+  resolutionReason AlertResolutionReason?
+  revision         Int                    @default(1)
+  updatedAt        DateTime               @updatedAt @db.Timestamptz(3)
+
+  rule   AlertRule             @relation(fields: [ruleId], references: [id], onDelete: Restrict)
+  events AlertLifecycleEvent[]
+
+  @@index([ruleId, updatedAt, id])
+  @@index([status, updatedAt, id])
+}
+
+model AlertLifecycleEvent {
+  id        String                  @id @default(uuid()) @db.Uuid
+  alertId   String                  @db.Uuid
+  type      AlertLifecycleEventType
+  revision  Int
+  actorId   String?                 @db.Uuid
+  note      String?                 @db.VarChar(500)
+  requestId String                  @db.VarChar(128)
+  createdAt DateTime                @default(now()) @db.Timestamptz(3)
+
+  alert         Alert               @relation(fields: [alertId], references: [id], onDelete: Cascade)
+  actor         User?               @relation("AlertEventActor", fields: [actorId], references: [id], onDelete: SetNull)
+  notifications InAppNotification[]
+
+  @@unique([alertId, revision])
+  @@index([createdAt])
+}
+
+model InAppNotification {
+  id               String    @id @default(uuid()) @db.Uuid
+  lifecycleEventId String    @db.Uuid
+  recipientUserId  String    @db.Uuid
+  isRead           Boolean   @default(false)
+  readAt           DateTime? @db.Timestamptz(3)
+  createdAt        DateTime  @default(now()) @db.Timestamptz(3)
+
+  lifecycleEvent AlertLifecycleEvent @relation(fields: [lifecycleEventId], references: [id], onDelete: Cascade)
+  recipient      User                @relation("NotificationRecipient", fields: [recipientUserId], references: [id], onDelete: Cascade)
+
+  @@unique([lifecycleEventId, recipientUserId])
+  @@index([recipientUserId, createdAt, id])
+}
+
+model IdempotencyClaim {
+  id                 String                 @id @default(uuid()) @db.Uuid
+  operation          String                 @db.VarChar(80)
+  key                String                 @db.VarChar(160)
+  requestFingerprint String                 @db.VarChar(64)
+  status             IdempotencyClaimStatus
+  response           Json?
+  expiresAt          DateTime               @db.Timestamptz(3)
+  createdAt          DateTime               @default(now()) @db.Timestamptz(3)
+  updatedAt          DateTime               @updatedAt @db.Timestamptz(3)
+
+  @@unique([operation, key])
+  @@index([expiresAt])
+}
+
+model EvaluatorLease {
+  name           String   @id @db.VarChar(80)
+  holderId       String   @db.VarChar(120)
+  expiresAt      DateTime @db.Timestamptz(3)
+  continuationId String?  @db.Uuid
+  updatedAt      DateTime @updatedAt @db.Timestamptz(3)
 }

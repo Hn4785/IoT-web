@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Logger, Module } from '@nestjs/common';
 
 import { ApiKeyModule } from '../api-keys/api-key.module.js';
 import { AuthModule } from '../auth/auth.module.js';
@@ -17,6 +17,7 @@ import { ClientRateLimitGuard, ClientRateLimitStore } from './client-rate-limit.
 import { ClientController } from './client.controller.js';
 import { HierarchyService } from './hierarchy.service.js';
 import {
+  DemoSoilMetadataProvider,
   SOIL_METADATA_PROVIDER,
   UnconfirmedSoilMetadataProvider,
 } from './soil-metadata.provider.js';
@@ -61,7 +62,17 @@ import { StationRepository } from './station.repository.js';
     },
     {
       provide: SOIL_METADATA_PROVIDER,
-      useClass: UnconfirmedSoilMetadataProvider,
+      inject: [RUNTIME_CONFIG],
+      useFactory: (config: RuntimeConfig) => {
+        if (config.alertDemoMetadataEnabled) {
+          Logger.warn(
+            'Demo soil metadata is enabled for allowlisted stations',
+            'StationDataModule',
+          );
+          return new DemoSoilMetadataProvider(config.alertDemoStationCodes);
+        }
+        return new UnconfirmedSoilMetadataProvider();
+      },
     },
   ],
   exports: [StationRepository, HierarchyService, StationDataService, SOIL_METADATA_PROVIDER],

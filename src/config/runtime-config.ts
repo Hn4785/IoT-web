@@ -28,6 +28,19 @@ const frontendOrigin = z.url().transform((value, context) => {
   return url.origin;
 });
 
+const booleanString = z.enum(['true', 'false']).transform((value) => value === 'true');
+const stationCodes = z
+  .string()
+  .transform((value) => [
+    ...new Set(
+      value
+        .split(',')
+        .map((code) => code.trim())
+        .filter(Boolean),
+    ),
+  ])
+  .pipe(z.array(z.string().regex(/^[A-Za-z0-9_-]{1,80}$/)).max(100));
+
 const runtimeConfigSchema = z
   .object({
     NODE_ENV: z.enum(['development', 'test', 'production']),
@@ -46,6 +59,17 @@ const runtimeConfigSchema = z
     SOIL_STALE_AFTER_MS: z.coerce.number().int().min(1).max(3_600_000),
     SOIL_STALE_IF_ERROR_MS: z.coerce.number().int().min(1).max(3_600_000),
     SOIL_CACHE_MAX_ENTRIES: z.coerce.number().int().min(1).max(10_000),
+    ALERT_EVALUATION_INTERVAL_MS: z.coerce
+      .number()
+      .int()
+      .min(10_000)
+      .max(3_600_000)
+      .default(60_000),
+    ALERT_EVALUATION_BATCH_SIZE: z.coerce.number().int().min(1).max(500).default(50),
+    ALERT_EVALUATOR_LEASE_MS: z.coerce.number().int().min(1_000).max(3_599_999).default(55_000),
+    ALERT_IDEMPOTENCY_RETENTION_HOURS: z.coerce.number().int().min(1).max(720).default(168),
+    ALERT_DEMO_METADATA_ENABLED: booleanString.default(false),
+    ALERT_DEMO_STATION_CODES: stationCodes.default([]),
   })
   .superRefine((value, context) => {
     if (
@@ -72,6 +96,20 @@ const runtimeConfigSchema = z
         message: 'Credential secrets must be distinct',
       });
     }
+    if (value.ALERT_EVALUATOR_LEASE_MS >= value.ALERT_EVALUATION_INTERVAL_MS) {
+      context.addIssue({
+        code: 'custom',
+        path: ['ALERT_EVALUATOR_LEASE_MS'],
+        message: 'Alert evaluator lease must be shorter than its interval',
+      });
+    }
+    if (value.NODE_ENV === 'production' && value.ALERT_DEMO_METADATA_ENABLED) {
+      context.addIssue({
+        code: 'custom',
+        path: ['ALERT_DEMO_METADATA_ENABLED'],
+        message: 'Demo alert metadata is forbidden in production',
+      });
+    }
   });
 
 export type RuntimeConfig = Readonly<{
@@ -91,6 +129,12 @@ export type RuntimeConfig = Readonly<{
   soilStaleAfterMs: number;
   soilStaleIfErrorMs: number;
   soilCacheMaxEntries: number;
+  alertEvaluationIntervalMs: number;
+  alertEvaluationBatchSize: number;
+  alertEvaluatorLeaseMs: number;
+  alertIdempotencyRetentionHours: number;
+  alertDemoMetadataEnabled: boolean;
+  alertDemoStationCodes: readonly string[];
 }>;
 
 export function parseRuntimeConfig(env: Record<string, string | undefined>): RuntimeConfig {
@@ -113,5 +157,11 @@ export function parseRuntimeConfig(env: Record<string, string | undefined>): Run
     soilStaleAfterMs: value.SOIL_STALE_AFTER_MS,
     soilStaleIfErrorMs: value.SOIL_STALE_IF_ERROR_MS,
     soilCacheMaxEntries: value.SOIL_CACHE_MAX_ENTRIES,
+    alertEvaluationIntervalMs: value.ALERT_EVALUATION_INTERVAL_MS,
+    alertEvaluationBatchSize: value.ALERT_EVALUATION_BATCH_SIZE,
+    alertEvaluatorLeaseMs: value.ALERT_EVALUATOR_LEASE_MS,
+    alertIdempotencyRetentionHours: value.ALERT_IDEMPOTENCY_RETENTION_HOURS,
+    alertDemoMetadataEnabled: value.ALERT_DEMO_METADATA_ENABLED,
+    alertDemoStationCodes: Object.freeze(value.ALERT_DEMO_STATION_CODES),
   });
 }

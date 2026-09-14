@@ -19,6 +19,12 @@ const completeEnvironment = {
   SOIL_STALE_AFTER_MS: '900000',
   SOIL_STALE_IF_ERROR_MS: '300000',
   SOIL_CACHE_MAX_ENTRIES: '500',
+  ALERT_EVALUATION_INTERVAL_MS: '60000',
+  ALERT_EVALUATION_BATCH_SIZE: '50',
+  ALERT_EVALUATOR_LEASE_MS: '55000',
+  ALERT_IDEMPOTENCY_RETENTION_HOURS: '168',
+  ALERT_DEMO_METADATA_ENABLED: 'false',
+  ALERT_DEMO_STATION_CODES: '',
 } as const;
 
 describe('parseRuntimeConfig', () => {
@@ -40,6 +46,12 @@ describe('parseRuntimeConfig', () => {
       soilStaleAfterMs: 900_000,
       soilStaleIfErrorMs: 300_000,
       soilCacheMaxEntries: 500,
+      alertEvaluationIntervalMs: 60_000,
+      alertEvaluationBatchSize: 50,
+      alertEvaluatorLeaseMs: 55_000,
+      alertIdempotencyRetentionHours: 168,
+      alertDemoMetadataEnabled: false,
+      alertDemoStationCodes: [],
     });
   });
 
@@ -75,5 +87,35 @@ describe('parseRuntimeConfig', () => {
     ['excessive soil cache max entries', { SOIL_CACHE_MAX_ENTRIES: '10001' }],
   ])('rejects %s', (_name, override) => {
     expect(() => parseRuntimeConfig({ ...completeEnvironment, ...override })).toThrow();
+  });
+
+  it('normalizes bounded demo station codes', () => {
+    const config = parseRuntimeConfig({
+      ...completeEnvironment,
+      ALERT_DEMO_METADATA_ENABLED: 'true',
+      ALERT_DEMO_STATION_CODES: ' NODE01, NODE02,NODE01 ',
+    });
+
+    expect(config.alertDemoMetadataEnabled).toBe(true);
+    expect(config.alertDemoStationCodes).toEqual(['NODE01', 'NODE02']);
+  });
+
+  it('rejects demo metadata in production', () => {
+    expect(() =>
+      parseRuntimeConfig({
+        ...completeEnvironment,
+        NODE_ENV: 'production',
+        ALERT_DEMO_METADATA_ENABLED: 'true',
+      }),
+    ).toThrow();
+  });
+
+  it('rejects a lease that is not shorter than the interval', () => {
+    expect(() =>
+      parseRuntimeConfig({
+        ...completeEnvironment,
+        ALERT_EVALUATOR_LEASE_MS: '60000',
+      }),
+    ).toThrow();
   });
 });

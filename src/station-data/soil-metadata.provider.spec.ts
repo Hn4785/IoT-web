@@ -1,5 +1,8 @@
 import { parseLatestSoilQuery, SOIL_FIELDS } from './station-data.contracts.js';
-import { UnconfirmedSoilMetadataProvider } from './soil-metadata.provider.js';
+import {
+  DemoSoilMetadataProvider,
+  UnconfirmedSoilMetadataProvider,
+} from './soil-metadata.provider.js';
 
 describe('SD-3 Task 6A', () => {
   describe('parseLatestSoilQuery', () => {
@@ -50,5 +53,22 @@ describe('SD-3 Task 6A', () => {
         expect('revision' in metadata).toBe(false);
       },
     );
+  });
+
+  describe('DemoSoilMetadataProvider', () => {
+    test('confirms only allowlisted stations with a visible demo revision', async () => {
+      const provider = new DemoSoilMetadataProvider(['NODE01']);
+
+      await expect(provider.getFieldMetadata('NODE01', 'moisture')).resolves.toEqual({
+        field: 'moisture',
+        isConfirmed: true,
+        unit: '%',
+        revision: 'demo:v1:moisture',
+      });
+      await expect(provider.getFieldMetadata('NODE02', 'moisture')).resolves.toEqual({
+        field: 'moisture',
+        isConfirmed: false,
+      });
+    });
   });
 });

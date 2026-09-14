@@ -28,7 +28,7 @@ export async function prepareTestDatabase(): Promise<void> {
   const prisma = createTestPrismaClient();
   try {
     await prisma.$executeRawUnsafe(
-      'TRUNCATE TABLE "SecurityAuditEvent", "ApiKeyStationScope", "ApiKey", "ClientStationGrant", "FarmMembership", "Station", "Plot", "Farm", "Session", "SystemAuthority", "User" CASCADE',
+      'TRUNCATE TABLE "EvaluatorLease", "IdempotencyClaim", "InAppNotification", "AlertLifecycleEvent", "Alert", "AlertEvaluationState", "AlertRule", "SecurityAuditEvent", "ApiKeyStationScope", "ApiKey", "ClientStationGrant", "FarmMembership", "Station", "Plot", "Farm", "Session", "SystemAuthority", "User" CASCADE',
     );
   } finally {
     await prisma.$disconnect();
