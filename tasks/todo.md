@@ -35,12 +35,14 @@
 - [x] Checkpoint B2: Verify latest DTO and frontend adapter against approved sample JSON
 - [x] SD-4: Expose bounded historical measurements
 - [x] SD-5: Expose scoped Client Developer data access
-- [ ] Checkpoint B-core: Frontend replaces station and soil mocks against verified fake upstream data
+- [x] Checkpoint B-core: Backend station-data contract and fake-upstream behavior are sample-verified
+- [ ] Checkpoint B-integration: Frontend replaces station and soil mocks against backend APIs
 - [ ] Checkpoint B-device: Hardware metadata and one real station validate physical assumptions
 
-Backend B-core contract and fake-upstream verification are complete. The
-Checkpoint B-core checkbox remains open until the frontend replaces and verifies
-its station/soil mocks. B-device remains open until live hardware is reachable.
+Backend B-core contract and fake-upstream verification are complete and accepted
+as the temporary Phase B delivery point. Frontend station/soil mock replacement
+is tracked separately as B-integration. B-device remains open until live hardware
+is reachable.
 
 Integration note: the upstream API is temporarily unavailable during device
 installation, so implementation uses the API Guide response JSON as its sample
@@ -54,12 +56,18 @@ NODE01/NODE02 subset. Until upstream access is restored, B-core evidence is
 ## Phase C: Alerts and in-app notifications
 
 - [x] AC-1: Approve the `alert-config` design spec
-- [ ] AC-2: Implement scoped alert rules
-- [ ] AC-3: Implement acknowledge/resolve lifecycle
+- [ ] C0: Add production-safe demo metadata boundary
+- [ ] C1: Add Phase C persistence invariants and migration
+- [ ] Checkpoint C-foundation: Review demo isolation and database constraints
+- [ ] AC-2a: Implement alert-rule contracts and validation
+- [ ] AC-2b: Implement scoped alert-rule APIs
+- [ ] AC-3a: Implement pure evaluator, durable progress and scheduler lease
+- [ ] AC-3b: Implement acknowledge/resolve lifecycle
 - [ ] Checkpoint C1: Review alert state transitions and idempotency
-- [ ] AC-4: Implement the scoped in-app notification inbox
+- [ ] AC-4: Implement scoped in-app notifications and read state
+- [ ] C-capability: Report device configuration as unavailable
 - [ ] C-device design gate: Approve hardware schema and transport before configuration work
-- [ ] Checkpoint C-core: Frontend replaces alert and notification mocks
+- [ ] Checkpoint C-core: Backend gate passes; frontend integration remains separately tracked
 
 ## Phase D: Operations
 

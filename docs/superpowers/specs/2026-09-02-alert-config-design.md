@@ -1,7 +1,7 @@
 # Alert and In-App Notification Design
 
 Date: 2026-09-02
-Status: Approved for planning after station-data B-core locks its internal interfaces
+Status: Approved for implementation against fake metadata; production activation remains blocked by B-device
 Module: `alert-config`
 Depends on: verified `station-data` B-core for implementation and B-device field
 metadata for production activation
@@ -64,6 +64,9 @@ hardware configuration schema
 - Admin global scope and Farmer farm-membership scope.
 - A device-configuration capability response that reports the feature as
   unavailable pending the hardware contract.
+- An explicit local demo metadata provider for configured seed station codes.
+  Demo metadata is never accepted in production and every revision begins with
+  `demo:` so it cannot be mistaken for hardware-confirmed metadata.
 
 ### Deferred
 
@@ -104,7 +107,7 @@ in the frontend is never an authorization boundary.
 enabled rules in bounded batches
         |
         v
-StationDataService.getLatestSoil(station, field)
+StationDataService.getLatest(station, { fields: [field] })
         |
         +-- unavailable / missing / stale --> record safe evaluation result;
         |                                     keep counters unchanged
@@ -207,6 +210,13 @@ always interpreted in the unit stored on the rule.
 
 Fake B-core tests may provide explicit test metadata, but development fixtures
 must be visibly marked non-production and cannot make a real station confirmed.
+
+For local demonstrations, `ALERT_DEMO_METADATA_ENABLED=true` may confirm only
+station codes listed in `ALERT_DEMO_STATION_CODES`. This mode is valid only when
+`NODE_ENV=development` or `test`, emits a startup warning, and returns metadata
+revisions prefixed with `demo:`. Production configuration rejects the flag even
+when the station allowlist is empty. The demo provider does not modify Station
+rows and is replaced by the B-device metadata provider later.
 
 At most one enabled rule exists for a `(stationId, field)` pair. Concurrent
 enable/create operations are enforced by the database and normalize to
@@ -515,11 +525,15 @@ ALERT_EVALUATION_INTERVAL_MS=60000
 ALERT_EVALUATION_BATCH_SIZE=50
 ALERT_EVALUATOR_LEASE_MS=55000
 ALERT_IDEMPOTENCY_RETENTION_HOURS=168
+ALERT_DEMO_METADATA_ENABLED=false
+ALERT_DEMO_STATION_CODES=
 ```
 
 Production refuses unsafe values. The lease must be shorter than the interval;
 batch size and interval bounds prevent accidental unbounded load. Tests use an
-injected clock and invoke the evaluator directly instead of sleeping.
+injected clock and invoke the evaluator directly instead of sleeping. Demo mode
+is rejected in production; demo station codes are trimmed, deduplicated and
+bounded before they reach the provider.
 
 ## 15. Project structure and style
 
@@ -628,6 +642,8 @@ uses the existing isolated `iot_test` safety boundary.
 - Use database-enforced uniqueness for duplicate-sensitive state.
 - Preserve normalized envelopes, UTC timestamps and request correlation.
 - Keep Phase C-core independently testable with fake station-data.
+- Keep demo metadata opt-in, station-allowlisted, visibly prefixed `demo:` and
+  impossible to enable in production.
 
 ### Ask first
 
@@ -648,6 +664,7 @@ uses the existing isolated `iot_test` safety boundary.
 - Store arbitrary scripts, expressions or device JSON as an alert rule.
 - Claim device configuration is published or acknowledged without a device
   contract and transport evidence.
+- Accept demo metadata when `NODE_ENV=production`.
 
 ## 19. Delivery checkpoints
 

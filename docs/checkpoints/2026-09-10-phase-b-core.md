@@ -3,7 +3,7 @@
 Date: 2026-09-10  
 Branch: `codex/integration-core`  
 Implementation commits: `5802f1e..eeadfb4`  
-Status: backend contract verified; not pushed or merged.
+Status: accepted as the sample-verified backend Phase B checkpoint; B-integration and B-device remain open.
 
 ## Evidence
 
@@ -31,7 +31,7 @@ history bounds/cursors and per-key rate-limit/reset behavior.
   reachable high/critical production finding.
 - Node 24.17.0 LTS is installed under `E:\Dev\nvm`; the full test, typecheck,
   lint, format and build gate passed on this declared runtime.
-- Frontend replacement of station/soil mocks is not verified, so the shared
-  Checkpoint B-core remains open.
+- Frontend replacement of station/soil mocks is not verified and remains tracked
+  separately as Checkpoint B-integration.
 - B-device remains open until CENTER metadata and at least one real station are
   verified against the live upstream API.

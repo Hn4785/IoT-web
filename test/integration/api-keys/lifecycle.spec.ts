@@ -139,6 +139,22 @@ describe('Client Developer API-key lifecycle', () => {
     expect(response.body).not.toContain('keyHash');
   });
 
+  it('accepts a newly issued key on the scoped Client API', async () => {
+    const created = await createKey('Use immediately');
+    const key = created.json<CreatedKeyResponse>().data.key;
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/api/v1/client/stations',
+      headers: { 'x-api-key': key },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json<{ data: { items: Array<{ id: string }> } }>().data.items).toEqual([
+      expect.objectContaining({ id: grantedStation.id }),
+    ]);
+  });
+
   it('rejects incompatible roles, unknown fields and stations outside the account grant', async () => {
     const farmerResponse = await app.inject({
       method: 'POST',
