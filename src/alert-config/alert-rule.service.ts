@@ -3,6 +3,8 @@ import { Inject, Injectable } from '@nestjs/common';
 
 import type { CurrentPrincipalValue } from '../authorization/current-principal.js';
 import { AppError } from '../common/errors/app-error.js';
+import { RUNTIME_CONFIG } from '../config/runtime-config.module.js';
+import type { RuntimeConfig } from '../config/runtime-config.js';
 import { PrismaService } from '../database/prisma.service.js';
 import { Prisma, type SoilAlertField } from '../generated/prisma/client.js';
 import {
@@ -26,6 +28,7 @@ export class AlertRuleService {
     private readonly prisma: PrismaService,
     @Inject(SOIL_METADATA_PROVIDER)
     private readonly metadataProvider: SoilMetadataProvider,
+    @Inject(RUNTIME_CONFIG) private readonly config: RuntimeConfig,
   ) {}
 
   async listRules(
@@ -88,7 +91,7 @@ export class AlertRuleService {
     this.assertAuthorizedRole(principal);
     const station = await this.requireStationAccess(principal, stationId);
 
-    const trimmedKey = idempotencyKey?.trim();
+    const trimmedKey = idempotencyKey.trim();
     if (!trimmedKey || trimmedKey.length > 160) {
       throw new AppError('VALIDATION_ERROR', 400, 'Idempotency-Key header is required');
     }
@@ -105,111 +108,79 @@ export class AlertRuleService {
       .update(JSON.stringify({ userId: principal.userId, stationId, body: normalizedBody }))
       .digest('hex');
 
+    await this.assertValidMetadata(
+      station.upstreamCode,
+      station.id,
+      input.field,
+      input.unit,
+      input.expectedMetadataRevision,
+    );
+
+    const fieldEnum = input.field.toUpperCase() as SoilAlertField;
     try {
-      await this.prisma.idempotencyClaim.create({
-        data: {
-          operation: 'RULE_CREATE',
-          key: trimmedKey,
-          requestFingerprint: fingerprint,
-          status: 'IN_PROGRESS',
-          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-        },
+      return await this.prisma.$transaction(async (tx) => {
+        await tx.idempotencyClaim.create({
+          data: {
+            operation: 'RULE_CREATE',
+            key: trimmedKey,
+            requestFingerprint: fingerprint,
+            status: 'IN_PROGRESS',
+            expiresAt: new Date(
+              Date.now() + this.config.alertIdempotencyRetentionHours * 60 * 60 * 1000,
+            ),
+          },
+        });
+        const created = await tx.alertRule.create({
+          data: {
+            stationId,
+            field: fieldEnum,
+            unit: input.unit,
+            metadataRevision: input.expectedMetadataRevision,
+            condition: input.condition,
+            severity: input.severity,
+            requiredBreachSamples: 2,
+            requiredRecoverySamples: 2,
+            isEnabled: input.isEnabled,
+            evaluationStatus: input.isEnabled ? 'READY' : 'DISABLED',
+            revision: 1,
+            activeKey: input.isEnabled ? `${stationId}:${input.field.toLowerCase()}` : null,
+            evaluationState: { create: {} },
+          },
+        });
+        const dto = toAlertRuleDto(created);
+        await tx.idempotencyClaim.update({
+          where: { operation_key: { operation: 'RULE_CREATE', key: trimmedKey } },
+          data: { status: 'COMPLETED', response: dto },
+        });
+        return dto;
       });
     } catch (err) {
-      if (this.isUniqueConstraintViolation(err)) {
-        const existing = await this.prisma.idempotencyClaim.findUnique({
-          where: { operation_key: { operation: 'RULE_CREATE', key: trimmedKey } },
-        });
-        if (existing) {
-          if (existing.requestFingerprint !== fingerprint) {
-            throw new AlertConfigError(
-              'IDEMPOTENCY_KEY_REUSED',
-              409,
-              'Idempotency key was previously used with different payload',
-            );
-          }
-          if (existing.status === 'IN_PROGRESS') {
-            throw new AlertConfigError(
-              'REQUEST_IN_PROGRESS',
-              409,
-              'Request with this idempotency key is already in progress',
-            );
-          }
-          if (existing.status === 'COMPLETED' && existing.response) {
-            return existing.response as unknown as AlertRuleDto;
-          }
-        }
-      }
-      throw err;
-    }
-
-    try {
-      await this.assertValidMetadata(
-        station.upstreamCode,
-        station.id,
-        input.field,
-        input.unit,
-        input.expectedMetadataRevision,
-      );
-
-      const fieldEnum = input.field.toUpperCase() as SoilAlertField;
-      if (input.isEnabled) {
-        const activeExisting = await this.prisma.alertRule.findFirst({
-          where: { stationId, field: fieldEnum, isEnabled: true },
-        });
-        if (activeExisting) {
-          throw new AlertConfigError(
-            'ACTIVE_RULE_EXISTS',
-            409,
-            'An active rule already exists for this station and field',
-          );
-        }
-      }
-
-      const created = await this.prisma.alertRule.create({
-        data: {
-          stationId,
-          field: fieldEnum,
-          unit: input.unit,
-          metadataRevision: input.expectedMetadataRevision,
-          condition: input.condition as unknown as Prisma.InputJsonValue,
-          severity: input.severity,
-          requiredBreachSamples: 2,
-          requiredRecoverySamples: 2,
-          isEnabled: input.isEnabled,
-          evaluationStatus: input.isEnabled ? 'READY' : 'DISABLED',
-          revision: 1,
-          activeKey: input.isEnabled ? `${stationId}:${input.field.toLowerCase()}` : null,
-          evaluationState: { create: {} },
-        },
-      });
-
-      const dto = toAlertRuleDto(created);
-
-      await this.prisma.idempotencyClaim.update({
+      if (!this.isUniqueConstraintViolation(err)) throw err;
+      const existing = await this.prisma.idempotencyClaim.findUnique({
         where: { operation_key: { operation: 'RULE_CREATE', key: trimmedKey } },
-        data: {
-          status: 'COMPLETED',
-          response: dto as unknown as Prisma.InputJsonValue,
-        },
       });
-
-      return dto;
-    } catch (err) {
-      await this.prisma.idempotencyClaim
-        .delete({
-          where: { operation_key: { operation: 'RULE_CREATE', key: trimmedKey } },
-        })
-        .catch(() => {});
-
-      if (this.isUniqueConstraintViolation(err)) {
+      if (!existing) {
         throw new AlertConfigError(
           'ACTIVE_RULE_EXISTS',
           409,
           'An active rule already exists for this station and field',
         );
       }
-      throw err;
+      if (existing.requestFingerprint !== fingerprint) {
+        throw new AlertConfigError(
+          'IDEMPOTENCY_KEY_REUSED',
+          409,
+          'Idempotency key was previously used with different payload',
+        );
+      }
+      if (!existing.response) {
+        throw new AlertConfigError(
+          'REQUEST_IN_PROGRESS',
+          409,
+          'Request with this idempotency key is already in progress',
+        );
+      }
+      return existing.response as unknown as AlertRuleDto;
     }
   }
 
@@ -313,12 +284,10 @@ export class AlertRuleService {
               requestId,
             },
           });
-          return tx.alertRule.update({
-            where: { id: rule.id },
+          const ruleUpdate = await tx.alertRule.updateMany({
+            where: { id: rule.id, revision: input.expectedRevision },
             data: {
-              ...(input.condition
-                ? { condition: input.condition as unknown as Prisma.InputJsonValue }
-                : {}),
+              ...(input.condition ? { condition: input.condition } : {}),
               ...(input.severity ? { severity: input.severity } : {}),
               ...(input.unit ? { unit: input.unit } : {}),
               ...(input.expectedMetadataRevision
@@ -330,26 +299,34 @@ export class AlertRuleService {
               revision: { increment: 1 },
             },
           });
+          if (ruleUpdate.count !== 1) {
+            throw new AlertConfigError('VERSION_CONFLICT', 409, 'Rule revision conflict');
+          }
+          return tx.alertRule.findUniqueOrThrow({ where: { id: rule.id } });
         });
         return toAlertRuleDto(updated);
       }
 
-      const updated = await this.prisma.alertRule.update({
-        where: { id: rule.id },
-        data: {
-          ...(input.condition
-            ? { condition: input.condition as unknown as Prisma.InputJsonValue }
-            : {}),
-          ...(input.severity ? { severity: input.severity } : {}),
-          ...(input.unit ? { unit: input.unit } : {}),
-          ...(input.expectedMetadataRevision
-            ? { metadataRevision: input.expectedMetadataRevision }
-            : {}),
-          isEnabled: nextIsEnabled,
-          evaluationStatus: nextIsEnabled ? 'READY' : 'DISABLED',
-          activeKey: nextIsEnabled ? `${rule.stationId}:${rule.field.toLowerCase()}` : null,
-          revision: { increment: 1 },
-        },
+      const updated = await this.prisma.$transaction(async (tx) => {
+        const result = await tx.alertRule.updateMany({
+          where: { id: rule.id, revision: input.expectedRevision },
+          data: {
+            ...(input.condition ? { condition: input.condition } : {}),
+            ...(input.severity ? { severity: input.severity } : {}),
+            ...(input.unit ? { unit: input.unit } : {}),
+            ...(input.expectedMetadataRevision
+              ? { metadataRevision: input.expectedMetadataRevision }
+              : {}),
+            isEnabled: nextIsEnabled,
+            evaluationStatus: nextIsEnabled ? 'READY' : 'DISABLED',
+            activeKey: nextIsEnabled ? `${rule.stationId}:${rule.field.toLowerCase()}` : null,
+            revision: { increment: 1 },
+          },
+        });
+        if (result.count !== 1) {
+          throw new AlertConfigError('VERSION_CONFLICT', 409, 'Rule revision conflict');
+        }
+        return tx.alertRule.findUniqueOrThrow({ where: { id: rule.id } });
       });
       return toAlertRuleDto(updated);
     } catch (err) {

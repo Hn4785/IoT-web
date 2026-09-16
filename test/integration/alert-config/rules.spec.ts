@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/restrict-template-expressions */
 import { randomUUID } from 'node:crypto';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -84,8 +85,8 @@ describeDb('alert-config rules integration (PostgreSQL)', () => {
   });
 
   afterAll(async () => {
-    if (app) await app.close();
-    if (prisma) await prisma.$disconnect();
+    await app.close();
+    await prisma.$disconnect();
   });
 
   it('allows Admin to create an alert rule on confirmed station with Idempotency-Key', async () => {
@@ -279,5 +280,55 @@ describeDb('alert-config rules integration (PostgreSQL)', () => {
     });
     expect(patchRes.statusCode).toBe(409);
     expect(patchRes.json().error.code).toBe('VERSION_CONFLICT');
+  });
+
+  it('replays concurrent create retries without duplicate rules', async () => {
+    const key = `idem-race-${randomUUID()}`;
+    const request = () =>
+      app.inject({
+        method: 'POST',
+        url: `/api/v1/stations/${stationA.id}/alert-rules`,
+        headers: { authorization: `Bearer ${adminToken}`, 'idempotency-key': key },
+        payload: {
+          field: 'ec',
+          unit: 'µS/cm',
+          expectedMetadataRevision: 'demo:v1:ec',
+          condition: { operator: 'ABOVE', threshold: 1000 },
+          severity: 'WARNING',
+          isEnabled: false,
+        },
+      });
+    const responses = await Promise.all([request(), request()]);
+    expect(responses.map((response) => response.statusCode)).toEqual([201, 201]);
+    expect(responses[0].json().data.id).toBe(responses[1].json().data.id);
+  });
+
+  it('allows only one concurrent PATCH for the same expected revision', async () => {
+    const created = await app.inject({
+      method: 'POST',
+      url: `/api/v1/stations/${stationA.id}/alert-rules`,
+      headers: {
+        authorization: `Bearer ${adminToken}`,
+        'idempotency-key': `idem-patch-race-${randomUUID()}`,
+      },
+      payload: {
+        field: 'ph',
+        unit: 'pH',
+        expectedMetadataRevision: 'demo:v1:ph',
+        condition: { operator: 'BELOW', threshold: 5 },
+        severity: 'WARNING',
+        isEnabled: false,
+      },
+    });
+    const id = created.json().data.id;
+    const patch = (severity: 'WARNING' | 'CRITICAL') =>
+      app.inject({
+        method: 'PATCH',
+        url: `/api/v1/alert-rules/${id}`,
+        headers: { authorization: `Bearer ${adminToken}` },
+        payload: { severity, expectedRevision: 1 },
+      });
+    const responses = await Promise.all([patch('CRITICAL'), patch('WARNING')]);
+    expect(responses.map((response) => response.statusCode).sort()).toEqual([200, 409]);
   });
 });

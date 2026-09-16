@@ -59,11 +59,11 @@ NODE01/NODE02 subset. Until upstream access is restored, B-core evidence is
 - [x] C0: Add production-safe demo metadata boundary
 - [x] C1: Add Phase C persistence invariants and migration
 - [x] Checkpoint C-foundation: Demo isolation and database constraints verified
-- [ ] AC-2a: Implement alert-rule contracts and validation
-- [ ] AC-2b: Implement scoped alert-rule APIs
-- [ ] AC-3a: Implement pure evaluator, durable progress and scheduler lease
-- [ ] AC-3b: Implement acknowledge/resolve lifecycle
-- [ ] Checkpoint C1: Review alert state transitions and idempotency
+- [x] AC-2a: Implement alert-rule contracts and validation
+- [x] AC-2b: Implement scoped alert-rule APIs
+- [x] AC-3a: Implement pure evaluator, durable progress and scheduler lease
+- [x] AC-3b: Implement acknowledge/resolve lifecycle
+- [x] Checkpoint C1: Review alert state transitions and idempotency
 - [ ] AC-4: Implement scoped in-app notifications and read state
 - [ ] C-capability: Report device configuration as unavailable
 - [ ] C-device design gate: Approve hardware schema and transport before configuration work

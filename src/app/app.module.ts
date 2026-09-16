@@ -1,6 +1,7 @@
 import { DynamicModule, Module } from '@nestjs/common';
 
 import { ApiKeyModule } from '../api-keys/api-key.module.js';
+import { AlertConfigModule } from '../alert-config/alert-config.module.js';
 import { AuthModule } from '../auth/auth.module.js';
 import { AuthorizationModule } from '../authorization/authorization.module.js';
 import { RuntimeConfigModule } from '../config/runtime-config.module.js';
@@ -18,6 +19,7 @@ export class AppModule {
       imports: [
         RuntimeConfigModule.register(config),
         DatabaseModule,
+        AlertConfigModule,
         ApiKeyModule,
         AuthModule,
         AuthorizationModule,

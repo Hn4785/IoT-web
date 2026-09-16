@@ -23,6 +23,12 @@ describe('OpenAPI contract', () => {
     expect(response.statusCode).toBe(200);
     const document = response.json<{ paths: Record<string, unknown> }>();
     expect(Object.keys(document.paths)).toEqual([
+      '/api/v1/stations/{stationId}/alert-rules',
+      '/api/v1/alert-rules/{ruleId}',
+      '/api/v1/alerts',
+      '/api/v1/alerts/{alertId}',
+      '/api/v1/alerts/{alertId}/acknowledgements',
+      '/api/v1/alerts/{alertId}/resolutions',
       '/api/v1/developer/api-keys/available-stations',
       '/api/v1/developer/api-keys',
       '/api/v1/developer/api-keys/{apiKeyId}/rotate',

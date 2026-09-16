@@ -18,9 +18,17 @@ describe('Phase C OpenAPI alert-rule contract', () => {
     const response = await app.inject({ method: 'GET', url: '/docs-json' });
     type Operation = {
       security?: unknown;
-      parameters?: Array<{ name?: string; in?: string; schema?: { format?: string; type?: string } }>;
+      parameters?: Array<{
+        name?: string;
+        in?: string;
+        schema?: { format?: string; type?: string };
+      }>;
       requestBody?: {
-        content?: { 'application/json'?: { schema?: { additionalProperties?: boolean; properties?: Record<string, unknown> } } };
+        content?: {
+          'application/json'?: {
+            schema?: { additionalProperties?: boolean; properties?: Record<string, unknown> };
+          };
+        };
       };
       responses?: Record<string, { description?: string }>;
     };
@@ -32,6 +40,7 @@ describe('Phase C OpenAPI alert-rule contract', () => {
 
     const stationRulesPath = document.paths['/api/v1/stations/{stationId}/alert-rules'];
     expect(stationRulesPath).toBeDefined();
+    if (!stationRulesPath) throw new Error('Missing station alert-rule OpenAPI path');
     expect(stationRulesPath.get).toBeDefined();
     expect(stationRulesPath.post).toBeDefined();
 
@@ -44,7 +53,9 @@ describe('Phase C OpenAPI alert-rule contract', () => {
     expect(stationIdParam?.schema?.format).toBe('uuid');
 
     // POST Idempotency-Key header
-    const postHeaders = stationRulesPath.post?.parameters?.find((p) => p.name === 'Idempotency-Key');
+    const postHeaders = stationRulesPath.post?.parameters?.find(
+      (p) => p.name === 'Idempotency-Key',
+    );
     expect(postHeaders).toBeDefined();
 
     // Documented responses for POST
@@ -57,6 +68,7 @@ describe('Phase C OpenAPI alert-rule contract', () => {
 
     const singleRulePath = document.paths['/api/v1/alert-rules/{ruleId}'];
     expect(singleRulePath).toBeDefined();
+    if (!singleRulePath) throw new Error('Missing single alert-rule OpenAPI path');
     expect(singleRulePath.get).toBeDefined();
     expect(singleRulePath.patch).toBeDefined();
 
@@ -70,5 +82,10 @@ describe('Phase C OpenAPI alert-rule contract', () => {
     expect(singleRulePath.patch?.responses?.['403']).toBeDefined();
     expect(singleRulePath.patch?.responses?.['404']).toBeDefined();
     expect(singleRulePath.patch?.responses?.['409']).toBeDefined();
+
+    expect(document.paths['/api/v1/alerts']?.get).toBeDefined();
+    expect(document.paths['/api/v1/alerts/{alertId}']?.get).toBeDefined();
+    expect(document.paths['/api/v1/alerts/{alertId}/acknowledgements']?.post).toBeDefined();
+    expect(document.paths['/api/v1/alerts/{alertId}/resolutions']?.post).toBeDefined();
   });
 });
