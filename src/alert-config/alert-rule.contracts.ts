@@ -34,19 +34,19 @@ export type AlertEvaluationStatus = z.infer<typeof alertEvaluationStatusSchema>;
 
 export const alertConditionAboveSchema = z.strictObject({
   operator: z.literal('ABOVE'),
-  threshold: z.number().finite(),
+  threshold: z.number(),
 });
 
 export const alertConditionBelowSchema = z.strictObject({
   operator: z.literal('BELOW'),
-  threshold: z.number().finite(),
+  threshold: z.number(),
 });
 
 export const alertConditionOutsideRangeSchema = z
   .strictObject({
     operator: z.literal('OUTSIDE_RANGE'),
-    lowerThreshold: z.number().finite(),
-    upperThreshold: z.number().finite(),
+    lowerThreshold: z.number(),
+    upperThreshold: z.number(),
   })
   .refine((val) => val.lowerThreshold < val.upperThreshold, {
     message: 'lowerThreshold must be strictly less than upperThreshold',
