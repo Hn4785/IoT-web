@@ -60,3 +60,37 @@ test("production API calls default to the same origin proxy", () => {
   assert.match(source, /VITE_API_BASE_URL \|\| "\/api\/v1"/);
   assert.doesNotMatch(source, /localhost:3000/);
 });
+
+test("soil dashboard does not advertise unsupported depth data", () => {
+  const source = readFileSync(
+    new URL("../src/pages/farm-owner/RealtimeSoilMonitoring.tsx", import.meta.url),
+    "utf8",
+  );
+
+  assert.doesNotMatch(source, /Depth:/);
+  assert.doesNotMatch(source, /currentDepth/);
+});
+
+test("date range actions stay inside a bounded popover", () => {
+  const source = readFileSync(
+    new URL("../src/components/common/DateRangePicker.module.css", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(source, /right:\s*0/);
+  assert.match(source, /max-height:/);
+  assert.match(source, /overflow-y:\s*auto/);
+});
+
+test("admin dashboard uses backend services instead of empty mock data", () => {
+  const source = readFileSync(
+    new URL("../src/pages/admin/AdminDashboard.tsx", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(source, /stationBrowserService/);
+  assert.match(source, /userService/);
+  assert.doesNotMatch(source, /from "@\/data\/farms"/);
+  assert.doesNotMatch(source, /Healthy station percentage/);
+  assert.doesNotMatch(source, />95%</);
+});

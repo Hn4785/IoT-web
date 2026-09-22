@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Activity,
   Cpu,
@@ -9,384 +9,187 @@ import {
   Users,
 } from "lucide-react";
 
-import PageHeader from "@/components/layout/PageHeader";
 import Button from "@/components/common/Button";
-import StatusBadge from "@/components/common/StatusBadge";
-import LineChart from "@/components/charts/LineChart";
+import ErrorState from "@/components/common/ErrorState";
+import Loading from "@/components/common/Loading";
 import DonutChart from "@/components/charts/DonutChart";
-import BarChart from "@/components/charts/BarChart";
-
-import { farms } from "@/data/farms";
-import { stations } from "@/data/stations";
-import { gateways } from "@/data/gateways";
-import { sensors } from "@/data/sensors";
-import { users } from "@/data/user";
+import PageHeader from "@/components/layout/PageHeader";
+import {
+  stationBrowserService,
+  type BrowserFarm,
+  type BrowserPlot,
+  type BrowserStation,
+} from "@/services/stationBrowserService";
+import { userService } from "@/services/userService";
+import { normalizeApiError } from "@/utils/apiError";
 
 import styles from "./AdminDashboard.module.css";
 
-const healthTrend: Array<{ label: string; value: number }> = [];
+interface DashboardData {
+  farms: BrowserFarm[];
+  plots: BrowserPlot[];
+  stations: BrowserStation[];
+  userCount: number;
+}
 
-const recentEvents: Array<{
-  time: string;
-  event: string;
-  user: string;
-  resource: string;
-  status: string;
-}> = [];
+const EMPTY_DATA: DashboardData = {
+  farms: [],
+  plots: [],
+  stations: [],
+  userCount: 0,
+};
 
 export default function AdminDashboard() {
+  const [data, setData] = useState<DashboardData>(EMPTY_DATA);
   const [farmId, setFarmId] = useState("all");
-  const [eventFilter, setEventFilter] = useState("all");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const visibleStations = useMemo(() => {
-    if (farmId === "all") {
-      return stations;
+  const loadDashboard = useCallback(async () => {
+    try {
+      const [farmPage, userPage] = await Promise.all([
+        stationBrowserService.listFarms(),
+        userService.getUsers({ limit: 100 }),
+      ]);
+      const plotPages = await Promise.all(
+        farmPage.items.map((farm) => stationBrowserService.listPlots(farm.id)),
+      );
+      const plots = plotPages.flatMap((page) => page.items);
+      const stationPages = await Promise.all(
+        plots.map((plot) => stationBrowserService.listStations(plot.id)),
+      );
+
+      setData({
+        farms: farmPage.items,
+        plots,
+        stations: stationPages.flatMap((page) => page.items),
+        userCount: userPage.items.length,
+      });
+    } catch (reason) {
+      setError(normalizeApiError(reason).message);
+    } finally {
+      setLoading(false);
     }
+  }, []);
 
-    return stations.filter((station) => station.farmId === farmId);
-  }, [farmId]);
+  const refreshDashboard = useCallback(() => {
+    setLoading(true);
+    setError("");
+    void loadDashboard();
+  }, [loadDashboard]);
 
-  const stationHealth = useMemo(
-    () => [
-      {
-        label: "Online",
-        value: visibleStations.filter(
-          (station) => station.status === "online",
-        ).length,
-      },
-      {
-        label: "Offline",
-        value: visibleStations.filter(
-          (station) => station.status === "offline",
-        ).length,
-      },
-      {
-        label: "Stale",
-        value: visibleStations.filter(
-          (station) => station.status === "stale",
-        ).length,
-      },
-    ],
-    [visibleStations],
+  useEffect(() => {
+    // Initial load synchronizes the dashboard with the backend inventory.
+    // oxlint-disable-next-line react/set-state-in-effect
+    void loadDashboard();
+  }, [loadDashboard]);
+
+  const visibleStations = useMemo(
+    () => farmId === "all"
+      ? data.stations
+      : data.stations.filter((station) => station.farmId === farmId),
+    [data.stations, farmId],
   );
 
-  const filteredEvents = useMemo(() => {
-    if (eventFilter === "failed") {
-      return recentEvents.filter((event) => event.status === "failed");
-    }
-
-    return recentEvents;
-  }, [eventFilter]);
-
-  const totalPlots = farms.reduce(
-    (total, farm) => total + (farm.plotCount ?? 0),
-    0,
+  const stationDistribution = useMemo(
+    () => data.farms.map((farm) => ({
+      label: farm.name,
+      value: data.stations.filter((station) => station.farmId === farm.id).length,
+    })),
+    [data.farms, data.stations],
   );
 
   const kpis = [
-    {
-      label: "Total Farms",
-      value: farms.length,
-      change: "+8.3%",
-      icon: Database,
-    },
-    {
-      label: "Total Plots",
-      value: totalPlots,
-      change: "+12.5%",
-      icon: Activity,
-    },
-    {
-      label: "Total Stations",
-      value: stations.length,
-      change: "+6.8%",
-      icon: Server,
-    },
-    {
-      label: "Total Gateways",
-      value: gateways.length,
-      change: "+5.1%",
-      icon: Cpu,
-    },
-    {
-      label: "Total Sensors",
-      value: sensors.length,
-      change: "+9.4%",
-      icon: Gauge,
-    },
-    {
-      label: "Total Users",
-      value: users.length,
-      change: "+4.2%",
-      icon: Users,
-    },
+    { label: "Total Farms", value: data.farms.length, icon: Database, available: true },
+    { label: "Total Plots", value: data.plots.length, icon: Activity, available: true },
+    { label: "Total Stations", value: data.stations.length, icon: Server, available: true },
+    { label: "Total Gateways", value: 0, icon: Cpu, available: false },
+    { label: "Total Sensors", value: 0, icon: Gauge, available: false },
+    { label: "Total Users", value: data.userCount, icon: Users, available: true },
   ];
 
   return (
     <div className={styles.page}>
       <PageHeader
         title="System Overview"
-        description="Monitor platform health, devices, users, and recent system activity."
+        description="Current platform inventory available from the backend."
         actions={
           <Button
             variant="outline"
             icon={<RefreshCw size={16} />}
+            onClick={refreshDashboard}
+            disabled={loading}
           >
             Refresh
           </Button>
         }
       />
 
+      {loading && <Loading label="Loading system overview..." />}
+      {error && <ErrorState description={error} onRetry={refreshDashboard} />}
+
       <section className={styles.filters}>
-        <select
-          value={farmId}
-          onChange={(event) => setFarmId(event.target.value)}
-        >
-          <option value="all">All Farms</option>
-
-          {farms.map((farm) => (
-            <option key={farm.id} value={farm.id}>
-              {farm.name}
-            </option>
-          ))}
-        </select>
-
-        <select>
-          <option>All Stations</option>
-
-          {visibleStations.map((station) => (
-            <option key={station.id} value={station.id}>
-              {station.name}
-            </option>
-          ))}
-        </select>
-
-        <select>
-          <option>All Device Types</option>
-          <option>Station</option>
-          <option>Gateway</option>
-          <option>Sensor</option>
-        </select>
-
-        <select
-          value={eventFilter}
-          onChange={(event) => setEventFilter(event.target.value)}
-        >
-          <option value="all">All Events</option>
-          <option value="failed">Failed Events</option>
-        </select>
+        <label>
+          <span className={styles.srOnly}>Filter by farm</span>
+          <select value={farmId} onChange={(event) => setFarmId(event.target.value)}>
+            <option value="all">All Farms</option>
+            {data.farms.map((farm) => (
+              <option key={farm.id} value={farm.id}>{farm.name}</option>
+            ))}
+          </select>
+        </label>
       </section>
 
-      <section className={styles.kpiGrid}>
-        {kpis.map(({ label, value, change, icon: Icon }) => (
-          <article
-            className={styles.kpiCard}
-            key={label}
-          >
+      <section className={styles.kpiGrid} aria-label="System inventory">
+        {kpis.map(({ label, value, icon: Icon, available }) => (
+          <article className={styles.kpiCard} key={label}>
             <div className={styles.kpiTop}>
               <span>{label}</span>
               <Icon size={18} />
             </div>
-
-            <strong>{value}</strong>
-
-            <span className={styles.change}>
-              ↑ {change}
-              <small> vs previous period</small>
+            <strong>{available ? value : "N/A"}</strong>
+            <span className={styles.sourceNote}>
+              {available ? "Live backend data" : "Backend contract not available"}
             </span>
           </article>
         ))}
       </section>
 
-      <section className={styles.panel}>
-        <div className={styles.sectionHeading}>
-          <div>
-            <h2>System Health</h2>
-            <p>
-              Connectivity state across monitored stations.
-            </p>
-          </div>
-
-          <div className={styles.healthSummary}>
-            {stationHealth.map((item) => (
-              <div key={item.label}>
-                <StatusBadge
-                  status={
-                    item.label.toLowerCase() as
-                      | "online"
-                      | "offline"
-                      | "stale"
-                  }
-                />
-
-                <strong>{item.value}</strong>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       <section className={styles.chartGrid}>
         <article className={styles.panel}>
           <div className={styles.sectionHeading}>
             <div>
-              <h2>Station Health Over Time</h2>
-              <p>Healthy station percentage.</p>
+              <h2>Registered Stations</h2>
+              <p>Stations in the selected farm scope.</p>
             </div>
-
-            <strong className={styles.metric}>95%</strong>
+            <strong className={styles.metric}>{visibleStations.length}</strong>
           </div>
-
-          <LineChart
-            data={healthTrend}
-            min={80}
-            max={100}
-            unit="%"
-            showArea
-            showDots
-          />
         </article>
 
         <article className={styles.panel}>
           <div className={styles.sectionHeading}>
             <div>
-              <h2>Station Distribution</h2>
-              <p>Current connectivity status.</p>
+              <h2>Stations by Farm</h2>
+              <p>Distribution from the current backend hierarchy.</p>
             </div>
           </div>
-
           <DonutChart
-            data={stationHealth}
-            centerValue={visibleStations.length}
+            data={stationDistribution}
+            centerValue={data.stations.length}
             centerLabel="Stations"
           />
         </article>
       </section>
 
-      <section className={styles.chartGrid}>
-        <article className={styles.panel}>
-          <div className={styles.sectionHeading}>
-            <div>
-              <h2>Sensor Health</h2>
-              <p>Distribution by current device state.</p>
-            </div>
-          </div>
-
-          <BarChart
-            data={[
-              {
-                label: "Active",
-                value: sensors.filter(
-                  (sensor) => sensor.status === "active",
-                ).length,
-              },
-              {
-                label: "Error",
-                value: sensors.filter(
-                  (sensor) => sensor.status === "error",
-                ).length,
-              },
-              {
-                label: "Inactive",
-                value: sensors.filter(
-                  (sensor) => sensor.status === "inactive",
-                ).length,
-              },
-              {
-                label: "Uncalibrated",
-                value: sensors.filter(
-                  (sensor) => sensor.status === "uncalibrated",
-                ).length,
-              },
-            ]}
-            showValues
-          />
-        </article>
-
-        <article className={styles.panel}>
-          <div className={styles.sectionHeading}>
-            <div>
-              <h2>Gateway Health</h2>
-              <p>Current gateway status.</p>
-            </div>
-          </div>
-
-          <div className={styles.gatewayList}>
-            {["online", "stale", "offline"].map((status) => (
-              <div key={status}>
-                <StatusBadge
-                  status={
-                    status as
-                      | "online"
-                      | "stale"
-                      | "offline"
-                  }
-                />
-
-                <strong>
-                  {
-                    gateways.filter(
-                      (gateway) => gateway.status === status,
-                    ).length
-                  }
-                </strong>
-              </div>
-            ))}
-          </div>
-        </article>
-      </section>
-
       <section className={styles.panel}>
         <div className={styles.sectionHeading}>
           <div>
-            <h2>Recent System Events</h2>
+            <h2>Operational Health</h2>
             <p>
-              Latest administrative and system activity.
+              Online, stale, sensor and gateway health will appear when the backend exposes
+              those status contracts. No values are estimated.
             </p>
           </div>
-        </div>
-
-        <div className={styles.tableWrap}>
-          <table>
-            <thead>
-              <tr>
-                <th>Timestamp</th>
-                <th>Event Type</th>
-                <th>User</th>
-                <th>Resource</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {filteredEvents.map((event) => (
-                <tr
-                  key={`${event.time}-${event.resource}`}
-                >
-                  <td>{event.time}</td>
-                  <td>{event.event}</td>
-                  <td>{event.user}</td>
-                  <td className={styles.mono}>
-                    {event.resource}
-                  </td>
-                  <td>
-                    <StatusBadge
-                      status={
-                        event.status === "success"
-                          ? "active"
-                          : "critical"
-                      }
-                      label={
-                        event.status === "success"
-                          ? "Success"
-                          : "Failed"
-                      }
-                    />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
         </div>
       </section>
     </div>

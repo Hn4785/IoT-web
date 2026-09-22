@@ -178,7 +178,6 @@ export default function RealtimeSoilMonitoring() {
   const dataError = currentData?.error ?? "";
   const dataLoading = Boolean(hierarchy.selectedStationId && !currentData);
   const latestView = useMemo(() => latest ? adaptLatestSoilData(latest) : null, [latest]);
-  const currentDepth = latest?.fields.find((field) => field.depthCm != null)?.depthCm;
   const getMetricValue = (field: SoilField): SoilValue | undefined => {
     const reading = latestView?.fields[field];
     return reading ? {
@@ -271,13 +270,6 @@ export default function RealtimeSoilMonitoring() {
           }))}
         />
 
-        <div className={styles.filterItem}>
-          <span>Depth:</span>
-          <div className={styles.staticSelect}>
-            <span>{currentDepth == null ? "N/A" : `${currentDepth}cm`}</span>
-            <ChevronDown size={13} />
-          </div>
-        </div>
       </section>
 
       <section className={styles.metricGrid}>
