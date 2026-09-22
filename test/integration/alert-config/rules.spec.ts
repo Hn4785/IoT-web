@@ -1,9 +1,13 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/restrict-template-expressions */
 import { randomUUID } from 'node:crypto';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { createApp } from '../../../src/app/create-app.js';
+import {
+  SOIL_METADATA_PROVIDER,
+  type SoilMetadataProvider,
+} from '../../../src/station-data/soil-metadata.provider.js';
 import { issueAccessToken } from '../../helpers/access-token.js';
 import { createTestPrismaClient, prepareTestDatabase } from '../../helpers/database.js';
 import { makeTestRuntimeConfig } from '../../helpers/runtime-config.js';
@@ -153,6 +157,40 @@ describeDb('alert-config rules integration (PostgreSQL)', () => {
     });
     expect(res3.statusCode).toBe(409);
     expect(res3.json().error.code).toBe('IDEMPOTENCY_KEY_REUSED');
+  });
+
+  it('replays a completed create before consulting live metadata again', async () => {
+    const key = `idem-metadata-replay-${randomUUID()}`;
+    const payload = {
+      field: 'potassium',
+      unit: 'mg/kg',
+      expectedMetadataRevision: 'demo:v1:potassium',
+      condition: { operator: 'BELOW', threshold: 20 },
+      severity: 'WARNING',
+      isEnabled: false,
+    };
+    const first = await app.inject({
+      method: 'POST',
+      url: `/api/v1/stations/${stationA.id}/alert-rules`,
+      headers: { authorization: `Bearer ${adminToken}`, 'idempotency-key': key },
+      payload,
+    });
+    expect(first.statusCode).toBe(201);
+    const metadata = app.get<SoilMetadataProvider>(SOIL_METADATA_PROVIDER);
+    const metadataSpy = vi
+      .spyOn(metadata, 'getFieldMetadata')
+      .mockResolvedValue({ field: 'potassium', isConfirmed: false });
+
+    const replay = await app.inject({
+      method: 'POST',
+      url: `/api/v1/stations/${stationA.id}/alert-rules`,
+      headers: { authorization: `Bearer ${adminToken}`, 'idempotency-key': key },
+      payload,
+    });
+    metadataSpy.mockRestore();
+
+    expect(replay.statusCode).toBe(201);
+    expect(replay.json().data.id).toBe(first.json().data.id);
   });
 
   it('allows Farmer to manage rules in own farm scope but returns 404 for cross-scope station', async () => {

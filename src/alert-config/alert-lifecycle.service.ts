@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
 
 import type { CurrentPrincipalValue } from '../authorization/current-principal.js';
 import { AppError } from '../common/errors/app-error.js';
@@ -7,16 +7,36 @@ import { RUNTIME_CONFIG } from '../config/runtime-config.module.js';
 import type { RuntimeConfig } from '../config/runtime-config.js';
 import { PrismaService } from '../database/prisma.service.js';
 import { Prisma } from '../generated/prisma/client.js';
+import { deliverLifecycleNotifications } from '../notifications/notification-delivery.js';
+import { OperationsMetrics } from '../operations/operations-signals.js';
 import { AlertConfigError } from './alert-config.errors.js';
 import {
   type AlertActionInput,
   type AlertDto,
+  decodeAlertCursor,
+  encodeAlertCursor,
   type ListAlertsQuery,
   toAlertDto,
 } from './alert-lifecycle.contracts.js';
 
 const alertInclude = {
-  rule: { select: { stationId: true, field: true, severity: true } },
+  rule: {
+    include: {
+      station: {
+        select: { id: true, upstreamCode: true, name: true, plot: { select: { farmId: true } } },
+      },
+    },
+  },
+} as const;
+const alertTransitionInclude = {
+  rule: {
+    include: {
+      station: {
+        select: { id: true, upstreamCode: true, name: true, plot: { select: { farmId: true } } },
+      },
+      evaluationState: true,
+    },
+  },
 } as const;
 
 @Injectable()
@@ -24,18 +44,34 @@ export class AlertLifecycleService {
   constructor(
     private readonly prisma: PrismaService,
     @Inject(RUNTIME_CONFIG) private readonly config: RuntimeConfig,
+    @Optional() private readonly metrics?: OperationsMetrics,
   ) {}
 
   async list(
     principal: CurrentPrincipalValue,
     query: ListAlertsQuery,
-  ): Promise<{ items: AlertDto[] }> {
+  ): Promise<{ items: AlertDto[]; nextCursor: string | null }> {
     this.assertRole(principal);
+    const filters = {
+      ...(query.stationId ? { stationId: query.stationId } : {}),
+      ...(query.status ? { status: query.status } : {}),
+      ...(query.severity ? { severity: query.severity } : {}),
+    };
+    const cursor = query.cursor ? decodeAlertCursor(query.cursor, filters) : undefined;
     const rows = await this.prisma.alert.findMany({
       where: {
         ...(query.status ? { status: query.status } : {}),
+        ...(cursor
+          ? {
+              OR: [
+                { updatedAt: { lt: new Date(cursor.updatedAt) } },
+                { updatedAt: new Date(cursor.updatedAt), id: { lt: cursor.id } },
+              ],
+            }
+          : {}),
         rule: {
           ...(query.stationId ? { stationId: query.stationId } : {}),
+          ...(query.severity ? { severity: query.severity } : {}),
           ...(principal.role === 'FARMER'
             ? {
                 station: {
@@ -46,10 +82,29 @@ export class AlertLifecycleService {
         },
       },
       orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
-      take: query.limit,
+      take: query.limit + 1,
       include: alertInclude,
     });
-    return { items: rows.map(toAlertDto) };
+    const page = rows.slice(0, query.limit);
+    const last = page.at(-1);
+    return {
+      items: page.map(toAlertDto),
+      nextCursor:
+        rows.length > query.limit && last
+          ? encodeAlertCursor({
+              v: 1,
+              kind: 'alert',
+              sort: 'updatedAt_desc',
+              filters: {
+                stationId: query.stationId ?? null,
+                status: query.status ?? null,
+                severity: query.severity ?? null,
+              },
+              updatedAt: last.updatedAt.toISOString(),
+              id: last.id,
+            })
+          : null,
+    };
   }
 
   async get(principal: CurrentPrincipalValue, alertId: string): Promise<AlertDto> {
@@ -84,7 +139,7 @@ export class AlertLifecycleService {
     input: AlertActionInput,
     requestId: string,
   ): Promise<AlertDto> {
-    const alert = await this.findAuthorized(principal, alertId);
+    this.assertRole(principal);
     const key = rawKey.trim();
     if (!key || key.length > 160) {
       throw new AppError('VALIDATION_ERROR', 400, 'Idempotency-Key header is required');
@@ -106,40 +161,85 @@ export class AlertLifecycleService {
             ),
           },
         });
-        const current = await tx.alert.findUniqueOrThrow({
-          where: { id: alert.id },
-          include: { ...alertInclude, rule: { include: { evaluationState: true } } },
+        const authorized = await tx.alert.findFirst({
+          where: {
+            id: alertId,
+            ...(principal.role === 'FARMER'
+              ? {
+                  rule: {
+                    station: {
+                      plot: { farm: { memberships: { some: { userId: principal.userId } } } },
+                    },
+                  },
+                }
+              : {}),
+          },
+          select: { ruleId: true },
         });
+        if (!authorized) throw new AppError('NOT_FOUND', 404, 'Alert not found');
+        await tx.$queryRaw`SELECT "id" FROM "AlertRule" WHERE "id" = ${authorized.ruleId}::uuid FOR UPDATE`;
+        const current = await tx.alert.findFirst({
+          where: {
+            id: alertId,
+            ...(principal.role === 'FARMER'
+              ? {
+                  rule: {
+                    station: {
+                      plot: { farm: { memberships: { some: { userId: principal.userId } } } },
+                    },
+                  },
+                }
+              : {}),
+          },
+          include: alertTransitionInclude,
+        });
+        if (!current) throw new AppError('NOT_FOUND', 404, 'Alert not found');
         let result = current;
         if (operation === 'ALERT_ACKNOWLEDGE' && current.status === 'OPEN') {
           const revision = current.revision + 1;
-          result = await tx.alert.update({
-            where: { id: current.id },
+          const updated = await tx.alert.updateMany({
+            where: { id: current.id, status: 'OPEN', revision: current.revision },
             data: {
               status: 'ACKNOWLEDGED',
               acknowledgedAt: new Date(),
               acknowledgedBy: principal.userId,
               revision,
             },
-            include: { ...alertInclude, rule: { include: { evaluationState: true } } },
           });
-          await tx.alertLifecycleEvent.create({
-            data: {
-              alertId,
-              type: 'ACKNOWLEDGED',
-              revision,
-              actorId: principal.userId,
-              note: input.note ?? null,
-              requestId,
-            },
+          if (updated.count === 1) {
+            const event = await tx.alertLifecycleEvent.create({
+              data: {
+                alertId,
+                type: 'ACKNOWLEDGED',
+                revision,
+                actorId: principal.userId,
+                note: input.note ?? null,
+                requestId,
+              },
+            });
+            await deliverLifecycleNotifications(
+              tx,
+              event.id,
+              current.rule.station.plot.farmId,
+              this.metrics,
+            );
+          }
+          result = await tx.alert.findUniqueOrThrow({
+            where: { id: current.id },
+            include: alertTransitionInclude,
           });
         } else if (operation === 'ALERT_RESOLVE' && current.status !== 'RESOLVED') {
           if (current.rule.evaluationState?.lastResult !== 'NORMAL') {
             throw new AlertConfigError('ALERT_STILL_ACTIVE', 409, 'Alert is still active');
           }
           const revision = current.revision + 1;
-          result = await tx.alert.update({
-            where: { id: current.id },
+          const updated = await tx.alert.updateMany({
+            where: {
+              id: current.id,
+              status: current.status,
+              revision: current.revision,
+              unresolvedRuleId: current.ruleId,
+            },
             data: {
               status: 'RESOLVED',
               unresolvedRuleId: null,
@@ -148,17 +248,28 @@ export class AlertLifecycleService {
               resolutionReason: 'MANUAL',
               revision,
             },
-            include: { ...alertInclude, rule: { include: { evaluationState: true } } },
           });
-          await tx.alertLifecycleEvent.create({
-            data: {
-              alertId,
-              type: 'RESOLVED',
-              revision,
-              actorId: principal.userId,
-              note: input.note ?? null,
-              requestId,
-            },
+          if (updated.count === 1) {
+            const event = await tx.alertLifecycleEvent.create({
+              data: {
+                alertId,
+                type: 'RESOLVED',
+                revision,
+                actorId: principal.userId,
+                note: input.note ?? null,
+                requestId,
+              },
+            });
+            await deliverLifecycleNotifications(
+              tx,
+              event.id,
+              current.rule.station.plot.farmId,
+              this.metrics,
+            );
+          }
+          result = await tx.alert.findUniqueOrThrow({
+            where: { id: current.id },
+            include: alertTransitionInclude,
           });
         }
         const dto = toAlertDto(result);

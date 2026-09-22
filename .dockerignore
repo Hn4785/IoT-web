@@ -1,0 +1,16 @@
+.env
+.env.*
+!.env.example
+.git
+.github
+.worktrees
+.vs
+node_modules
+coverage
+dist
+artifacts
+*.log
+*.pem
+*.key
+*.dump
+*.backup

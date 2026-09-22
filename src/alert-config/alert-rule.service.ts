@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
 
 import type { CurrentPrincipalValue } from '../authorization/current-principal.js';
 import { AppError } from '../common/errors/app-error.js';
@@ -7,6 +7,8 @@ import { RUNTIME_CONFIG } from '../config/runtime-config.module.js';
 import type { RuntimeConfig } from '../config/runtime-config.js';
 import { PrismaService } from '../database/prisma.service.js';
 import { Prisma, type SoilAlertField } from '../generated/prisma/client.js';
+import { deliverLifecycleNotifications } from '../notifications/notification-delivery.js';
+import { OperationsMetrics } from '../operations/operations-signals.js';
 import {
   SOIL_METADATA_PROVIDER,
   type SoilMetadataProvider,
@@ -29,6 +31,7 @@ export class AlertRuleService {
     @Inject(SOIL_METADATA_PROVIDER)
     private readonly metadataProvider: SoilMetadataProvider,
     @Inject(RUNTIME_CONFIG) private readonly config: RuntimeConfig,
+    @Optional() private readonly metrics?: OperationsMetrics,
   ) {}
 
   async listRules(
@@ -107,6 +110,27 @@ export class AlertRuleService {
     const fingerprint = createHash('sha256')
       .update(JSON.stringify({ userId: principal.userId, stationId, body: normalizedBody }))
       .digest('hex');
+
+    const completedClaim = await this.prisma.idempotencyClaim.findUnique({
+      where: { operation_key: { operation: 'RULE_CREATE', key: trimmedKey } },
+    });
+    if (completedClaim) {
+      if (completedClaim.requestFingerprint !== fingerprint) {
+        throw new AlertConfigError(
+          'IDEMPOTENCY_KEY_REUSED',
+          409,
+          'Idempotency key was previously used with different payload',
+        );
+      }
+      if (!completedClaim.response) {
+        throw new AlertConfigError(
+          'REQUEST_IN_PROGRESS',
+          409,
+          'Request with this idempotency key is already in progress',
+        );
+      }
+      return completedClaim.response as unknown as AlertRuleDto;
+    }
 
     await this.assertValidMetadata(
       station.upstreamCode,
@@ -203,19 +227,6 @@ export class AlertRuleService {
       input.unit !== undefined ||
       input.expectedMetadataRevision !== undefined;
 
-    if (isMutatingCore) {
-      const activeAlert = await this.prisma.alert.findFirst({
-        where: { ruleId: rule.id, status: { in: ['OPEN', 'ACKNOWLEDGED'] } },
-      });
-      if (activeAlert) {
-        throw new AlertConfigError(
-          'ACTIVE_ALERT_EXISTS',
-          409,
-          'Cannot modify condition, severity or metadata while an unresolved alert exists',
-        );
-      }
-    }
-
     const nextIsEnabled = input.isEnabled !== undefined ? input.isEnabled : rule.isEnabled;
     const nextUnit = input.unit ?? rule.unit;
     const nextRevision = input.expectedMetadataRevision ?? rule.metadataRevision;
@@ -236,34 +247,39 @@ export class AlertRuleService {
       );
     }
 
-    if (nextIsEnabled && !rule.isEnabled) {
-      const duplicateActive = await this.prisma.alertRule.findFirst({
-        where: {
-          stationId: rule.stationId,
-          field: rule.field,
-          isEnabled: true,
-          id: { not: rule.id },
-        },
-      });
-      if (duplicateActive) {
-        throw new AlertConfigError(
-          'ACTIVE_RULE_EXISTS',
-          409,
-          'An active rule already exists for this station and field',
-        );
-      }
-    }
-
-    const unresolvedAlert =
-      !nextIsEnabled && rule.isEnabled
-        ? await this.prisma.alert.findFirst({
-            where: { ruleId: rule.id, status: { in: ['OPEN', 'ACKNOWLEDGED'] } },
-          })
-        : null;
-
     try {
-      if (unresolvedAlert) {
-        const updated = await this.prisma.$transaction(async (tx) => {
+      const updated = await this.prisma.$transaction(async (tx) => {
+        await tx.$queryRaw`SELECT "id" FROM "AlertRule" WHERE "id" = ${rule.id}::uuid FOR UPDATE`;
+        const current = await tx.alertRule.findFirst({
+          where: {
+            id: rule.id,
+            ...(principal.role === 'FARMER'
+              ? {
+                  station: {
+                    plot: { farm: { memberships: { some: { userId: principal.userId } } } },
+                  },
+                }
+              : {}),
+          },
+          include: { station: { select: { plot: { select: { farmId: true } } } } },
+        });
+        if (!current) throw new AppError('NOT_FOUND', 404, 'Alert rule not found');
+        if (current.revision !== input.expectedRevision) {
+          throw new AlertConfigError('VERSION_CONFLICT', 409, 'Rule revision conflict');
+        }
+
+        const unresolvedAlert = await tx.alert.findUnique({
+          where: { unresolvedRuleId: current.id },
+        });
+        if (isMutatingCore && unresolvedAlert) {
+          throw new AlertConfigError(
+            'ACTIVE_ALERT_EXISTS',
+            409,
+            'Cannot modify condition, severity or metadata while an unresolved alert exists',
+          );
+        }
+
+        if (!nextIsEnabled && current.isEnabled && unresolvedAlert) {
           await tx.alert.update({
             where: { id: unresolvedAlert.id },
             data: {
@@ -275,7 +291,7 @@ export class AlertRuleService {
               revision: { increment: 1 },
             },
           });
-          await tx.alertLifecycleEvent.create({
+          const event = await tx.alertLifecycleEvent.create({
             data: {
               alertId: unresolvedAlert.id,
               type: 'RESOLVED',
@@ -284,32 +300,15 @@ export class AlertRuleService {
               requestId,
             },
           });
-          const ruleUpdate = await tx.alertRule.updateMany({
-            where: { id: rule.id, revision: input.expectedRevision },
-            data: {
-              ...(input.condition ? { condition: input.condition } : {}),
-              ...(input.severity ? { severity: input.severity } : {}),
-              ...(input.unit ? { unit: input.unit } : {}),
-              ...(input.expectedMetadataRevision
-                ? { metadataRevision: input.expectedMetadataRevision }
-                : {}),
-              isEnabled: false,
-              evaluationStatus: 'DISABLED',
-              activeKey: null,
-              revision: { increment: 1 },
-            },
-          });
-          if (ruleUpdate.count !== 1) {
-            throw new AlertConfigError('VERSION_CONFLICT', 409, 'Rule revision conflict');
-          }
-          return tx.alertRule.findUniqueOrThrow({ where: { id: rule.id } });
-        });
-        return toAlertRuleDto(updated);
-      }
-
-      const updated = await this.prisma.$transaction(async (tx) => {
+          await deliverLifecycleNotifications(
+            tx,
+            event.id,
+            current.station.plot.farmId,
+            this.metrics,
+          );
+        }
         const result = await tx.alertRule.updateMany({
-          where: { id: rule.id, revision: input.expectedRevision },
+          where: { id: current.id, revision: input.expectedRevision },
           data: {
             ...(input.condition ? { condition: input.condition } : {}),
             ...(input.severity ? { severity: input.severity } : {}),
@@ -326,7 +325,7 @@ export class AlertRuleService {
         if (result.count !== 1) {
           throw new AlertConfigError('VERSION_CONFLICT', 409, 'Rule revision conflict');
         }
-        return tx.alertRule.findUniqueOrThrow({ where: { id: rule.id } });
+        return tx.alertRule.findUniqueOrThrow({ where: { id: current.id } });
       });
       return toAlertRuleDto(updated);
     } catch (err) {

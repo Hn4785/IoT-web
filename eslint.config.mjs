@@ -18,6 +18,10 @@ export default tseslint.config(
     },
   },
   {
+    files: ['scripts/**/*.mjs'],
+    ...tseslint.configs.disableTypeChecked,
+  },
+  {
     files: ['src/**/*.module.ts'],
     rules: {
       '@typescript-eslint/no-extraneous-class': 'off',

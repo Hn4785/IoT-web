@@ -31,10 +31,14 @@ import {
   type CurrentPrincipalValue,
 } from '../authorization/current-principal.js';
 import {
+  alertRuleEnvelopeOpenApiSchema,
+  alertRulePageEnvelopeOpenApiSchema,
+  createAlertRuleOpenApiSchema,
   parseAlertRuleId,
   parseCreateAlertRule,
   parseListAlertRulesQuery,
   parsePatchAlertRule,
+  patchAlertRuleOpenApiSchema,
 } from './alert-rule.contracts.js';
 import { AlertRuleService } from './alert-rule.service.js';
 
@@ -63,7 +67,7 @@ export class AlertRuleController {
     schema: { type: 'integer', minimum: 1, maximum: 100 },
   })
   @ApiQuery({ name: 'cursor', required: false, schema: { type: 'string', maxLength: 2048 } })
-  @ApiOkResponse({ description: 'Alert rules page' })
+  @ApiOkResponse({ schema: alertRulePageEnvelopeOpenApiSchema })
   @errorResponses()
   async list(
     @CurrentPrincipal() principal: CurrentPrincipalValue,
@@ -88,8 +92,8 @@ export class AlertRuleController {
     required: true,
     schema: { type: 'string', maxLength: 160 },
   })
-  @ApiBody({ description: 'Alert rule definition' })
-  @ApiCreatedResponse({ description: 'Created or replayed alert rule' })
+  @ApiBody({ schema: createAlertRuleOpenApiSchema })
+  @ApiCreatedResponse({ schema: alertRuleEnvelopeOpenApiSchema })
   @errorResponses()
   async create(
     @CurrentPrincipal() principal: CurrentPrincipalValue,
@@ -111,7 +115,7 @@ export class AlertRuleController {
   @Get('alert-rules/:ruleId')
   @Header('Cache-Control', 'no-store')
   @ApiParam({ name: 'ruleId', schema: { type: 'string', format: 'uuid' } })
-  @ApiOkResponse({ description: 'Alert rule' })
+  @ApiOkResponse({ schema: alertRuleEnvelopeOpenApiSchema })
   @errorResponses()
   async get(@CurrentPrincipal() principal: CurrentPrincipalValue, @Param('ruleId') ruleId: string) {
     return { success: true, data: await this.rules.getRule(principal, parseAlertRuleId(ruleId)) };
@@ -120,8 +124,8 @@ export class AlertRuleController {
   @Patch('alert-rules/:ruleId')
   @Header('Cache-Control', 'no-store')
   @ApiParam({ name: 'ruleId', schema: { type: 'string', format: 'uuid' } })
-  @ApiBody({ description: 'Alert rule patch with expectedRevision' })
-  @ApiOkResponse({ description: 'Updated alert rule' })
+  @ApiBody({ schema: patchAlertRuleOpenApiSchema })
+  @ApiOkResponse({ schema: alertRuleEnvelopeOpenApiSchema })
   @errorResponses()
   async patch(
     @CurrentPrincipal() principal: CurrentPrincipalValue,

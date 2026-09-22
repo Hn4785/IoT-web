@@ -2,6 +2,7 @@ import cookie from '@fastify/cookie';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
+import { LogController } from 'fastify';
 import type { IncomingMessage } from 'node:http';
 import type { Http2ServerRequest } from 'node:http2';
 import { NestFactory } from '@nestjs/core';
@@ -12,16 +13,33 @@ import { AppError } from '../common/errors/app-error.js';
 import { HttpErrorFilter } from '../common/errors/http-error.filter.js';
 import { selectRequestId } from '../common/http/request-id.js';
 import type { RuntimeConfig } from '../config/runtime-config.js';
+import { OperationsMetrics, requestCompletionLog } from '../operations/operations-signals.js';
 import { AppModule } from './app.module.js';
 
 const GLOBAL_RATE_LIMIT_MAX = 100;
 
 export async function createApp(config: RuntimeConfig): Promise<NestFastifyApplication> {
+  const nodeEnv = config.nodeEnv;
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule.register(config),
     new FastifyAdapter({
       genReqId: (request: IncomingMessage | Http2ServerRequest) =>
         selectRequestId(request.headers['x-request-id']),
+      logController: new LogController({ disableRequestLogging: true }),
+      logger:
+        nodeEnv === 'test'
+          ? false
+          : {
+              level: config.logLevel,
+              redact: [
+                'req.headers.authorization',
+                'req.headers.cookie',
+                'req.headers.x-api-key',
+                'request.headers.authorization',
+                'request.headers.cookie',
+                'request.headers.x-api-key',
+              ],
+            },
     }),
     { logger: false },
   );
@@ -44,11 +62,17 @@ export async function createApp(config: RuntimeConfig): Promise<NestFastifyAppli
     void reply.header('x-request-id', request.id);
     done(null, payload);
   });
-  if (config.nodeEnv !== 'production') {
+  const operationsMetrics = app.get(OperationsMetrics);
+  fastify.addHook('onResponse', (request, reply, done) => {
+    operationsMetrics.recordHttp(request.method, reply.statusCode);
+    request.log.info(requestCompletionLog(request.id, request.method, reply.statusCode));
+    done();
+  });
+  if (nodeEnv !== 'production') {
     const openApiConfig = new DocumentBuilder()
       .setTitle('IoT Soil Monitoring API')
       .setDescription('Role 3 backend contract for the Role 2 web application')
-      .setVersion('0.1.0')
+      .setVersion('2.5.0')
       .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT' }, 'bearer')
       .addCookieAuth(
         'refreshToken',

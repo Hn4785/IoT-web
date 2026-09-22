@@ -121,6 +121,9 @@ describe('identity retention boundary', () => {
       sessionsPurged: 1,
       usersAnonymized: 1,
       apiKeysPurged: 1,
+      notificationsPurged: 0,
+      alertsPurged: 0,
+      idempotencyClaimsPurged: 0,
     });
 
     expect(await prisma.session.count()).toBe(1);

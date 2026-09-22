@@ -50,12 +50,18 @@ function recordFingerprint(record: SourceRecord, fields: readonly SoilField[]): 
       .filter((field) => typeof record[field] === 'number' && Number.isFinite(record[field]))
       .map((field) => [field, record[field]]),
   );
-  return digest({ ts: record.ts, time: record.time, ...values });
+  return digest({ ts: record.ts, ...values });
 }
 
 const invalidCursor = (): AppError => new AppError('VALIDATION_ERROR', 400, 'Cursor is invalid');
 const invalidUpstream = (): AppError =>
   new AppError('UPSTREAM_INVALID_RESPONSE', 502, 'Weather response is invalid');
+
+function observedAt(timestamp: number): string {
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) throw invalidUpstream();
+  return date.toISOString();
+}
 
 export function mapHistoryPage(input: HistoryMapInput): NormalizedHistoryPage {
   const matches = input.upstream.filter(({ station }) => station === input.stationCode);
@@ -84,7 +90,7 @@ export function mapHistoryPage(input: HistoryMapInput): NormalizedHistoryPage {
     const points = pageRecords.flatMap((record) => {
       const value = record[field];
       return typeof value === 'number' && Number.isFinite(value)
-        ? [{ observedAt: record.time, value, quality: 'good' as const }]
+        ? [{ observedAt: observedAt(record.ts), value, quality: 'good' as const }]
         : [];
     });
     return points.length ? [{ field, unit: null, sensorId: null, depthCm: null, points }] : [];
@@ -102,7 +108,7 @@ export function mapHistoryPage(input: HistoryMapInput): NormalizedHistoryPage {
       v: 1,
       kind: 'soil-history',
       queryFingerprint: input.queryFingerprint,
-      boundaryTime: boundary.time,
+      boundaryTime: observedAt(boundary.ts),
       boundaryFingerprint,
       boundaryOccurrence,
     });

@@ -143,6 +143,39 @@ describe('Weather API contracts', () => {
       expect(parseWeatherLatestResponse(input)).toEqual(input);
     });
 
+    it('accepts provider local display times when numeric timestamps are present', () => {
+      const latest = parseWeatherLatestResponse({
+        success: true,
+        data: [
+          {
+            station: 'NODE01',
+            latest: {
+              soil: {
+                ts: 1790077654527,
+                time: '2026-09-22 18:47:34',
+                _fieldTs: { moisture: 1790077654527 },
+                moisture: 43,
+              },
+            },
+          },
+        ],
+      });
+      const history = parseWeatherHistoryResponse({
+        success: true,
+        data: [
+          {
+            station: 'NODE01',
+            history: {
+              soil: [{ ts: 1790077654527, time: '2026-09-22 18:47:34', moisture: 43 }],
+            },
+          },
+        ],
+      });
+
+      expect(latest.data[0]?.latest.soil?.time).toBe('2026-09-22 18:47:34');
+      expect(history.data[0]?.history.soil?.[0]?.time).toBe('2026-09-22 18:47:34');
+    });
+
     it('preserves a valid sparse raw history record', () => {
       const parsed = parseWeatherHistoryResponse({
         success: true,

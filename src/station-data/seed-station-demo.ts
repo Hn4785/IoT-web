@@ -14,6 +14,10 @@ export const DEMO_KEYS = Object.freeze({
   stations: Object.freeze([
     Object.freeze({ upstreamCode: 'NODE01', name: 'Station NODE01' }),
     Object.freeze({ upstreamCode: 'NODE02', name: 'Station NODE02' }),
+    Object.freeze({ upstreamCode: 'NODE03', name: 'Station NODE03' }),
+    Object.freeze({ upstreamCode: 'NODE04', name: 'Station NODE04' }),
+    Object.freeze({ upstreamCode: 'NODE05', name: 'Station NODE05' }),
+    Object.freeze({ upstreamCode: 'NODE06', name: 'Station NODE06' }),
   ]),
 });
 

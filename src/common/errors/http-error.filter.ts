@@ -1,4 +1,4 @@
-import { ArgumentsHost, Catch, ExceptionFilter, HttpException, Logger } from '@nestjs/common';
+import { ArgumentsHost, Catch, ExceptionFilter, HttpException } from '@nestjs/common';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
 import { Prisma } from '../../generated/prisma/client.js';
@@ -29,8 +29,6 @@ function httpErrorMessage(status: number): string {
 
 @Catch()
 export class HttpErrorFilter implements ExceptionFilter {
-  private readonly logger = new Logger(HttpErrorFilter.name);
-
   catch(exception: unknown, host: ArgumentsHost): void {
     const http = host.switchToHttp();
     const request = http.getRequest<FastifyRequest>();
@@ -57,7 +55,7 @@ export class HttpErrorFilter implements ExceptionFilter {
           ? 'Database is temporarily unavailable'
           : httpErrorMessage(status);
 
-    this.logger.error({ requestId: request.id, code, status });
+    request.log.error({ event: 'http_request_failed', requestId: request.id, code, status });
     void reply.status(status).send({
       success: false,
       error: { code, message },

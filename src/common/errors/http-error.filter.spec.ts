@@ -7,15 +7,34 @@ import { HttpErrorFilter } from './http-error.filter.js';
 const createHost = (
   requestId: string,
   reply: { status: ReturnType<typeof vi.fn>; send: ReturnType<typeof vi.fn> },
+  logError = vi.fn(),
 ) =>
   ({
     switchToHttp: () => ({
-      getRequest: () => ({ id: requestId }),
+      getRequest: () => ({ id: requestId, log: { error: logError } }),
       getResponse: () => reply,
     }),
   }) as unknown as ArgumentsHost;
 
 describe('HttpErrorFilter', () => {
+  it('logs only a structured safe error summary', () => {
+    const reply = { status: vi.fn().mockReturnThis(), send: vi.fn() };
+    const logError = vi.fn();
+
+    new HttpErrorFilter().catch(
+      new Error('password=must-not-appear'),
+      createHost('req-safe', reply, logError),
+    );
+
+    expect(logError).toHaveBeenCalledWith({
+      event: 'http_request_failed',
+      requestId: 'req-safe',
+      code: 'INTERNAL_ERROR',
+      status: 500,
+    });
+    expect(JSON.stringify(logError.mock.calls)).not.toContain('must-not-appear');
+  });
+
   it('maps a generic 400 HttpException to VALIDATION_ERROR', () => {
     const reply = { status: vi.fn().mockReturnThis(), send: vi.fn() };
 

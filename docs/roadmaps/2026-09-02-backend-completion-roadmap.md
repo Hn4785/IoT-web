@@ -123,8 +123,9 @@ mock state; the device-configuration page reports the capability unavailable.
 | OP-4 | Migration, backup and rollback | Deploy runbook covers migrations, tested restore, rollback and credential rotation             | Restore rehearsal and checklist evidence | OP-3               | M     |
 | OP-5 | Release gate                   | End-to-end role flows, load limits, security review and frontend contract tests pass           | Staging acceptance suite                 | All prior packages | M     |
 
-Checkpoint D: backend is production-ready and the Admin audit/metrics views can
-consume persisted operational data.
+Checkpoint D-local: backend image, recovery rehearsal and frontend contract are
+ready for controlled integration. Checkpoint D-production additionally requires
+staging evidence and the named infrastructure/security decisions.
 
 ## Likely module roots
 
@@ -167,6 +168,7 @@ Role 2 work can proceed without weakening backend sequencing:
 
 ## Immediate next action
 
-Review this roadmap, then run a dedicated `identity-access` brainstorming session.
-The first deliverable is an approved design spec, not production authentication
-code.
+Checkpoint D-local is verified. Continue with frontend browser integration and
+live-device verification; then close D-production only after ingress/TLS/proxy,
+private metrics, backup ownership/RPO/RTO, MFA and staging acceptance are
+explicit. Do not treat the local in-process registry as production monitoring.

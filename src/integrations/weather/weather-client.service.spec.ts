@@ -1,16 +1,22 @@
 import { startUpstreamServer } from '../../../test/helpers/upstream-server.js';
 import { makeTestRuntimeConfig } from '../../../test/helpers/runtime-config.js';
+import { OperationsMetrics } from '../../operations/operations-signals.js';
 import { parseLatestWeatherQuery, parseWeatherHistoryQuery } from './contracts.js';
 import { WeatherClientService } from './weather-client.service.js';
 
-const makeClient = (baseUrl: string, apiKey = 'server-only-key', timeoutMs = 1_000) => {
+const makeClient = (
+  baseUrl: string,
+  apiKey = 'server-only-key',
+  timeoutMs = 1_000,
+  metrics?: OperationsMetrics,
+) => {
   const config = makeTestRuntimeConfig({
     weatherApiBaseUrl: baseUrl,
     weatherApiKey: apiKey,
     weatherApiTimeoutMs: timeoutMs,
   });
 
-  return new WeatherClientService(config);
+  return new WeatherClientService(config, metrics);
 };
 
 describe('WeatherClientService', () => {
@@ -391,6 +397,26 @@ describe('WeatherClientService', () => {
         safeMessage: 'Weather service is unavailable',
       });
       expect(JSON.stringify(thrown)).not.toContain(JSON.stringify(body));
+    } finally {
+      await upstream.close();
+    }
+  });
+
+  it('records an upstream dependency failure with a finite label', async () => {
+    const upstream = await startUpstreamServer([{ status: 503, body: { secret: 'hidden' } }]);
+    const metrics = new OperationsMetrics();
+    const client = makeClient(`${upstream.baseUrl}/api/v1`, 'server-only-key', 1_000, metrics);
+
+    try {
+      await expect(client.listStations()).rejects.toMatchObject({ code: 'UPSTREAM_UNAVAILABLE' });
+      expect(metrics.snapshot()).toEqual([
+        {
+          name: 'dependency_failures_total',
+          labels: { dependency: 'weather' },
+          value: 1,
+        },
+      ]);
+      expect(JSON.stringify(metrics.snapshot())).not.toContain(upstream.baseUrl);
     } finally {
       await upstream.close();
     }

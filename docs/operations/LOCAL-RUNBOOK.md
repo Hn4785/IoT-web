@@ -95,12 +95,13 @@ pnpm start
 ## 6. Kiểm tra trước khi commit
 
 ```powershell
-pnpm typecheck
-pnpm lint
-pnpm format:check
+pnpm verify
 pnpm test
-pnpm build
-pnpm audit
+pnpm test:coverage
+pnpm audit --prod --audit-level=high
+pnpm security:secrets
+pnpm db:status
+git diff --check
 ```
 
 Nếu test tích hợp database thất bại, kiểm tra theo thứ tự:
@@ -141,6 +142,9 @@ pnpm retention:run -- --confirm-retention
 ```
 
 Không chạy lệnh này để sửa lỗi phát triển thông thường. Hãy sao lưu database trước khi thực hiện trên dữ liệu quan trọng.
+
+Hướng dẫn build image, diễn tập restore và kiểm tra contract nối frontend nằm ở
+[`DELIVERY-RECOVERY.md`](./DELIVERY-RECOVERY.md).
 
 ## Trình tự chạy hằng ngày
 

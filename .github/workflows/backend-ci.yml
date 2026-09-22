@@ -1,0 +1,95 @@
+name: Backend CI
+
+on:
+  push:
+    branches: [BE]
+  pull_request:
+    branches: [BE]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:17.6-alpine3.22
+        env:
+          POSTGRES_DB: iot_dev
+          POSTGRES_USER: iot_app
+          POSTGRES_PASSWORD: ci-database-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U iot_app -d iot_dev"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+    env:
+      NODE_ENV: test
+      PORT: 3000
+      LOG_LEVEL: warn
+      WEATHER_API_BASE_URL: https://example.invalid/api/v1
+      WEATHER_API_KEY: ci-weather-placeholder
+      WEATHER_API_TIMEOUT_MS: 1000
+      DATABASE_URL: postgresql://iot_app:ci-database-password@localhost:5432/iot_dev?schema=public
+      TEST_DATABASE_URL: postgresql://iot_app:ci-database-password@localhost:5432/iot_test?schema=public
+      FRONTEND_ORIGIN: http://localhost:5173
+      JWT_SECRET: ci-jwt-secret-with-at-least-32-characters
+      CREDENTIAL_PEPPER: ci-credential-pepper-distinct-32-chars
+      SOIL_LATEST_CACHE_TTL_MS: 30000
+      SOIL_HISTORY_CACHE_TTL_MS: 300000
+      SOIL_STALE_AFTER_MS: 900000
+      SOIL_STALE_IF_ERROR_MS: 300000
+      SOIL_CACHE_MAX_ENTRIES: 500
+      ALERT_EVALUATION_INTERVAL_MS: 60000
+      ALERT_EVALUATION_BATCH_SIZE: 50
+      ALERT_EVALUATOR_LEASE_MS: 55000
+      ALERT_IDEMPOTENCY_RETENTION_HOURS: 168
+      ALERT_DEMO_METADATA_ENABLED: false
+      ALERT_DEMO_STATION_CODES: ''
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.19.0
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.17.0
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Create isolated test database
+        run: docker exec ${{ job.services.postgres.id }} createdb -U iot_app iot_test
+      - run: pnpm db:migrate:deploy
+      - run: DATABASE_URL="$TEST_DATABASE_URL" pnpm db:migrate:deploy
+      - run: pnpm verify
+      - run: pnpm test:coverage
+      - run: pnpm audit --prod --audit-level=high
+      - run: pnpm security:secrets
+      - run: docker build --pull -t iot-api:ci .
+      - name: Smoke production image
+        run: |
+          docker run -d --name iot-api-smoke --add-host=host.docker.internal:host-gateway -p 3000:3000 \
+            -e NODE_ENV=production -e PORT=3000 -e LOG_LEVEL=warn \
+            -e WEATHER_API_BASE_URL=https://example.invalid/api/v1 -e WEATHER_API_KEY=ci-weather-placeholder -e WEATHER_API_TIMEOUT_MS=1000 \
+            -e DATABASE_URL=postgresql://iot_app:ci-database-password@host.docker.internal:5432/iot_dev?schema=public \
+            -e TEST_DATABASE_URL=postgresql://iot_app:ci-database-password@host.docker.internal:5432/iot_test?schema=public \
+            -e FRONTEND_ORIGIN=http://localhost:5173 \
+            -e JWT_SECRET=ci-jwt-secret-with-at-least-32-characters \
+            -e CREDENTIAL_PEPPER=ci-credential-pepper-distinct-32-chars \
+            -e SOIL_LATEST_CACHE_TTL_MS=30000 -e SOIL_HISTORY_CACHE_TTL_MS=300000 \
+            -e SOIL_STALE_AFTER_MS=900000 -e SOIL_STALE_IF_ERROR_MS=300000 -e SOIL_CACHE_MAX_ENTRIES=500 \
+            -e ALERT_EVALUATION_INTERVAL_MS=60000 -e ALERT_EVALUATION_BATCH_SIZE=50 \
+            -e ALERT_EVALUATOR_LEASE_MS=55000 -e ALERT_IDEMPOTENCY_RETENTION_HOURS=168 \
+            -e ALERT_DEMO_METADATA_ENABLED=false -e ALERT_DEMO_STATION_CODES= \
+            iot-api:ci
+          for attempt in {1..30}; do
+            curl --fail --silent http://127.0.0.1:3000/api/v1/health && break
+            sleep 1
+          done
+          pnpm release:check -- --skip-openapi
+      - if: always()
+        run: docker rm -f iot-api-smoke 2>/dev/null || true

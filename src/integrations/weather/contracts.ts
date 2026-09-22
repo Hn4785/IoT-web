@@ -19,6 +19,31 @@ const latestWeatherQuerySchema = z.strictObject({
 });
 
 const utcTimestamp = utcTimestampSchema;
+const PROVIDER_LOCAL_TIME_PATTERN =
+  /^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,9}))?$/;
+
+function isProviderLocalTime(value: string): boolean {
+  const match = PROVIDER_LOCAL_TIME_PATTERN.exec(value);
+  if (!match) return false;
+  const [, year, month, day, hour, minute, second] = match;
+  const expected = [year, month, day, hour, minute, second].map(Number);
+  const parsed = new Date(`${year}-${month}-${day}T${hour}:${minute}:${second}Z`);
+  if (Number.isNaN(parsed.getTime())) return false;
+  const actual = [
+    parsed.getUTCFullYear(),
+    parsed.getUTCMonth() + 1,
+    parsed.getUTCDate(),
+    parsed.getUTCHours(),
+    parsed.getUTCMinutes(),
+    parsed.getUTCSeconds(),
+  ];
+  return actual.every((part, index) => part === expected[index]);
+}
+
+const providerDisplayTime = z.union([
+  utcTimestamp,
+  z.string().refine(isProviderLocalTime, 'A valid provider date-time is required'),
+]);
 
 const weatherHistoryQuerySchema = latestWeatherQuerySchema
   .extend({
@@ -53,11 +78,13 @@ const fieldTimestamps = z.record(fieldName, timestampMs);
 const latestMeasurement = z
   .object({
     ts: timestampMs,
-    time: utcTimestamp,
+    time: providerDisplayTime,
     _fieldTs: fieldTimestamps,
   })
   .catchall(dynamicValue);
-const historyRecord = z.object({ ts: timestampMs, time: utcTimestamp }).catchall(dynamicValue);
+const historyRecord = z
+  .object({ ts: timestampMs, time: providerDisplayTime })
+  .catchall(dynamicValue);
 const latestByType = z.partialRecord(measurement, latestMeasurement);
 const historyByType = z.partialRecord(measurement, z.array(historyRecord));
 const successEnvelope = <T extends z.ZodType>(data: T) =>

@@ -28,7 +28,7 @@ describe('GET /api/v1/health', () => {
       success: true,
       data: {
         service: 'iot-api',
-        version: '0.1.0',
+        version: '2.5.0',
         status: 'healthy',
         environment: 'test',
       },

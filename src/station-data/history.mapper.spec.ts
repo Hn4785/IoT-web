@@ -89,6 +89,23 @@ describe('history mapper and cursor', () => {
     ).toBe(true);
   });
 
+  it('normalizes observed time from numeric ts instead of provider display time', () => {
+    const page = mapHistoryPage({
+      stationId: 'station-1',
+      stationCode: 'NODE01',
+      fields: ['moisture'],
+      order: 'desc',
+      limit: 1,
+      queryFingerprint: fingerprint,
+      fetchedAt: new Date('2026-09-22T11:48:00Z'),
+      upstream: upstream([
+        { ts: 1790077654527, time: '2026-09-22 18:47:34', moisture: 43 },
+      ]),
+    });
+
+    expect(page.series[0]?.points[0]?.observedAt).toBe('2026-09-22T11:47:34.527Z');
+  });
+
   it('continues through identical boundary records without duplicating them', () => {
     const records = [
       { ts: 1, time: '2026-09-01T00:00:00Z', moisture: 40 },

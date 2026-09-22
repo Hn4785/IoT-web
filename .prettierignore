@@ -1,3 +1,6 @@
 .env.example
 prisma/schema.prisma
 src/generated/prisma/
+Dockerfile
+.dockerignore
+*.ps1

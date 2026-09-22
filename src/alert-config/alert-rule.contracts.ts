@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { SchemaObject } from '@nestjs/swagger';
 
 import { AppError } from '../common/errors/app-error.js';
 import { utcTimestampSchema } from '../common/validation/utc-timestamp.js';
@@ -115,6 +116,91 @@ export const alertRuleDtoSchema = z.strictObject({
   updatedAt: utcTimestampSchema,
 });
 export type AlertRuleDto = z.infer<typeof alertRuleDtoSchema>;
+
+const conditionOpenApiSchema: SchemaObject = {
+  oneOf: [
+    {
+      type: 'object',
+      additionalProperties: false,
+      required: ['operator', 'threshold'],
+      properties: { operator: { type: 'string', enum: ['ABOVE'] }, threshold: { type: 'number' } },
+    },
+    {
+      type: 'object',
+      additionalProperties: false,
+      required: ['operator', 'threshold'],
+      properties: { operator: { type: 'string', enum: ['BELOW'] }, threshold: { type: 'number' } },
+    },
+    {
+      type: 'object',
+      additionalProperties: false,
+      required: ['operator', 'lowerThreshold', 'upperThreshold'],
+      properties: {
+        operator: { type: 'string', enum: ['OUTSIDE_RANGE'] },
+        lowerThreshold: { type: 'number' },
+        upperThreshold: { type: 'number' },
+      },
+    },
+  ],
+};
+const mutableRuleProperties: Record<string, SchemaObject> = {
+  condition: conditionOpenApiSchema,
+  severity: { type: 'string', enum: [...ALERT_RULE_SEVERITIES] },
+  unit: { type: 'string', minLength: 1, maxLength: 32 },
+  expectedMetadataRevision: { type: 'string', minLength: 1, maxLength: 160 },
+  isEnabled: { type: 'boolean' },
+};
+export const createAlertRuleOpenApiSchema: SchemaObject = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['field', 'unit', 'expectedMetadataRevision', 'condition', 'severity'],
+  properties: { field: { type: 'string', enum: [...SOIL_ALERT_FIELDS] }, ...mutableRuleProperties },
+};
+export const patchAlertRuleOpenApiSchema: SchemaObject = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['expectedRevision'],
+  properties: {
+    ...mutableRuleProperties,
+    expectedRevision: { type: 'integer', minimum: 1 },
+  },
+};
+export const alertRuleOpenApiSchema: SchemaObject = {
+  type: 'object',
+  properties: {
+    id: { type: 'string', format: 'uuid' },
+    stationId: { type: 'string', format: 'uuid' },
+    field: { type: 'string', enum: [...SOIL_ALERT_FIELDS] },
+    unit: { type: 'string' },
+    metadataRevision: { type: 'string' },
+    condition: conditionOpenApiSchema,
+    severity: { type: 'string', enum: [...ALERT_RULE_SEVERITIES] },
+    requiredBreachSamples: { type: 'integer', enum: [2] },
+    requiredRecoverySamples: { type: 'integer', enum: [2] },
+    isEnabled: { type: 'boolean' },
+    evaluationStatus: { type: 'string', enum: [...ALERT_EVALUATION_STATUSES] },
+    revision: { type: 'integer', minimum: 1 },
+    createdAt: { type: 'string', format: 'date-time' },
+    updatedAt: { type: 'string', format: 'date-time' },
+  },
+};
+export const alertRuleEnvelopeOpenApiSchema: SchemaObject = {
+  type: 'object',
+  properties: { success: { type: 'boolean', enum: [true] }, data: alertRuleOpenApiSchema },
+};
+export const alertRulePageEnvelopeOpenApiSchema: SchemaObject = {
+  type: 'object',
+  properties: {
+    success: { type: 'boolean', enum: [true] },
+    data: {
+      type: 'object',
+      properties: {
+        items: { type: 'array', items: alertRuleOpenApiSchema },
+        nextCursor: { type: 'string', nullable: true },
+      },
+    },
+  },
+};
 
 function parse<T>(schema: z.ZodType<T>, value: unknown, message: string): T {
   const result = schema.safeParse(value);

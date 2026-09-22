@@ -1,6 +1,21 @@
 # Sổ lỗi Backend
 
-Cập nhật gần nhất: 2026-09-14. Đây là file theo dõi lỗi chính của backend. Lỗi chưa hoàn thành luôn đặt ở trên; lỗi đã sửa được chuyển xuống cuối file sau khi có test hoặc bằng chứng kiểm chứng.
+Cập nhật gần nhất: 2026-09-22. Đây là file theo dõi lỗi chính của backend. Lỗi chưa hoàn thành luôn đặt ở trên; lỗi đã sửa được chuyển xuống cuối file sau khi có test hoặc bằng chứng kiểm chứng.
+
+## Gate hiện tại
+
+- Gate toàn backend ngày 2026-09-22 đạt 58/58 file, 369/369 test; typecheck,
+  lint, format, build và `git diff --check` đều đạt.
+- Rà soát tĩnh toàn backend ngày 2026-09-20: format, typecheck, lint, build và
+  `git diff --check` đạt; 22/22 unit test file, 222/222 test đạt.
+- Phân quyền route, transaction, uniqueness, idempotency, optimistic revision,
+  upstream fail-closed và retention boundary đã được đối chiếu lại với schema và
+  spec. Chưa tìm thấy lỗi logic mới có bằng chứng tái hiện.
+- Checkpoint D1 ngày 2026-09-20 đạt 57/57 file, 365/365 test. Coverage đạt
+  88.48% statements, 77.60% branches, 93.24% functions và 90.29% lines.
+- Checkpoint D-local ngày 2026-09-20 đạt 58/58 file, 369/369 test với cùng mức
+  coverage; image production, restore cô lập, secret scan và contract frontend
+  đều đạt.
 
 ## Chưa sửa
 
@@ -11,15 +26,39 @@ Cập nhật gần nhất: 2026-09-14. Đây là file theo dõi lỗi chính c�
   (gateway hay shared store và số proxy hop) để không tạo lỗ hổng giả mạo IP.
 - Chưa có MFA/SSO; Super Admin cần MFA trước khi public Internet.
 - Audit append-only mới được bảo vệ theo convention ứng dụng, chưa có database role chặn update/delete.
-- Cần diễn tập backup/restore, mã hóa backup, rotation secret và audit monitoring.
+- Metrics mới là registry trong process và chưa có endpoint public. Cần chốt
+  ingress/TLS, scraper network và multi-instance aggregation trước khi expose.
+- Restore local đã được diễn tập thành công; production vẫn cần chốt RPO/RTO,
+  backup mã hóa ngoài máy, rotation secret và audit monitoring.
 - Dependency audit chỉ phát hiện advisory đã biết, không loại trừ supply-chain compromise.
+- GitHub Actions hiện khóa theo major tag (`v4`), chưa khóa theo commit SHA đã
+  duyệt. Trước khi dùng CI bảo vệ production cần pin SHA và có lịch cập nhật.
 
 ### [Trung bình, chưa reachable] Advisory `mysql2` từ Prisma tooling
 
-- `pnpm audit --prod` kiểm tra lại ngày 2026-09-11 vẫn báo
+- `pnpm audit --prod` kiểm tra lại ngày 2026-09-20 vẫn báo
   `GHSA-rgwj-5xj2-c3m3` với `mysql2 <=3.23.0`, được kéo gián tiếp qua Prisma.
 - Backend chỉ cấu hình PostgreSQL và không gọi MySQL protocol, nên chưa tìm thấy đường khai thác trong runtime hiện tại; high/critical audit vẫn đạt.
 - Cần xử lý trong đợt cập nhật dependency có kiểm soát: chờ Prisma dùng bản vá, xem diff lockfile, chạy migration/test đầy đủ. Không dùng `audit fix --force`.
+
+### [Trung bình, Phase C] Lease evaluator chưa được gia hạn giữa batch
+
+- Lease chỉ được cấp ở đầu lượt chạy. Nếu một upstream call kéo dài quá TTL, instance
+  khác có thể nhận lease trước khi lượt cũ kết thúc; khóa hàng và idempotency hiện
+  bảo vệ lifecycle nhưng không loại bỏ công việc trùng.
+- Chưa sửa trong checkpoint này vì cần chốt chiến lược heartbeat/fencing token cho
+  triển khai nhiều instance; không tự mở rộng schema hoặc giao thức scheduler.
+
+### [Thiết kế, Phase C] Notification đồng bộ và DTO dùng trạng thái hiện tại
+
+- Fanout notification đang nằm cùng transaction lifecycle đúng theo spec đã duyệt,
+  nhưng transaction sẽ dài theo số recipient; khi tải thực tế tăng cần chuyển sang
+  outbox/worker mà vẫn giữ idempotency.
+- Notification lưu tham chiếu lifecycle thay vì snapshot hiển thị đầy đủ, nên DTO có
+  thể phản ánh trạng thái alert/rule/station hiện tại. Cần chốt yêu cầu lịch sử trước
+  khi thêm snapshot fields hoặc migration.
+- `alert-config` và `notifications` đang phụ thuộc hai chiều ở source level. Chưa gây
+  lỗi runtime, nhưng nên tách event delivery port khi module tiếp tục lớn lên.
 
 ## Đã kiểm chứng không phải lỗi
 
@@ -37,10 +76,108 @@ Cập nhật gần nhất: 2026-09-14. Đây là file theo dõi lỗi chính c�
 
 - Restart frontend không kết thúc refresh session trên backend. Nếu cookie
   `HttpOnly` còn hạn, frontend refresh và khôi phục đúng tài khoản là hành vi dự kiến.
+- Phiên refresh hiện có TTL 7 ngày; access token có TTL 15 phút và chỉ được giữ
+  trong bộ nhớ. Việc Pi hoặc web restart nhưng trình duyệt vẫn đăng nhập vào hôm
+  sau là đúng contract, không phải lưu access token vĩnh viễn.
 - Logout đã được kiểm chứng thu hồi session, xóa cookie và luôn xóa access token
   trong bộ nhớ frontend, kể cả request logout thất bại.
 
 ## Đã sửa
+
+### [Triển khai Pi] API không gọi được upstream do mạng Docker bị cô lập
+
+- Container API trước đây chỉ tham gia network `internal: true`, vì vậy không thể
+  phân giải DNS hoặc kết nối API đo đất bên ngoài và có thể trả `502` dù request
+  nội bộ vẫn khỏe.
+- API hiện tham gia thêm network `edge`; PostgreSQL vẫn chỉ nằm trong network nội
+  bộ. Xác minh ngày 2026-09-22: container API phân giải được
+  `quantracgialai.metrostic.com`, health LAN và public ngrok đều trả `200`.
+- API key upstream hợp lệ vẫn là điều kiện riêng để nhận dữ liệu thật; không lưu
+  key hoặc response nhạy cảm vào tài liệu.
+
+### [Frontend] Sidebar và thời gian Audit hiển thị sai
+
+- Sidebar chỉ tô xanh route cụ thể nhất, không còn sáng đồng thời Dashboard và
+  trang con. Timestamp Audit hiển thị theo `Asia/Ho_Chi_Minh` ở dạng
+  `HH:mm DD/MM/YYYY`, vẫn giữ ISO gốc trong thuộc tính `dateTime`.
+- Swagger chỉ hiện trong development vì backend cố ý không cung cấp `/docs` ở
+  production; bản public không còn dẫn tester tới trang `404`.
+- Verification ngày 2026-09-22: frontend đạt 27/27 test, build và lint.
+
+### [Cao, production] Image build được nhưng backend không khởi động
+
+- Smoke test phát hiện `dist/main.js` import `dotenv` nhưng package này từng nằm
+  trong `devDependencies`, nên `pnpm prune --prod` làm container lỗi
+  `ERR_MODULE_NOT_FOUND` ngay khi start.
+- `dotenv` đã được chuyển sang runtime dependency; image cài OpenSSL/CA cho Prisma,
+  chạy bằng user `node` và pass health/readiness trên cả `iot_dev` lẫn database
+  restore cô lập.
+- Verification ngày 2026-09-20: image Node 24 build thành công, runtime contract
+  và OpenAPI frontend contract đều pass.
+
+### [Cao, Phase C] Evaluator có race metadata, starvation và lỗi scheduler bị bỏ rơi
+
+- Metadata mismatch giờ chỉ block đúng revision/unit/metadataRevision đã kiểm tra;
+  transaction khóa rule và bỏ qua kết quả cũ nếu rule vừa được rebind.
+- Khi hết lease budget giữa batch, cursor vẫn tiến tới cuối batch đã lấy để lượt sau
+  quay vòng, tránh một nhóm station chậm giữ các rule phía sau vô thời hạn.
+- Scheduled run bắt rejection tại biên timer và chỉ log loại lỗi an toàn, không tạo
+  unhandled rejection hoặc đưa message nhạy cảm vào log.
+- Regression ngày 2026-09-19: 2 test file, 11/11 test qua. Toàn backend đạt
+  53/53 test file, 354/354 test; typecheck, lint, format và build đều đạt.
+
+### [Phase C] Notification chưa được phát và chưa có inbox theo scope hiện tại
+
+- Mỗi lifecycle event `OPENED`, `ACKNOWLEDGED`, `RESOLVED` tạo tối đa một
+  notification cho từng Admin active và Farmer active đang thuộc farm tại thời
+  điểm phát; Client Developer không nhận notification.
+- `GET /api/v1/notifications` có filter `isRead`, cursor gắn filter, unread count
+  và DTO an toàn. `PATCH /api/v1/notifications/:id` chỉ nhận `isRead`, giữ nguyên
+  `readAt` khi retry cùng trạng thái và trả 404 cho recipient/scope khác.
+- Farmer mất farm membership sẽ lập tức không còn đọc hoặc sửa notification cũ.
+  Lifecycle event và recipient delivery được ghi trong cùng transaction.
+
+### [Phase C] Retention chưa xử lý alert, notification và idempotency claim
+
+- Lệnh retention hiện xóa theo batch notification quá 180 ngày, resolved alert
+  quá 365 ngày và idempotency claim hết hạn. Unresolved alert cùng lifecycle
+  evidence không bị age-purge; alert xóa sẽ cascade evidence theo schema.
+- Integration test xác minh cả dữ liệu cũ bị xóa và dữ liệu ngay trong cửa sổ
+  retention vẫn được giữ.
+
+### [Phase C] Chưa có capability trung thực cho device configuration
+
+- `GET /api/v1/device-configurations/capability` cho Admin/Farmer trả cố định
+  `NOT_AVAILABLE / DEVICE_CONTRACT_PENDING`; Client Developer bị từ chối.
+- Không tạo bảng, payload, publish route hoặc giả lập acknowledgement thiết bị.
+
+### [Test contract] OpenAPI allowlist thiếu route Phase C mới
+
+- Full suite lần đầu phát hiện allowlist thiếu notification và device capability,
+  dù route runtime đã hoạt động. Danh sách contract đã được cập nhật và suite
+  toàn dự án chạy lại từ đầu.
+- Verification ngày 2026-09-19: 52/52 test file, 351/351 test; typecheck, lint,
+  format, build, migration status và diff check đều đạt. Coverage toàn backend:
+  88.08% statements, 77.13% branches, 92.64% functions, 90.12% lines.
+- Lượt này chỉ kiểm tra code/logic; không kiểm thử browser, tải, multi-instance,
+  API thiết bị thật hoặc hạ tầng production. Các mục đó chưa được coi là đã xác
+  minh và không được ghi nhận là bug nếu chưa có bằng chứng tái hiện.
+
+### [Cao, Phase C] Evaluator và alert lifecycle chưa an toàn khi chạy đồng thời
+
+- Evaluator dùng lease độc quyền, chặn hai lượt chạy trong cùng instance, không
+  bỏ qua cursor khi hết deadline và chỉ đọc latest một lần cho mỗi station/batch.
+- Rule bị đổi metadata sẽ chuyển sang `BLOCKED_METADATA`, đóng alert đang mở bằng
+  lý do an toàn và không dùng mẫu dữ liệu không còn đúng revision/unit.
+- Patch rule, evaluator và acknowledge/resolve khóa hoặc cập nhật có điều kiện;
+  request đồng thời không còn tạo hai lifecycle event hoặc trả lỗi 500.
+- Create idempotency replay giữ nguyên response kể cả khi metadata upstream sau
+  đó tạm unavailable. Alert list có cursor opaque gắn với filter và DTO/OpenAPI
+  đầy đủ station, condition, actor, unit và metadata revision.
+- Verification ngày 2026-09-17: Phase C 8/8 file, 83/83 test; toàn backend 50/50
+  file, 340/340 test; typecheck, lint, format, build và migration status đều đạt.
+  Coverage toàn backend: 87.91% statements, 76.93% branches, 92.25% functions,
+  89.82% lines.
 
 ### [Cao, API key] Key vừa tạo bị API Explorer từ chối
 

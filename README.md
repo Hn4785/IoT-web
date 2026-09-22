@@ -105,7 +105,7 @@ curl.exe http://localhost:3000/api/v1/health
   "success": true,
   "data": {
     "service": "iot-api",
-    "version": "0.1.0",
+    "version": "2.5.0",
     "status": "healthy",
     "environment": "development",
     "time": "2026-09-01T00:00:00.000Z"
@@ -167,7 +167,10 @@ authority không bị anonymize; audit linkage bằng user ID được giữ l�
 | `pnpm typecheck`                                   | Kiểm tra TypeScript                       |
 | `pnpm lint`                                        | Kiểm tra ESLint, không chấp nhận warning  |
 | `pnpm format:check`                                | Kiểm tra Prettier                         |
-| `pnpm audit`                                       | Kiểm tra dependency advisory              |
+| `pnpm verify`                                      | Format, typecheck, lint và build          |
+| `pnpm audit --prod --audit-level=high`             | Chặn advisory high/critical               |
+| `pnpm security:secrets`                            | Quét credential trong file đang track     |
+| `pnpm release:check`                               | Kiểm tra runtime và OpenAPI nối frontend  |
 | `pnpm ignored-builds`                              | Kiểm tra package build script bị chặn     |
 | `pnpm db:status`                                   | Kiểm tra migration database hiện tại      |
 | `pnpm db:seed-station-demo -- --confirm-demo-seed` | Tạo registry demo an toàn trong `iot_dev` |
@@ -180,3 +183,4 @@ authority không bị anonymize; audit linkage bằng user ID được giữ l�
 - [Backend capability map](./CAPABILITY-MAP.md)
 - [Threat model](./docs/security/integration-core-threat-model.md)
 - [Backend completion roadmap](./docs/roadmaps/2026-09-02-backend-completion-roadmap.md)
+- [Delivery, recovery and frontend release gate](./docs/operations/DELIVERY-RECOVERY.md)

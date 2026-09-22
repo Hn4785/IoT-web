@@ -1,8 +1,9 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
 
 import { AppError } from '../../common/errors/app-error.js';
 import { RUNTIME_CONFIG } from '../../config/runtime-config.module.js';
 import type { RuntimeConfig } from '../../config/runtime-config.js';
+import { OperationsMetrics } from '../../operations/operations-signals.js';
 import {
   parseWeatherLatestResponse,
   parseWeatherHealthResponse,
@@ -42,14 +43,6 @@ function mapTransportError(error: unknown): AppError {
     });
   }
   return upstreamUnavailable(error);
-}
-
-function parseUpstream<T>(parse: () => T): T {
-  try {
-    return parse();
-  } catch (error) {
-    throw upstreamUnavailable(error);
-  }
 }
 
 function mapUpstreamStatus(status: number): AppError {
@@ -92,16 +85,19 @@ async function readBoundedJson(response: Response): Promise<unknown> {
 
 @Injectable()
 export class WeatherClientService implements WeatherClient {
-  constructor(@Inject(RUNTIME_CONFIG) private readonly config: RuntimeConfig) {}
+  constructor(
+    @Inject(RUNTIME_CONFIG) private readonly config: RuntimeConfig,
+    @Optional() private readonly metrics?: OperationsMetrics,
+  ) {}
 
   async getHealth(): Promise<WeatherHealth> {
     const { body } = await this.getJson('/health');
-    return parseUpstream(() => parseWeatherHealthResponse(body).data);
+    return this.parseUpstream(() => parseWeatherHealthResponse(body).data);
   }
 
   async listStations(): Promise<readonly string[]> {
     const { body } = await this.getJson('/stations');
-    return parseUpstream(() => parseWeatherStationsResponse(body).data);
+    return this.parseUpstream(() => parseWeatherStationsResponse(body).data);
   }
 
   async getLatest(query: LatestWeatherQuery): Promise<readonly WeatherLatestStation[]> {
@@ -111,7 +107,7 @@ export class WeatherClientService implements WeatherClient {
     if (query.fields) search.set('fields', query.fields.join(','));
 
     const { body } = await this.getJson('/data/latest', search);
-    return parseUpstream(() => parseWeatherLatestResponse(body).data);
+    return this.parseUpstream(() => parseWeatherLatestResponse(body).data);
   }
 
   async getHistory(query: WeatherHistoryQuery): Promise<readonly WeatherHistoryStation[]> {
@@ -127,7 +123,7 @@ export class WeatherClientService implements WeatherClient {
     if (query.aggregate) search.set('aggregate', query.aggregate);
 
     const { body } = await this.getJson('/data/history', search);
-    return parseUpstream(() => parseWeatherHistoryResponse(body).data);
+    return this.parseUpstream(() => parseWeatherHistoryResponse(body).data);
   }
 
   private async getJson(path: WeatherPath, query?: URLSearchParams): Promise<UpstreamJson> {
@@ -145,17 +141,17 @@ export class WeatherClientService implements WeatherClient {
     try {
       response = await fetch(url, request);
     } catch (error) {
-      throw mapTransportError(error);
+      throw this.dependencyError(mapTransportError(error));
     }
     if (!response.ok) {
-      throw mapUpstreamStatus(response.status);
+      throw this.dependencyError(mapUpstreamStatus(response.status));
     }
 
     let body: unknown;
     try {
       body = await readBoundedJson(response);
     } catch (error) {
-      throw upstreamUnavailable(error);
+      throw this.dependencyError(upstreamUnavailable(error));
     }
 
     if (path === '/health') {
@@ -169,5 +165,18 @@ export class WeatherClientService implements WeatherClient {
         reset: response.headers.get('x-ratelimit-reset'),
       },
     };
+  }
+
+  private parseUpstream<T>(parse: () => T): T {
+    try {
+      return parse();
+    } catch (error) {
+      throw this.dependencyError(upstreamUnavailable(error));
+    }
+  }
+
+  private dependencyError(error: AppError): AppError {
+    this.metrics?.recordDependencyFailure('weather');
+    return error;
   }
 }

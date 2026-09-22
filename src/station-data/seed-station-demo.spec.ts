@@ -78,8 +78,8 @@ describe('station demo seed safety', () => {
   it('creates stable records once and is idempotent', async () => {
     const repository = new FakeDemoSeedRepository();
 
-    await expect(ensureDemoRecords(repository)).resolves.toEqual({ created: 4, existing: 0 });
-    await expect(ensureDemoRecords(repository)).resolves.toEqual({ created: 0, existing: 4 });
+    await expect(ensureDemoRecords(repository)).resolves.toEqual({ created: 8, existing: 0 });
+    await expect(ensureDemoRecords(repository)).resolves.toEqual({ created: 0, existing: 8 });
 
     expect(repository.farms).toEqual([expect.objectContaining({ name: DEMO_KEYS.farmName })]);
     expect(repository.plots).toEqual([
@@ -88,8 +88,12 @@ describe('station demo seed safety', () => {
     expect(repository.stations.map((station) => station.upstreamCode)).toEqual([
       'NODE01',
       'NODE02',
+      'NODE03',
+      'NODE04',
+      'NODE05',
+      'NODE06',
     ]);
-    expect(repository.created).toEqual({ farms: 1, plots: 1, stations: 2 });
+    expect(repository.created).toEqual({ farms: 1, plots: 1, stations: 6 });
   });
 
   it('rejects duplicate farm names and station natural-key conflicts', async () => {
