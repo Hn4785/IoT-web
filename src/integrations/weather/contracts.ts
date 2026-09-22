@@ -25,9 +25,9 @@ const PROVIDER_LOCAL_TIME_PATTERN =
 function isProviderLocalTime(value: string): boolean {
   const match = PROVIDER_LOCAL_TIME_PATTERN.exec(value);
   if (!match) return false;
-  const [, year, month, day, hour, minute, second] = match;
+  const [, year, month, day, hour, minute, second] = match!;
   const expected = [year, month, day, hour, minute, second].map(Number);
-  const parsed = new Date(`${year}-${month}-${day}T${hour}:${minute}:${second}Z`);
+  const parsed = new Date(`${year!}-${month!}-${day!}T${hour!}:${minute!}:${second!}Z`);
   if (Number.isNaN(parsed.getTime())) return false;
   const actual = [
     parsed.getUTCFullYear(),
