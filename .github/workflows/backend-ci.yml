@@ -65,6 +65,7 @@ jobs:
         run: docker exec ${{ job.services.postgres.id }} createdb -U iot_app iot_test
       - run: pnpm db:migrate:deploy
       - run: DATABASE_URL="$TEST_DATABASE_URL" pnpm db:migrate:deploy
+      - run: pnpm db:generate
       - run: pnpm verify
       - run: pnpm test:coverage
       - run: pnpm audit --prod --audit-level=high
