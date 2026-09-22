@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
   Users,
@@ -17,6 +17,7 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import type { UserRole } from '@/types/user';
 import styles from './Sidebar.module.css';
+import { findActiveNavigationPath } from './sidebarSelection';
 
 interface NavItem {
   label: string;
@@ -76,10 +77,15 @@ function formatRoleLabel(role: UserRole): string {
 
 export default function Sidebar() {
   const { user } = useAuth();
+  const { pathname } = useLocation();
 
   if (!user) return null;
 
   const items = NAV_CONFIG[user.role] ?? [];
+  const activePath = findActiveNavigationPath(
+    items.map(({ path }) => path),
+    pathname,
+  );
 
   return (
     <aside className={styles.sidebar}>
@@ -96,8 +102,11 @@ export default function Sidebar() {
             <li key={path}>
               <NavLink
                 to={path}
-                className={({ isActive }) =>
-                  isActive ? `${styles.navItem} ${styles.navItemActive}` : styles.navItem
+                end={path === '/admin'}
+                className={
+                  path === activePath
+                    ? `${styles.navItem} ${styles.navItemActive}`
+                    : styles.navItem
                 }
               >
                 <Icon size={18} strokeWidth={2} className={styles.navIcon} />

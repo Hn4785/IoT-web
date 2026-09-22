@@ -28,6 +28,10 @@
 
 ## Thay đổi frontend cần chú ý
 
+Sidebar chỉ đánh dấu màu xanh cho mục khớp cụ thể nhất với URL hiện tại; route gốc `/admin` không còn sáng đồng thời với các trang con. Thời gian trong bảng Audit được đổi từ ISO thô sang giờ Việt Nam theo dạng `HH:mm DD/MM/YYYY` (giữ ISO gốc trong thuộc tính `dateTime`).
+
+Nút mở Swagger chỉ xuất hiện ở bản development. Backend production cố ý không phục vụ `/docs`, nên bản staging/public dùng phần API Documentation tích hợp trong frontend và không hiển thị liên kết dẫn tới `404`.
+
 Access token chỉ được giữ trong bộ nhớ, không lưu vào `localStorage`. Refresh token do backend quản lý bằng cookie `HttpOnly`, vì vậy request phải giữ `withCredentials: true`.
 
 Khi nhiều request cùng gặp lỗi 401, frontend chỉ gửi một request refresh. Những request còn lại chờ kết quả chung, tránh reuse refresh token và làm người dùng bị đăng xuất ngoài ý muốn.

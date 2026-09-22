@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { copyText } from "@/utils/credentialInput";
+import { isInteractiveApiReferenceAvailable } from "@/utils/apiDocsAvailability";
 import styles from "./ApiDocs.module.css";
 
 interface Endpoint {
@@ -134,10 +135,12 @@ export default function ApiDocs() {
           </p>
         </div>
 
-        <a className={styles.externalButton} href="http://localhost:3000/docs" target="_blank" rel="noreferrer">
-          <ExternalLink size={16} />
-          API Reference
-        </a>
+        {isInteractiveApiReferenceAvailable(import.meta.env.PROD) && (
+          <a className={styles.externalButton} href="/docs" target="_blank" rel="noreferrer">
+            <ExternalLink size={16} />
+            API Reference
+          </a>
+        )}
       </div>
 
       <div className={styles.docsLayout}>

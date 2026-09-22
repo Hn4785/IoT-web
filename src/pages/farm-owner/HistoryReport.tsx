@@ -704,7 +704,7 @@ export default function HistoryReport() {
 
       <p className={styles.note}>
         Historical values are displayed
-        from the current mock data source.
+        from the connected backend data source.
         Production API integration is not
         configured yet.
       </p>

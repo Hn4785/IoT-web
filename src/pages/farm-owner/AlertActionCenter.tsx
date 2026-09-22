@@ -1065,7 +1065,7 @@ export default function AlertActionCenter() {
                 {currentUser?.displayName ??
                   "the farm owner"}
               </strong>{" "}
-              in this mock workflow.
+              after the backend confirms the action.
             </div>
           </section>
         ) : (

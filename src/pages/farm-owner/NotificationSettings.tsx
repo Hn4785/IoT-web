@@ -40,37 +40,7 @@ interface NotificationRule {
   enabled: boolean;
 }
 
-const initialRules: NotificationRule[] = [
-  {
-    id: "RULE-001",
-    name: "Low soil moisture",
-    severity: "warning",
-    metric: "Soil Moisture",
-    farmId: "FARM-001",
-    plotId: "PLOT-001",
-    channels: {
-      email: true,
-      push: true,
-      sms: false,
-    },
-    enabled: true,
-  },
-
-  {
-    id: "RULE-002",
-    name: "Critical soil condition",
-    severity: "critical",
-    metric: "Soil Moisture",
-    farmId: "FARM-001",
-    plotId: "PLOT-002",
-    channels: {
-      email: true,
-      push: true,
-      sms: true,
-    },
-    enabled: true,
-  },
-];
+const initialRules: NotificationRule[] = [];
 
 const channelMeta: Record<
   Channel,

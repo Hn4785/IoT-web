@@ -37,49 +37,17 @@ const permissions: Permission[] = [
   },
 ];
 
-const farms = [
-  {
-    id: "farm-001",
-    name: "Green Valley Farm",
-    plots: [
-      {
-        id: "plot-001",
-        name: "North Field",
-        stations: ["Station 001", "Station 002"],
-      },
-      {
-        id: "plot-002",
-        name: "South Field",
-        stations: ["Station 003"],
-      },
-    ],
-  },
-  {
-    id: "farm-002",
-    name: "Sunrise Farm",
-    plots: [
-      {
-        id: "plot-003",
-        name: "East Plot",
-        stations: ["Station 004"],
-      },
-    ],
-  },
-];
+const farms: Array<{
+  id: string;
+  name: string;
+  plots: Array<{ id: string; name: string; stations: string[] }>;
+}> = [];
 
 export default function ApiPermissions() {
-  const [selectedKey, setSelectedKey] = useState("Production Integration");
-  const [selectedPermissions, setSelectedPermissions] = useState<string[]>([
-    "latest",
-    "history",
-  ]);
-  const [selectedStations, setSelectedStations] = useState<string[]>([
-    "Station 001",
-    "Station 002",
-  ]);
-  const [expandedFarms, setExpandedFarms] = useState<string[]>([
-    "farm-001",
-  ]);
+  const [selectedKey, setSelectedKey] = useState("");
+  const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
+  const [selectedStations, setSelectedStations] = useState<string[]>([]);
+  const [expandedFarms, setExpandedFarms] = useState<string[]>([]);
 
   const togglePermission = (id: string) => {
     setSelectedPermissions((current) =>
@@ -123,9 +91,7 @@ export default function ApiPermissions() {
           value={selectedKey}
           onChange={(event) => setSelectedKey(event.target.value)}
         >
-          <option>Production Integration</option>
-          <option>Analytics Service</option>
-          <option>Mobile Application</option>
+          <option value="">No API key selected</option>
         </select>
       </section>
 

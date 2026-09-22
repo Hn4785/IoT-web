@@ -24,45 +24,15 @@ import { users } from "@/data/user";
 
 import styles from "./AdminDashboard.module.css";
 
-const healthTrend = [
-  { label: "08:00", value: 94 },
-  { label: "10:00", value: 92 },
-  { label: "12:00", value: 95 },
-  { label: "14:00", value: 93 },
-  { label: "16:00", value: 96 },
-  { label: "18:00", value: 95 },
-];
+const healthTrend: Array<{ label: string; value: number }> = [];
 
-const recentEvents = [
-  {
-    time: "16:42",
-    event: "Updated station configuration",
-    user: "Alex Morgan",
-    resource: "ST-001",
-    status: "success",
-  },
-  {
-    time: "16:28",
-    event: "Created alert rule",
-    user: "Daniel Nguyen",
-    resource: "RULE-003",
-    status: "success",
-  },
-  {
-    time: "16:15",
-    event: "Rotated gateway credential",
-    user: "Alex Morgan",
-    resource: "GW-004",
-    status: "success",
-  },
-  {
-    time: "15:58",
-    event: "Configuration update failed",
-    user: "Emily Tran",
-    resource: "ST-004",
-    status: "failed",
-  },
-];
+const recentEvents: Array<{
+  time: string;
+  event: string;
+  user: string;
+  resource: string;
+  status: string;
+}> = [];
 
 export default function AdminDashboard() {
   const [farmId, setFarmId] = useState("all");

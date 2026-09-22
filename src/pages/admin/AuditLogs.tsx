@@ -1,11 +1,7 @@
 import { useMemo, useState } from "react";
 import {
   Activity,
-  Database,
-  MessageSquare,
   Radio,
-  Server,
-  Wifi,
 } from "lucide-react";
 
 import PageHeader from "@/components/layout/PageHeader";
@@ -14,6 +10,7 @@ import SearchInput from "@/components/common/SearchInput";
 import StatusBadge from "@/components/common/StatusBadge";
 import DateRangePicker from "@/components/common/DateRangePicker";
 import Pagination from "@/components/common/Pagination";
+import { formatVietnamDateTime } from "@/utils/formatDateTime";
 
 import type { DateRange } from "react-day-picker";
 
@@ -36,135 +33,16 @@ interface AuditLog {
   result: AuditResult;
 }
 
-const auditLogs: AuditLog[] = [
-  {
-    id: "AUD-001",
-    timestamp: "2026-08-30T16:42:11Z",
-    user: "Alex Morgan",
-    action: "Changed sensor threshold",
-    resource: "Alert Rule",
-    resourceId: "RULE-001",
-    previous: "30%",
-    next: "25%",
-    source: "10.20.4.18",
-    result: "success",
-  },
-  {
-    id: "AUD-002",
-    timestamp: "2026-08-30T16:28:34Z",
-    user: "Daniel Nguyen",
-    action: "Updated station configuration",
-    resource: "Station",
-    resourceId: "ST-001",
-    previous: "10s",
-    next: "5s",
-    source: "10.20.4.21",
-    result: "success",
-  },
-  {
-    id: "AUD-003",
-    timestamp: "2026-08-30T16:15:02Z",
-    user: "Alex Morgan",
-    action: "Rotated gateway credential",
-    resource: "Gateway",
-    resourceId: "GW-004",
-    previous: "credential-v3",
-    next: "credential-v4",
-    source: "10.20.4.18",
-    result: "success",
-  },
-  {
-    id: "AUD-004",
-    timestamp: "2026-08-30T15:58:46Z",
-    user: "Emily Tran",
-    action: "Updated station configuration",
-    resource: "Station",
-    resourceId: "ST-004",
-    previous: "20s",
-    next: "15s",
-    source: "10.20.4.25",
-    result: "failed",
-  },
-  {
-    id: "AUD-005",
-    timestamp: "2026-08-30T15:41:20Z",
-    user: "Alex Morgan",
-    action: "Created alert rule",
-    resource: "Alert Rule",
-    resourceId: "RULE-004",
-    previous: "—",
-    next: "pH < 5.5",
-    source: "10.20.4.18",
-    result: "success",
-  },
-  {
-    id: "AUD-006",
-    timestamp: "2026-08-30T15:22:05Z",
-    user: "System",
-    action: "Device heartbeat processed",
-    resource: "Station",
-    resourceId: "ST-003",
-    previous: "offline",
-    next: "online",
-    source: "MQTT",
-    result: "success",
-  },
-  {
-    id: "AUD-007",
-    timestamp: "2026-08-30T14:58:09Z",
-    user: "Daniel Nguyen",
-    action: "Changed user role",
-    resource: "User",
-    resourceId: "USR-008",
-    previous: "operator",
-    next: "technician",
-    source: "10.20.4.21",
-    result: "success",
-  },
-];
+const auditLogs: AuditLog[] = [];
 
-const services = [
-  [
-    "MQTT Broker",
-    Radio,
-    "99.98%",
-    "0.02%",
-    "1,842 msg/s",
-    "84 ms",
-  ],
-  [
-    "Ingestion",
-    Database,
-    "99.94%",
-    "0.06%",
-    "1,817 msg/s",
-    "112 ms",
-  ],
-  [
-    "Notification",
-    MessageSquare,
-    "99.91%",
-    "0.09%",
-    "42 msg/s",
-    "238 ms",
-  ],
-  [
-    "WebSocket",
-    Wifi,
-    "99.97%",
-    "0.03%",
-    "684 conn/s",
-    "96 ms",
-  ],
-  [
-    "Dead Letter Queue",
-    Server,
-    "100%",
-    "0%",
-    "2 msg/min",
-    "—",
-  ],
-] as const;
+const services: ReadonlyArray<readonly [
+  string,
+  typeof Radio,
+  string,
+  string,
+  string,
+  string,
+]> = [];
 
 /**
  * FIX TYPE:
@@ -177,7 +55,7 @@ const services = [
  * | "WebSocket"
  * | "Dead Letter Queue"
  */
-type ServiceName = (typeof services)[number][0];
+type ServiceName = string;
 
 export default function AuditLogs() {
   const [query, setQuery] = useState("");
@@ -350,7 +228,9 @@ export default function AuditLogs() {
                 .map((log) => (
                   <tr key={log.id}>
                     <td>
-                      {log.timestamp}
+                      <time dateTime={log.timestamp} title={log.timestamp}>
+                        {formatVietnamDateTime(log.timestamp)}
+                      </time>
                     </td>
 
                     <td>
