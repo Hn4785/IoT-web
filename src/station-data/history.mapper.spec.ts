@@ -98,9 +98,7 @@ describe('history mapper and cursor', () => {
       limit: 1,
       queryFingerprint: fingerprint,
       fetchedAt: new Date('2026-09-22T11:48:00Z'),
-      upstream: upstream([
-        { ts: 1790077654527, time: '2026-09-22 18:47:34', moisture: 43 },
-      ]),
+      upstream: upstream([{ ts: 1790077654527, time: '2026-09-22 18:47:34', moisture: 43 }]),
     });
 
     expect(page.series[0]?.points[0]?.observedAt).toBe('2026-09-22T11:47:34.527Z');
