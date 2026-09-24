@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Search,
   Bell,
@@ -9,7 +9,10 @@ import {
 import { useNavigate } from "react-router-dom";
 
 import { useAuth } from "@/hooks/useAuth";
+import { notifications as initialNotifications } from "@/data/notifications";
+
 import Breadcrumb from "./Breadcrumb";
+import NotificationDropdown from "../notifications/NotificationDropdown";
 
 import styles from "./Topbar.module.css";
 
@@ -19,13 +22,80 @@ interface TopbarProps {
 }
 
 export default function Topbar({
-  notificationCount = 0,
   onSearch,
 }: TopbarProps) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+
+  const [notifications, setNotifications] = useState(
+    initialNotifications,
+  );
+
+  const notificationRef = useRef<HTMLDivElement>(null);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+
+  const unreadCount = notifications.filter(
+    (notification) => !notification.read,
+  ).length;
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+
+      if (
+        notificationRef.current &&
+        !notificationRef.current.contains(target)
+      ) {
+        setIsNotificationOpen(false);
+      }
+
+      if (
+        userMenuRef.current &&
+        !userMenuRef.current.contains(target)
+      ) {
+        setIsUserMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener(
+        "mousedown",
+        handleClickOutside,
+      );
+    };
+  }, []);
+
+  const handleNotificationToggle = () => {
+    setIsNotificationOpen((current) => !current);
+    setIsUserMenuOpen(false);
+  };
+
+  const handleMarkAsRead = (id: string) => {
+    setNotifications((current) =>
+      current.map((notification) =>
+        notification.id === id
+          ? {
+              ...notification,
+              read: true,
+            }
+          : notification,
+      ),
+    );
+  };
+
+  const handleMarkAllAsRead = () => {
+    setNotifications((current) =>
+      current.map((notification) => ({
+        ...notification,
+        read: true,
+      })),
+    );
+  };
 
   const handleLogout = async () => {
     setIsUserMenuOpen(false);
@@ -67,24 +137,48 @@ export default function Topbar({
           />
         </div>
 
-        <button
-          type="button"
-          className={styles.iconButton}
-          aria-label="Notifications"
+        {/* Notification */}
+        <div
+          ref={notificationRef}
+          className={styles.notificationMenu}
         >
-          <Bell size={18} />
+          <button
+            type="button"
+            className={styles.iconButton}
+            aria-label={`Notifications${
+              unreadCount > 0
+                ? `, ${unreadCount} unread`
+                : ""
+            }`}
+            aria-expanded={isNotificationOpen}
+            onClick={handleNotificationToggle}
+          >
+            <Bell size={18} />
 
-          {notificationCount > 0 && (
-            <span className={styles.badge}>
-              {notificationCount > 9
-                ? "9+"
-                : notificationCount}
-            </span>
+            {unreadCount > 0 && (
+              <span className={styles.badge}>
+                {unreadCount > 9
+                  ? "9+"
+                  : unreadCount}
+              </span>
+            )}
+          </button>
+
+          {isNotificationOpen && (
+            <NotificationDropdown
+              notifications={notifications}
+              onMarkAsRead={handleMarkAsRead}
+              onMarkAllAsRead={handleMarkAllAsRead}
+            />
           )}
-        </button>
+        </div>
 
+        {/* User menu */}
         {user && (
-          <div className={styles.userMenu}>
+          <div
+            ref={userMenuRef}
+            className={styles.userMenu}
+          >
             <button
               type="button"
               className={styles.avatarButton}
@@ -117,7 +211,11 @@ export default function Topbar({
                 className={styles.userDropdown}
                 role="menu"
               >
-                <div className={styles.userDropdownHeader}>
+                <div
+                  className={
+                    styles.userDropdownHeader
+                  }
+                >
                   <div
                     className={
                       styles.dropdownAvatar
@@ -151,9 +249,7 @@ export default function Topbar({
 
                 <button
                   type="button"
-                  className={
-                    styles.dropdownItem
-                  }
+                  className={styles.dropdownItem}
                   role="menuitem"
                   onClick={
                     handleChangePassword
@@ -180,9 +276,7 @@ export default function Topbar({
                     aria-hidden="true"
                   />
 
-                  <span>
-                    Log out
-                  </span>
+                  <span>Log out</span>
                 </button>
               </div>
             )}
