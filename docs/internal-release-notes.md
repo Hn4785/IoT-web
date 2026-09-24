@@ -31,9 +31,10 @@ Với mỗi thay đổi:
 
 ### Bằng chứng kiểm tra
 
-- `npm test`: 40/40 test đạt trước khi đổi nhãn phiên bản.
-- `npm run build` và `npm run lint`: đạt trước khi đổi nhãn phiên bản.
-- Browser Admin/Super Admin và kiểm tra Pi v2.5.2: **chưa xác nhận tại thời điểm ghi mục này**.
+- Snapshot commit `4d45f16` được xuất sang thư mục sạch; `npm ci --offline` không báo vulnerability, `npm test` đạt 40/40, `npm run lint` và `npm run build` đạt.
+- Pi qua LAN chạy `agrisense-web:v2.5.2` (healthy); API và database vẫn healthy. LAN `/__web_health` và `/api/v1/health` trả 200, audit khi chưa xác thực trả 401; đường public `/login` trả 200.
+- Chrome hiển thị nhãn `v2.5.2`; Dashboard với phiên Super Admin sẵn có hiển thị 1 Farm, 1 Plot, 6 Station, 3 User từ backend; IoT Config hiển thị `DEVICE_CONTRACT_PENDING` và không có nút ghi cấu hình giả.
+- Browser matrix đầy đủ cho Admin và Super Admin (Audit, Users/scope, Alert Center, station detail, lỗi phiên/dependency): **chưa hoàn tất**. Không đánh dấu các luồng này browser-verified.
 
 ### Tồn đọng liên quan
 

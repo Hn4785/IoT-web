@@ -241,13 +241,13 @@ thiết bị là phụ thuộc ngoài, phải để fail-closed thay vì dựng 
 
 | Trang/luồng | Trạng thái code | Browser role matrix |
 | --- | --- | --- |
-| Dashboard | Đã nối inventory; chỉ số chưa có contract là N/A | Chưa chạy |
+| Dashboard | Đã nối inventory; chỉ số chưa có contract là N/A | Smoke đạt trên Pi với phiên Super Admin; role matrix chưa xong |
 | Users và quyền Farm/Station | Đã nối API tài khoản và cấp/thu hồi scope | Chưa chạy |
 | Stations & Devices, Station Detail | Đã nối hierarchy, station detail, latest soil | Chưa chạy |
 | Device Health | Fail-closed theo capability, chưa có contract health | Chưa chạy |
 | Alert Center/rules | Đã nối contract Phase C | Chưa chạy |
 | Notifications | Tạm hoãn UI Admin; chờ frontend Notifications được push | Chưa chạy |
-| IoT Config, Config Proposals | Không hiển thị thao tác ghi giả; chờ device contract | Chưa chạy |
+| IoT Config, Config Proposals | Không hiển thị thao tác ghi giả; chờ device contract | IoT Config smoke đạt; Config Proposals chưa chạy |
 | Audit Log | Đã nối cursor/filter thật; chỉ Super Admin được đọc | Chưa chạy |
 
 Sau khi kiểm tra từng trang bằng cả Admin lẫn Super Admin, cập nhật cột browser
