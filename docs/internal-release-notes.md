@@ -11,6 +11,13 @@ Với mỗi thay đổi:
 3. Ghi rõ kết quả test; không đánh dấu hoàn thành nếu chưa có bằng chứng kiểm tra.
 4. Không ghi secret, mật khẩu, access token, refresh token hoặc API key vào file này.
 
+## Lỗi giao diện ghi nhận sau v2.5.2 — chưa xử lý
+
+1. **Thanh tìm kiếm toàn cục chưa hoạt động** (ảnh Admin Device Health/Stations & Devices). Có thể nhập từ khóa nhưng chưa có kết quả hoặc điều hướng tìm thiết bị/trạm; dễ khiến người dùng tưởng tính năng đã sẵn sàng. Khi xử lý, nối nguồn dữ liệu và hành vi tìm kiếm thật cho từng role, hoặc ẩn/vô hiệu hóa ô tìm kiếm cho đến khi có chức năng. Kiểm tra cả Admin, Farmer và Developer.
+2. **Tỷ lệ bố cục chưa cân đối trên khoảng 4–5 trang**. Hai ảnh hiện có cho thấy Device Health và Stations & Devices; các trang còn lại cần xác định khi rà soát, không tự gán tên. Ở Device Health, khối thông báo trải quá rộng trên màn hình lớn, nội dung nằm giữa khoảng trống lớn và không đồng nhịp với các trang Admin khác. Cần rà soát giới hạn chiều rộng, khoảng cách và responsive trên toàn bộ nhóm trang này; kiểm tra ở nhiều kích thước màn hình.
+
+Hai mục trên là lỗi UI/UX, không phải lỗi dữ liệu hay API. Chưa sửa trong bản Pi v2.5.2; chỉ đánh dấu hoàn thành sau khi có kiểm tra giao diện thực tế.
+
 ## v2.5.2 — 2026-09-24 (Admin/Super Admin checkpoint)
 
 ### Thay đổi
