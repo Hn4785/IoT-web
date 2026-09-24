@@ -20,7 +20,11 @@ export const API_ENDPOINTS = {
     base: "/admin/users",
     byId: (id: string) => `/admin/users/${id}`,
     resetPassword: (id: string) => `/admin/users/${id}/reset-password`,
+    farmMembership: (userId: string, farmId: string) => `/admin/users/${userId}/farm-memberships/${farmId}`,
+    stationGrant: (userId: string, stationId: string) => `/admin/users/${userId}/station-grants/${stationId}`,
   },
+
+  auditEvents: "/admin/audit-events",
 
   apiKeys: {
     base: "/developer/api-keys",
@@ -54,6 +58,22 @@ export const API_ENDPOINTS = {
   alerts: {
     base: "/alerts",
     byId: (id: string) => `/alerts/${id}`,
+    acknowledgements: (id: string) => `/alerts/${id}/acknowledgements`,
+    resolutions: (id: string) => `/alerts/${id}/resolutions`,
+  },
+
+  alertRules: {
+    byStation: (stationId: string) => `/stations/${stationId}/alert-rules`,
+    byId: (id: string) => `/alert-rules/${id}`,
+  },
+
+  notifications: {
+    base: "/notifications",
+    byId: (id: string) => `/notifications/${id}`,
+  },
+
+  deviceConfigurations: {
+    capability: "/device-configurations/capability",
   },
 
   /*

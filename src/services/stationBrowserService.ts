@@ -76,6 +76,12 @@ export function createStationBrowserService(client: BrowserHttpClient) {
       ));
     },
 
+    async getStation(stationId: string): Promise<BrowserStation> {
+      return dataOf(await client.get<ApiSuccessEnvelope<BrowserStation>>(
+        API_ENDPOINTS.stations.byId(stationId),
+      ));
+    },
+
     async getLatest(
       stationId: string,
       fields?: readonly ApiSoilField[],

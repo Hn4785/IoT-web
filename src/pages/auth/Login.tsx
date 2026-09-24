@@ -356,7 +356,7 @@ export default function Login() {
         </form>
 
         <footer className={styles.footer}>
-          AgriSense Monitoring Node System v2.5.1
+          AgriSense Monitoring Node System v2.5.2
         </footer>
       </section>
     </main>

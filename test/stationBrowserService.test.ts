@@ -32,6 +32,20 @@ test("browser hierarchy uses bearer-authenticated backend routes", async () => {
   ]);
 });
 
+test("admin station detail reads the scoped station route", async () => {
+  const calls: string[] = [];
+  const station = { id: "station-1", farmId: "farm-1", plotId: "plot-1", name: "North", code: "NODE01" };
+  const service = createStationBrowserService({
+    async get<T>(url: string): Promise<{ data: T }> {
+      calls.push(url);
+      return { data: { success: true, data: station } } as { data: T };
+    },
+  });
+
+  assert.deepEqual(await service.getStation("station-1"), station);
+  assert.deepEqual(calls, ["/stations/station-1"]);
+});
+
 test("browser history sends the strict backend query contract", async () => {
   const calls: unknown[][] = [];
   const client = {

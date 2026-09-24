@@ -81,7 +81,9 @@ export default function Sidebar() {
 
   if (!user) return null;
 
-  const items = NAV_CONFIG[user.role] ?? [];
+  const items = (NAV_CONFIG[user.role] ?? []).filter(
+    ({ path }) => path !== '/admin/audit-logs' || user.isSuperAdmin,
+  );
   const activePath = findActiveNavigationPath(
     items.map(({ path }) => path),
     pathname,

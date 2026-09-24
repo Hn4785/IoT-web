@@ -1,8 +1,10 @@
+const viteEnv = import.meta.env ?? {};
+
 const apiBaseUrl =
-  import.meta.env.VITE_API_BASE_URL || "/api/v1";
+  viteEnv.VITE_API_BASE_URL || "/api/v1";
 
 const apiTimeout = Number(
-  import.meta.env.VITE_API_TIMEOUT || 10000
+  viteEnv.VITE_API_TIMEOUT || 10000
 );
 
 export const env = {

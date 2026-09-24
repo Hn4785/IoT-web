@@ -1,92 +1,254 @@
-# Bàn giao kết nối Frontend - Backend
+# Hướng dẫn nối Frontend - Backend
 
-## Mốc cập nhật
+Tài liệu này là đầu mối triển khai tích hợp giữa nhánh frontend `FE` tại
+`D:/IoT-web` và backend `BE` tại
+`D:/IoT-api/.worktrees/integration-core`. Không đổi tên route hoặc tự dựng DTO
+theo giao diện; contract runtime từ backend là nguồn sự thật.
 
-- Nhánh: `FE`
-- Backend local: `http://localhost:3000/api/v1`
-- Biến môi trường frontend: `VITE_API_BASE_URL`
-- Commit hoàn thiện luồng tài khoản: `7f5b42a`
+> Trạng thái công việc nằm ở backend `tasks/todo.md`; lỗi nằm ở backend issue
+> ledger. File này chỉ giữ cách nối và acceptance theo trang, không giữ lịch sử
+> checkpoint hay sao chép sổ lỗi.
 
-Đợt cập nhật này thay phần mock của tài khoản bằng API thật từ backend Phase A. Các màn hình IoT thuộc Phase B/C vẫn giữ nguyên cho đến khi có contract tương ứng.
+## 1. Nguồn sự thật và nguyên tắc
 
-## Những phần đã hoạt động với backend
+- API prefix: `/api/v1`.
+- Development OpenAPI: `http://localhost:3000/docs-json`.
+- Swagger UI chỉ tồn tại ở development: `http://localhost:3000/docs`.
+- Success envelope: `{ "success": true, "data": ... }`.
+- Error envelope:
+  `{ "success": false, "error": { "code": "...", "message": "..." }, "requestId": "..." }`.
+- Browser dùng Bearer access token; refresh token chỉ nằm trong cookie
+  `HttpOnly` và mọi request refresh/logout phải bật credentials.
+- Client Developer gọi `/client/*` bằng `X-API-Key`, không dùng Bearer token của
+  portal thay thế API key.
+- Frontend không được tự suy ra quyền từ sidebar. Backend quyết định `401`,
+  `403` và phạm vi Farm/Station.
+- Không fallback sang dữ liệu mẫu khi API lỗi. Hiển thị loading, empty state hoặc
+  lỗi có nút thử lại.
+- Không ghi access token, refresh cookie, temporary password hoặc API key vào
+  source, localStorage, log, ảnh hay tài liệu.
 
-| Chức năng | API đang dùng | Trạng thái |
+## 2. Cấu hình môi trường
+
+### Local
+
+Backend `.env`:
+
+```dotenv
+PORT=3000
+FRONTEND_ORIGIN=http://localhost:5173
+```
+
+Frontend `.env`:
+
+```dotenv
+VITE_API_BASE_URL=http://localhost:3000/api/v1
+```
+
+### Pi/ngrok
+
+Frontend và backend nên đi qua cùng một origin. Trình duyệt gọi `/api/v1`; reverse
+proxy chuyển `/api/v1/*` vào container API, còn các route khác trả SPA. Không
+nhúng URL ngrok cụ thể vào source vì domain có thể thay đổi.
+
+## 3. Lớp kết nối chuẩn ở frontend
+
+Mỗi chức năng đi qua đúng bốn lớp:
+
+```text
+Page/Hook -> Service -> apiClient -> Backend controller
+```
+
+1. Khai báo đường dẫn trong `src/api/endpoints.ts`.
+2. Khai báo DTO TypeScript theo OpenAPI; không dùng trực tiếp type của dữ liệu
+   mẫu.
+3. Service gọi `apiClient`, unwrap đúng envelope và trả DTO cho page.
+4. Page quản lý loading/error/empty/success, không tự gọi Axios rải rác.
+5. Thêm contract test cho URL, method, query/body và envelope trước khi thay mock.
+
+`apiClient` phải giữ các invariant hiện tại:
+
+- Access token chỉ ở memory.
+- `withCredentials: true` cho cookie refresh.
+- Chỉ một refresh chạy tại một thời điểm; các request 401 còn lại chờ chung.
+- Refresh thất bại thì xóa session local và chuyển về `/login`.
+- Không retry vô hạn các request state-changing.
+
+## 4. Thứ tự tích hợp theo phase
+
+### Phase A - tài khoản và quyền
+
+| Luồng frontend | Backend contract | Trạng thái |
 | --- | --- | --- |
-| Đăng nhập | `POST /auth/login` | Đã nối |
+| Login | `POST /auth/login` | Đã nối |
 | Khôi phục phiên | `POST /auth/refresh`, `GET /auth/me` | Đã nối |
-| Đăng xuất | `POST /auth/logout` | Đã nối và có nút trên thanh trên cùng |
-| Đổi mật khẩu bắt buộc | `POST /auth/change-password` | Đã nối |
-| Danh sách tài khoản | `GET /admin/users` | Đã nối phân trang cursor |
-| Tạo tài khoản | `POST /admin/users` | Đã nối |
-| Sửa role/trạng thái | `PATCH /admin/users/:id` | Đã nối |
+| Logout | `POST /auth/logout` | Đã nối |
+| Đổi mật khẩu | `POST /auth/change-password` | Đã nối |
+| Danh sách/tạo/sửa user | `GET/POST /admin/users`, `PATCH /admin/users/:id` | Đã nối |
 | Reset mật khẩu | `POST /admin/users/:id/reset-password` | Đã nối |
-| Danh sách API Key | `GET /developer/api-keys` | Đã nối |
-| Tạo API Key | `POST /developer/api-keys` | Đã nối |
-| Rotate API Key | `POST /developer/api-keys/:id/rotate` | Đã nối |
-| Revoke API Key | `POST /developer/api-keys/:id/revoke` | Đã nối |
+| Quyền Farm/Station | `PUT/DELETE /admin/users/:id/farm-memberships/:farmId`, `PUT/DELETE /admin/users/:id/station-grants/:stationId` | Đã nối selector và thao tác cấp/thu hồi; cần kiểm thử browser |
+| Chuyển Super Admin | `POST /admin/super-admin/transfer` | Đã nối |
+| API key | `/developer/api-keys/*` | Đã nối |
 
-## Thay đổi frontend cần chú ý
+Điều kiện nghiệm thu Phase A trên trình duyệt:
 
-Sidebar chỉ đánh dấu màu xanh cho mục khớp cụ thể nhất với URL hiện tại; route gốc `/admin` không còn sáng đồng thời với các trang con. Thời gian trong bảng Audit được đổi từ ISO thô sang giờ Việt Nam theo dạng `HH:mm DD/MM/YYYY` (giữ ISO gốc trong thuộc tính `dateTime`).
+- Ba role vào đúng route và không mở được route role khác.
+- User mới bị buộc đổi mật khẩu.
+- Super Admin hiện tại không thể tự reset credential.
+- Chuyển authority thu hồi phiên cũ và buộc đăng nhập lại.
+- Create/rotate secret chỉ hiển thị một lần và thao tác Copy báo kết quả rõ ràng.
 
-Nút mở Swagger chỉ xuất hiện ở bản development. Backend production cố ý không phục vụ `/docs`, nên bản staging/public dùng phần API Documentation tích hợp trong frontend và không hiển thị liên kết dẫn tới `404`.
+### Phase B - Station và dữ liệu đất
 
-Access token chỉ được giữ trong bộ nhớ, không lưu vào `localStorage`. Refresh token do backend quản lý bằng cookie `HttpOnly`, vì vậy request phải giữ `withCredentials: true`.
+| Màn hình | Contract | Việc còn lại |
+| --- | --- | --- |
+| Farm -> Plot -> Station | `GET /farms`, `/farms/:id/plots`, `/plots/:id/stations` | Dùng chung `stationBrowserService` |
+| Soil Dashboard | `GET /stations/:id/data/latest`, `/history` | Đã nối; giữ polling hữu hạn |
+| Historical Analysis | `GET /stations/:id/data/history` | Đã nối |
+| Farmer Dashboard | Cùng hierarchy/latest | Đã nối; không fallback dữ liệu mẫu |
+| History Report | Cùng hierarchy/history | Đã nối; có empty/error và CSV từ dữ liệu đã tải |
+| Client API Explorer | `/client/stations`, `/client/data/latest`, `/client/data/history` | Đã nối bằng `X-API-Key` |
 
-Khi nhiều request cùng gặp lỗi 401, frontend chỉ gửi một request refresh. Những request còn lại chờ kết quả chung, tránh reuse refresh token và làm người dùng bị đăng xuất ngoài ý muốn.
+Quy tắc dữ liệu:
 
-Tài khoản có trạng thái `PENDING_PASSWORD_CHANGE` luôn được chuyển tới `/change-password`. Người dùng không thể mở dashboard trước khi đổi mật khẩu tạm thành công.
+- Thời gian gửi backend phải là ISO 8601 UTC kết thúc bằng `Z`.
+- History raw tối đa 7 ngày; aggregate tối đa 90 ngày.
+- Theo `nextCursor`; không tự suy ra tổng số trang.
+- `unit`, `sensorId`, `depthCm` có thể `null`. UI không dựng dữ liệu không có từ
+  provider.
+- Phân biệt `isFromCache`, `isStale`, upstream lỗi và danh sách rỗng.
 
-Mật khẩu tạm và API Key secret chỉ hiện ngay sau khi tạo hoặc rotate. Không lưu hai giá trị này vào store, trình duyệt hay source code.
+### Phase C - cảnh báo và thông báo trong ứng dụng
 
-Danh sách Admin User dùng `nextCursor`; backend không trả tổng số bản ghi. Giao diện vì vậy chỉ có `Previous` và `Next`, không được tự suy ra tổng số trang.
+Contract hiện có:
 
-## Phần chưa được nối
+- `GET/POST /stations/:stationId/alert-rules`.
+- `GET/PATCH /alert-rules/:ruleId`.
+- `GET /alerts`, `GET /alerts/:alertId`.
+- `POST /alerts/:alertId/acknowledgements`.
+- `POST /alerts/:alertId/resolutions`.
+- `GET /notifications`, `PATCH /notifications/:notificationId`.
+- `GET /device-configurations/capability`.
 
-### Quyền Farm và Station của tài khoản
+Trạng thái frontend hiện tại:
 
-Backend đã có lệnh gán hoặc bỏ quyền nhưng chưa có API đọc quyền hiện tại của một user. Form chọn quyền mock đã được tắt để tránh gửi ID giả hoặc ghi đè nhầm quyền đang có.
+1. `alertService` dùng đúng POST acknowledgement/resolution sub-resource; không
+   còn gọi route `PATCH /alerts/:id` hoặc comments không tồn tại.
+2. Farmer và Admin Alert Center dùng chung lifecycle DTO thật.
+3. `notificationService` dùng cursor/unread/mark-read contract thật; UI
+   Notifications còn chờ frontend hoàn thiện và chưa nằm trong checkpoint Admin.
+4. Các trang cấu hình/thiết bị hiển thị unavailable khi capability trả
+   `DEVICE_CONTRACT_PENDING`; không dựng nút publish giả.
+5. Còn phải chạy browser matrix cho quyền Admin/Farmer, mất membership và stale
+   session trước khi nghiệm thu tích hợp.
 
-Muốn hoàn thiện phần này, backend cần trả danh sách Farm/Station đã gán trong `GET /admin/users/:id`, hoặc bổ sung endpoint đọc riêng. Sau đó frontend mới nên dựng lại phần chọn quyền bằng UUID thật.
+### Phase D - audit và vận hành
 
-### Dữ liệu IoT
+- Admin Audit dùng `GET /admin/audit-events`; chỉ Super Admin được đọc.
+- Readiness dành cho hạ tầng, không dùng thay liveness `/health` trên UI.
+- Không expose registry metrics process-local ra giao diện khi chưa có contract
+  production.
+- Device Health, Gateway/Sensor metrics và API Metrics phải hiển thị `N/A` hoặc
+  unavailable cho tới khi backend có contract thật; không giữ số mẫu.
 
-Telemetry, cảm biến, cảnh báo, thời tiết, báo cáo và số liệu dashboard vẫn là mock. Không đổi những màn hình này sang API tài khoản và không coi dữ liệu demo là dữ liệu backend thật.
+## 5. Ánh xạ lỗi sang giao diện
 
-### Phạm vi API Key theo Station
+| HTTP/code | Hành vi frontend |
+| --- | --- |
+| `400 VALIDATION_ERROR` | Giữ form, chỉ rõ trường/input sai |
+| `401 UNAUTHENTICATED` | Thử single-flight refresh một lần; thất bại thì login |
+| `403 FORBIDDEN` | Trang không có quyền; không giả thành dữ liệu rỗng |
+| `404 NOT_FOUND` | Resource không tồn tại hoặc ngoài scope; không tiết lộ khác biệt |
+| `409 CONFLICT` | Thông báo dữ liệu/thao tác đã thay đổi, tải lại trạng thái |
+| `429 RATE_LIMITED` | Khóa gửi lại tạm thời, đọc rate-limit header nếu có |
+| `502 UPSTREAM_UNAVAILABLE` | Giữ dữ liệu cache hợp lệ nếu response cung cấp; cho thử lại |
+| `503 DATABASE_UNAVAILABLE` | Báo dịch vụ tạm thời không sẵn sàng, không xóa session tùy tiện |
 
-Khi tạo API Key, frontend hiện gửi `stationIds: []`. Việc chọn Station cụ thể sẽ được bổ sung sau khi contract đọc quyền Station hoàn chỉnh.
+Luôn giữ `requestId` để tester đối chiếu log backend, nhưng không hiển thị stack
+trace hoặc raw exception.
 
-## Cách chạy và kiểm tra nhanh
+## 6. Checklist thay một trang mock bằng API thật
+
+1. Xác nhận endpoint trong `/docs-json` và role được phép.
+2. Viết DTO input/output và test URL/method/envelope.
+3. Viết hoặc sửa service; không gọi backend trực tiếp từ component.
+4. Thay nguồn mock, sau đó xóa import `src/data/*` khỏi trang.
+5. Kiểm tra loading, empty, error, retry và stale/cache.
+6. Kiểm tra `401`, `403`, `404`, `409`, `429`, `502/503` có liên quan.
+7. Kiểm tra logout, refresh và chuyển role/status không để state cũ tồn tại.
+8. Chạy test/build/lint cả hai phía.
+9. Dùng DevTools kiểm tra request thực tế không chứa secret ngoài header/cookie
+   đã thiết kế.
+10. Cập nhật `docs/internal-release-notes.md`; chỉ đánh dấu hoàn thành khi có
+    bằng chứng browser hoặc test tự động.
+
+## 7. Lệnh kiểm tra
 
 ```powershell
-# Terminal backend
+# Backend
 cd D:\IoT-api\.worktrees\integration-core
-pnpm start
+docker compose up -d postgres
+pnpm db:status
+pnpm test
+pnpm verify
 
-# Terminal frontend
+# Frontend
 cd D:\IoT-web
-npm install
-npm run dev
+pnpm test
+pnpm lint
+pnpm build
 ```
 
-Kiểm tra thủ công theo thứ tự:
+Sau gate tĩnh, chạy browser matrix cho Admin, Farmer và Client Developer trên:
 
-1. Đăng nhập bằng từng role và kiểm tra đúng dashboard.
-2. Dùng tài khoản có mật khẩu tạm, thử mở dashboard và xác nhận hệ thống chuyển về `/change-password`.
-3. Đổi mật khẩu, đăng xuất rồi đăng nhập lại bằng mật khẩu mới.
-4. Với Admin: tạo user, đổi role/trạng thái, reset mật khẩu và thử nút phân trang.
-5. Với Client Developer: tạo, copy, rotate và revoke API Key.
-6. Mở DevTools để chắc chắn không có access token, refresh token, mật khẩu tạm hoặc API Key secret trong `localStorage`.
+- màn hình desktop;
+- chiều rộng khoảng 390 px;
+- phiên mới, phiên hết hạn và logout;
+- upstream/database hoạt động và tạm mất kết nối.
 
-Trước khi bàn giao tiếp, chạy:
+## 8. Thứ tự hoàn thiện hiện tại
 
-```powershell
-npm test
-npm run lint
-npm run build
-npm audit --audit-level=high
-```
+### Gate trước khi nối toàn diện
 
-Không commit `.env`, cookie, access token, mật khẩu tạm hoặc API Key secret lên Git.
+Các adapter và trang Phase B/C có thể hoàn thiện local đã được nối. Gate tiếp
+theo là kiểm thử trình duyệt theo role; provider CENTER/NODE và contract ghi
+thiết bị là phụ thuộc ngoài, phải để fail-closed thay vì dựng dữ liệu giả.
+
+### Thứ tự nối theo role và từng trang
+
+1. **Admin/Super Admin trước:** Dashboard → Users/phân quyền → Stations & Devices
+   → Device Health → Alert Center/rules → Notifications nếu có → Config
+   capability/proposals → Audit Log.
+2. Chạy đủ happy path, sai quyền, session hết hạn và lỗi dependency cho toàn bộ
+   trang Admin/Super Admin; tạo checkpoint riêng trước khi chuyển role.
+3. **Farmer tiếp theo:** Dashboard → Soil Dashboard → Historical Analysis →
+   History Report → Alerts/Alert Center → Notification Inbox/Settings.
+4. Chạy scope Farm/Plot/Station, mất membership, stale/cache và upstream lỗi;
+   tạo checkpoint Farmer riêng.
+5. **Client Developer cuối cùng:** Dashboard → API Keys → API Permissions → API
+   Docs → API Explorer → API Metrics khi đã có contract.
+6. Chạy API-key scope, create/copy/rotate/revoke, rate limit và key hết hạn; tạo
+   checkpoint Developer riêng.
+7. Sau ba checkpoint role mới chạy browser matrix liên role và QA recovery toàn
+   hệ thống.
+8. Chỉ sau đó mới đóng staging/production: TLS/proxy, shared limiter, backup,
+   MFA và metrics tập trung.
+
+### Theo dõi checkpoint Admin/Super Admin v2.5.2
+
+`Đã nối code` chỉ xác nhận frontend gọi API thật và build/test tĩnh đạt; **không**
+đồng nghĩa đã nghiệm thu trên browser với tài khoản thật.
+
+| Trang/luồng | Trạng thái code | Browser role matrix |
+| --- | --- | --- |
+| Dashboard | Đã nối inventory; chỉ số chưa có contract là N/A | Chưa chạy |
+| Users và quyền Farm/Station | Đã nối API tài khoản và cấp/thu hồi scope | Chưa chạy |
+| Stations & Devices, Station Detail | Đã nối hierarchy, station detail, latest soil | Chưa chạy |
+| Device Health | Fail-closed theo capability, chưa có contract health | Chưa chạy |
+| Alert Center/rules | Đã nối contract Phase C | Chưa chạy |
+| Notifications | Tạm hoãn UI Admin; chờ frontend Notifications được push | Chưa chạy |
+| IoT Config, Config Proposals | Không hiển thị thao tác ghi giả; chờ device contract | Chưa chạy |
+| Audit Log | Đã nối cursor/filter thật; chỉ Super Admin được đọc | Chưa chạy |
+
+Sau khi kiểm tra từng trang bằng cả Admin lẫn Super Admin, cập nhật cột browser
+và lỗi phát hiện tại `docs/internal-release-notes.md` trước khi chuyển sang Farmer.

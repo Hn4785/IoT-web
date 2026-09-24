@@ -1,112 +1,80 @@
-import { apiClient } from "@/api/apiClient";
-import { API_ENDPOINTS } from "@/api/endpoints";
+import type { AxiosInstance } from "axios";
 
+import { apiClient } from "../api/apiClient.ts";
+import { API_ENDPOINTS } from "../api/endpoints.ts";
+import type { ApiSuccessEnvelope } from "../types/api.ts";
 import type {
-  Alert,
-  AlertSeverity,
-  AlertStatus,
-  AlertType,
-} from "@/types/alert";
+  AlertDto,
+  AlertQuery,
+  AlertRuleDto,
+  AlertRuleQuery,
+  CreateAlertRuleInput,
+  CursorPage,
+  UpdateAlertRuleInput,
+} from "../types/alertApi.ts";
 
-import type { PaginatedResponse } from "@/types/api";
+type HttpClient = Pick<AxiosInstance, "get" | "post" | "patch">;
 
-export interface AlertQueryParams {
-  page?: number;
-  limit?: number;
+export function createAlertService(client: HttpClient) {
+  return {
+    async listAlerts(params: AlertQuery = {}): Promise<CursorPage<AlertDto>> {
+      const response = await client.get<ApiSuccessEnvelope<CursorPage<AlertDto>>>(
+        API_ENDPOINTS.alerts.base,
+        { params },
+      );
+      return response.data.data;
+    },
 
-  farmId?: string;
-  plotId?: string;
-  stationId?: string;
-  sensorId?: string;
+    async getAlert(id: string): Promise<AlertDto> {
+      const response = await client.get<ApiSuccessEnvelope<AlertDto>>(API_ENDPOINTS.alerts.byId(id));
+      return response.data.data;
+    },
 
-  type?: AlertType;
-  severity?: AlertSeverity;
-  status?: AlertStatus;
+    async acknowledge(id: string, note?: string): Promise<AlertDto> {
+      const response = await client.post<ApiSuccessEnvelope<AlertDto>>(
+        API_ENDPOINTS.alerts.acknowledgements(id),
+        note ? { note } : {},
+      );
+      return response.data.data;
+    },
+
+    async resolve(id: string, note?: string): Promise<AlertDto> {
+      const response = await client.post<ApiSuccessEnvelope<AlertDto>>(
+        API_ENDPOINTS.alerts.resolutions(id),
+        note ? { note } : {},
+      );
+      return response.data.data;
+    },
+
+    async listRules(stationId: string, params: AlertRuleQuery = {}): Promise<CursorPage<AlertRuleDto>> {
+      const response = await client.get<ApiSuccessEnvelope<CursorPage<AlertRuleDto>>>(
+        API_ENDPOINTS.alertRules.byStation(stationId),
+        { params },
+      );
+      return response.data.data;
+    },
+
+    async createRule(stationId: string, input: CreateAlertRuleInput): Promise<AlertRuleDto> {
+      const response = await client.post<ApiSuccessEnvelope<AlertRuleDto>>(
+        API_ENDPOINTS.alertRules.byStation(stationId),
+        input,
+      );
+      return response.data.data;
+    },
+
+    async getRule(id: string): Promise<AlertRuleDto> {
+      const response = await client.get<ApiSuccessEnvelope<AlertRuleDto>>(API_ENDPOINTS.alertRules.byId(id));
+      return response.data.data;
+    },
+
+    async updateRule(id: string, input: UpdateAlertRuleInput): Promise<AlertRuleDto> {
+      const response = await client.patch<ApiSuccessEnvelope<AlertRuleDto>>(
+        API_ENDPOINTS.alertRules.byId(id),
+        input,
+      );
+      return response.data.data;
+    },
+  };
 }
 
-export interface UpdateAlertRequest {
-  status?: AlertStatus;
-
-  assignedTo?: string;
-
-  acknowledgedBy?: string;
-
-  resolvedBy?: string;
-}
-
-export interface AddAlertCommentRequest {
-  content: string;
-}
-
-export const alertService = {
-  async getAlerts(
-    params?: AlertQueryParams
-  ): Promise<PaginatedResponse<Alert>> {
-    const response = await apiClient.get<
-      PaginatedResponse<Alert>
-    >(
-      API_ENDPOINTS.alerts.base,
-      { params }
-    );
-
-    return response.data;
-  },
-
-  async getAlertById(id: string): Promise<Alert> {
-    const response = await apiClient.get<Alert>(
-      API_ENDPOINTS.alerts.byId(id)
-    );
-
-    return response.data;
-  },
-
-  async updateAlert(
-    id: string,
-    payload: UpdateAlertRequest
-  ): Promise<Alert> {
-    const response = await apiClient.patch<Alert>(
-      API_ENDPOINTS.alerts.byId(id),
-      payload
-    );
-
-    return response.data;
-  },
-
-  async acknowledgeAlert(
-    id: string
-  ): Promise<Alert> {
-    const response = await apiClient.patch<Alert>(
-      API_ENDPOINTS.alerts.byId(id),
-      {
-        status: "acknowledged",
-      }
-    );
-
-    return response.data;
-  },
-
-  async resolveAlert(
-    id: string
-  ): Promise<Alert> {
-    const response = await apiClient.patch<Alert>(
-      API_ENDPOINTS.alerts.byId(id),
-      {
-        status: "resolved",
-      }
-    );
-
-    return response.data;
-  },
-
-  async addComment(
-    id: string,
-    payload: AddAlertCommentRequest
-  ): Promise<Alert> {
-    const response = await apiClient.post<Alert>(
-      `${API_ENDPOINTS.alerts.byId(id)}/comments`,
-      payload
-    );
-
-    return response.data;
-  },
-};
+export const alertService = createAlertService(apiClient);

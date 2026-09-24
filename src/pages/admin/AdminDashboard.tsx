@@ -30,6 +30,7 @@ interface DashboardData {
   plots: BrowserPlot[];
   stations: BrowserStation[];
   userCount: number;
+  inventoryLimited: boolean;
 }
 
 const EMPTY_DATA: DashboardData = {
@@ -37,6 +38,7 @@ const EMPTY_DATA: DashboardData = {
   plots: [],
   stations: [],
   userCount: 0,
+  inventoryLimited: false,
 };
 
 export default function AdminDashboard() {
@@ -64,6 +66,7 @@ export default function AdminDashboard() {
         plots,
         stations: stationPages.flatMap((page) => page.items),
         userCount: userPage.items.length,
+        inventoryLimited: Boolean(farmPage.nextCursor || userPage.nextCursor || plotPages.some((page) => page.nextCursor) || stationPages.some((page) => page.nextCursor)),
       });
     } catch (reason) {
       setError(normalizeApiError(reason).message);
@@ -100,12 +103,12 @@ export default function AdminDashboard() {
   );
 
   const kpis = [
-    { label: "Total Farms", value: data.farms.length, icon: Database, available: true },
-    { label: "Total Plots", value: data.plots.length, icon: Activity, available: true },
-    { label: "Total Stations", value: data.stations.length, icon: Server, available: true },
+    { label: "Loaded Farms", value: data.farms.length, icon: Database, available: true },
+    { label: "Loaded Plots", value: data.plots.length, icon: Activity, available: true },
+    { label: "Loaded Stations", value: data.stations.length, icon: Server, available: true },
     { label: "Total Gateways", value: 0, icon: Cpu, available: false },
     { label: "Total Sensors", value: 0, icon: Gauge, available: false },
-    { label: "Total Users", value: data.userCount, icon: Users, available: true },
+    { label: "Loaded Users", value: data.userCount, icon: Users, available: true },
   ];
 
   return (
@@ -127,6 +130,7 @@ export default function AdminDashboard() {
 
       {loading && <Loading label="Loading system overview..." />}
       {error && <ErrorState description={error} onRetry={refreshDashboard} />}
+      {data.inventoryLimited && <p role="status">Only the first page of some resources is shown. These counts are not system-wide totals.</p>}
 
       <section className={styles.filters}>
         <label>

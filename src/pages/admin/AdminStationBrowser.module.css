@@ -1,0 +1,15 @@
+.page { display: flex; flex-direction: column; gap: var(--spacing-5); padding: var(--spacing-6); }
+.panel { padding: var(--spacing-5); background: var(--color-bg-surface); border: 1px solid var(--color-border-default); border-radius: var(--radius-xl); box-shadow: var(--shadow-sm); }
+.panel h2 { margin: 0 0 var(--spacing-4); font-size: var(--font-size-body-lg); }
+.filters { display: flex; flex-wrap: wrap; gap: var(--spacing-4); }
+.filters label { display: flex; flex-direction: column; gap: var(--spacing-2); min-width: 220px; color: var(--color-text-secondary); }
+.filters select { height: var(--height-input-md); padding: 0 var(--spacing-3); border: 1px solid var(--color-border-default); border-radius: var(--radius-md); background: var(--color-bg-surface); color: var(--color-text-primary); }
+.stationList { display: grid; gap: var(--spacing-3); list-style: none; padding: 0; margin: 0; }
+.stationList li { display: flex; align-items: center; gap: var(--spacing-3); padding: var(--spacing-3); border: 1px solid var(--color-border-subtle); border-radius: var(--radius-md); }
+.stationList li > div { flex: 1; display: flex; flex-direction: column; gap: var(--spacing-1); }
+.stationList li span, .note { color: var(--color-text-secondary); font-size: var(--font-size-body-sm); }
+.stationList a { color: var(--color-primary-dark); font-weight: var(--font-weight-semibold); }
+.readings { list-style: none; padding: 0; display: grid; gap: var(--spacing-3); grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+.readings li { display: flex; flex-direction: column; gap: var(--spacing-2); padding: var(--spacing-3); border: 1px solid var(--color-border-subtle); border-radius: var(--radius-md); }
+.readings small { color: var(--color-text-secondary); }
+@media (max-width: 650px) { .page { padding: var(--spacing-4); } .filters label { width: 100%; } .stationList li { flex-wrap: wrap; } }

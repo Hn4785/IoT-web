@@ -1,10 +1,10 @@
 import axios from "axios";
 import type { AxiosError, InternalAxiosRequestConfig } from "axios";
 
-import { env } from "@/config/env";
-import { authStorage } from "@/utils/authStorage";
-import type { ApiSuccessEnvelope } from "@/types/api";
-import { createSingleFlight } from "./refreshCoordinator";
+import { env } from "../config/env.ts";
+import { authStorage } from "../utils/authStorage.ts";
+import type { ApiSuccessEnvelope } from "../types/api.ts";
+import { createSingleFlight } from "./refreshCoordinator.ts";
 
 type RetriableRequest = InternalAxiosRequestConfig & { _retry?: boolean };
 

@@ -28,6 +28,7 @@ import { copyText } from "@/utils/credentialInput";
 import { useAuth } from "@/hooks/useAuth";
 import { authorityService } from "@/services/authorityService";
 import { authService } from "@/services/authService";
+import UserScopeEditor from "./UserScopeEditor";
 import {
   canResetCredentials,
   canTransferSuperAdminTo,
@@ -282,12 +283,12 @@ export default function UserManagement() {
       {operationError && <div role="alert">{operationError}</div>}
       <section className={styles.stats}>
         <div>
-          <span>Total Users</span>
+          <span>Users on this page</span>
           <strong>{items.length}</strong>
         </div>
 
         <div>
-          <span>Active</span>
+          <span>Active on this page</span>
           <strong>
             {
               items.filter(
@@ -298,7 +299,7 @@ export default function UserManagement() {
         </div>
 
         <div>
-          <span>Disabled</span>
+          <span>Disabled on this page</span>
           <strong>
             {
               items.filter(
@@ -436,11 +437,9 @@ export default function UserManagement() {
                     />
                   </td>
 
-                  <td>
-                    {user.assignedFarmIds.length}
-                  </td>
+                  <td>Open user to view</td>
 
-                  <td>{user.assignedStationIds.length}</td>
+                  <td>Open user to view</td>
 
                   <td>
                     {formatDateTime(user.lastLogin)}
@@ -656,10 +655,14 @@ export default function UserManagement() {
               <strong>Current resource access</strong>
               <span>Farms: {editingUser.assignedFarmIds.join(", ") || "None"}</span>
               <span>Stations: {editingUser.assignedStationIds.join(", ") || "None"}</span>
-              <small>Assignment editing needs a dedicated selector before it can be enabled safely.</small>
+              <small>Changes to Farm and Station access are saved separately below.</small>
             </div>
           )}
         </form>
+        {editingUser && <UserScopeEditor key={editingUser.id} user={editingUser} onChange={(updated) => {
+          setEditingUser(updated);
+          setItems((current) => current.map((item) => item.id === updated.id ? updated : item));
+        }} />}
       </Drawer>
 
       <ConfirmDialog
