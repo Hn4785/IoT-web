@@ -41,6 +41,9 @@ Cập nhật gần nhất: 2026-09-25. Đây là file theo dõi lỗi chính c�
   nguồn không có depth; kiểm thử có/không có depth đạt. Bản xem trước component
   xác nhận không còn nhãn hoặc cột Depth khi dữ liệu rỗng, nhưng chưa có phiên
   Farmer/API local để xác nhận với telemetry thật.
+- Màn hình Historical Analysis local đã thay `0.0`/`NaN` giả ở trạng thái rỗng
+  bằng `N/A` và thông báo không có số đo; số đo 0 thật vẫn được giữ và tính.
+  Unit test, build và lint đạt; chưa đối chiếu API thật trong browser.
 
 ### [Trung bình, Frontend] Thanh tìm kiếm toàn cục chưa hoạt động
 
