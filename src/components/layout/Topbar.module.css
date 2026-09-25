@@ -77,6 +77,12 @@
   background-color: var(--color-bg-page, #f8fafc);
 }
 
+.notificationMenu {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
 .badge {
   position: absolute;
   top: 2px;
