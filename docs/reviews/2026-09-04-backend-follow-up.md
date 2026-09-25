@@ -17,6 +17,14 @@ Cập nhật gần nhất: 2026-09-25. Đây là file theo dõi lỗi chính c�
 
 ## Chưa sửa
 
+### [Trung bình, Frontend/Farmer] Historical Analysis còn điều khiển giả
+
+- Rà mã ngày 2026-09-25: `Last 30 Days` là nhãn cố định có biểu tượng xổ xuống,
+  còn nút `Area` và `Chart information` không có hành động. API history vẫn
+  lấy đúng cửa sổ 30 ngày nhưng người dùng có thể tưởng các điều khiển hoạt động.
+  Cần nối hành vi thật hoặc đổi thành nội dung không tương tác trước khi đóng
+  checkpoint Farmer.
+
 ### [Trung bình, Frontend/Farmer] Hộp thông báo chỉ hiển thị trang đầu
 
 - Kiểm tra mã ngày 2026-09-25: trang Farmer gọi inbox với `limit: 100` nhưng
@@ -26,6 +34,10 @@ Cập nhật gần nhất: 2026-09-25. Đây là file theo dõi lỗi chính c�
 - Mã FE local đã thêm nút tải tiếp theo `nextCursor`, ghép các trang không trùng
   và bỏ kết quả request cũ khi đổi bộ lọc/làm mới. Kiểm thử unit đỏ trước sửa,
   xanh sau sửa; chưa thử tài khoản Farmer có hơn 100 mục trên browser/API thật.
+- Historical Analysis local đã ẩn Depth ở bộ lọc, biểu đồ, bảng và CSV khi
+  nguồn không có depth; kiểm thử có/không có depth đạt. Bản xem trước component
+  xác nhận không còn nhãn hoặc cột Depth khi dữ liệu rỗng, nhưng chưa có phiên
+  Farmer/API local để xác nhận với telemetry thật.
 
 ### [Trung bình, Frontend] Thanh tìm kiếm toàn cục chưa hoạt động
 
