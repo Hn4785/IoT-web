@@ -18,6 +18,7 @@ import {
 import { normalizeApiError } from "@/utils/apiError";
 import type { SoilField } from "@/types/soil";
 
+import { historyDepthPresentation } from "./historicalDepthPresentation.ts";
 import styles from "./HistoricalAnalysis.module.css";
 
 const EMPTY_HISTORY: Record<string, SoilHistoryData> = {};
@@ -162,22 +163,26 @@ export default function HistoricalAnalysis() {
       history.series.flatMap((item) => item.depthCm == null ? [] : [item.depthCm]),
     ),
   )).sort((left, right) => left - right), [historyByStation]);
+  const depthPresentation = useMemo(
+    () => historyDepthPresentation(availableDepths),
+    [availableDepths],
+  );
 
   const series = useMemo(() => hierarchy.stations.flatMap((station) =>
     (historyByStation[station.id]?.series ?? [])
       .filter((item) => item.field === selectedMetric)
       .filter((item) => item.depthCm == null || selectedDepths.length === 0 || selectedDepths.includes(item.depthCm))
       .map((item, index) => {
-        const depthLabel = item.depthCm == null ? "N/A" : `${item.depthCm}cm`;
+        const depthLabel = item.depthCm == null ? "" : `${item.depthCm}cm`;
         return {
         id: `${station.id}-${item.sensorId ?? index}-${item.depthCm ?? "na"}`,
         stationLabel: station.code,
         depthLabel,
-        label: `${station.code} (${depthLabel})`,
+        label: depthPresentation.seriesLabel(station.code, item.depthCm),
         points: item.points,
         values: item.points.map((point) => point.value),
       };}),
-  ), [hierarchy.stations, historyByStation, selectedDepths, selectedMetric]);
+  ), [hierarchy.stations, historyByStation, selectedDepths, selectedMetric, depthPresentation]);
 
   const exportCsv = () => {
     const safeCell = (value: string | number) => {
@@ -185,11 +190,11 @@ export default function HistoricalAnalysis() {
       const guarded = /^[=+\-@]/.test(text) ? `'${text}` : text;
       return `"${guarded.replaceAll('"', '""')}"`;
     };
-    const rows = [
-      ["station", "depth", "metric", "observedAt", "value", "unit"],
+    const rows: Array<Array<string | number>> = [
+      depthPresentation.csvColumns,
       ...series.flatMap((item) => item.points.map((point) => [
         item.stationLabel,
-        item.depthLabel,
+        ...(depthPresentation.showDepth ? [item.depthLabel] : []),
         selectedMetric,
         point.observedAt,
         point.value,
@@ -250,7 +255,9 @@ export default function HistoricalAnalysis() {
     <main className={styles.page}>
       <PageHeader
         title="Historical Analysis & Correlation"
-        description="Compare soil profiles across depths and multiple stations."
+        description={depthPresentation.showDepth
+          ? "Compare soil profiles across depths and multiple stations."
+          : "Compare soil history across stations."}
         actions={
           <button className={styles.exportButton} disabled={series.length === 0} onClick={exportCsv}>
             <Download size={13} />
@@ -302,27 +309,23 @@ export default function HistoricalAnalysis() {
           </div>
         </div>
 
-        <div className={styles.filter}>
-          <span>Depths:</span>
-
-          <div className={styles.depthSelector}>
-            {availableDepths.length === 0 && <span>Not provided by source</span>}
-            {availableDepths.map((depth) => (
-              <button
-                key={depth}
-                type="button"
-                className={
-                  selectedDepths.includes(depth)
-                    ? styles.depthActive
-                    : styles.depthButton
-                }
-                onClick={() => toggleDepth(depth)}
-              >
-                {depth}cm
-              </button>
-            ))}
+        {depthPresentation.showDepth && (
+          <div className={styles.filter}>
+            <span>Depths:</span>
+            <div className={styles.depthSelector}>
+              {availableDepths.map((depth) => (
+                <button
+                  key={depth}
+                  type="button"
+                  className={selectedDepths.includes(depth) ? styles.depthActive : styles.depthButton}
+                  onClick={() => toggleDepth(depth)}
+                >
+                  {depth}cm
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         <SelectBox
           label="Metric"
@@ -358,10 +361,9 @@ export default function HistoricalAnalysis() {
         <div className={styles.chartHeader}>
           <div>
             <h2>{metric.label} Multi-Series Correlation</h2>
-            <span>
-              Compare stations and depths over the selected
-              period.
-            </span>
+            <span>{depthPresentation.showDepth
+              ? "Compare stations and depths over the selected period."
+              : "Compare stations over the selected period."}</span>
           </div>
 
           <div className={styles.chartControls}>
@@ -438,7 +440,7 @@ export default function HistoricalAnalysis() {
             <thead>
               <tr>
                 <th>Station</th>
-                <th>Depth</th>
+                {depthPresentation.showDepth && <th>Depth</th>}
                 <th>Average</th>
                 <th>Minimum</th>
                 <th>Maximum</th>
@@ -471,7 +473,7 @@ export default function HistoricalAnalysis() {
                 return (
                   <tr key={item.id}>
                     <td>{item.stationLabel}</td>
-                    <td>{item.depthLabel}</td>
+                    {depthPresentation.showDepth && <td>{item.depthLabel}</td>}
                     <td>{avg.toFixed(1)}{metric.unit}</td>
                     <td>{min.toFixed(1)}{metric.unit}</td>
                     <td>{max.toFixed(1)}{metric.unit}</td>
@@ -505,7 +507,7 @@ export default function HistoricalAnalysis() {
 
           <InsightCard
             title="Total Observations Calculated"
-            value={`${allValues.length} telemetry points analyzed for selected station/depth combinations.`}
+            value={`${allValues.length} telemetry points analyzed for selected ${depthPresentation.showDepth ? "station/depth combinations" : "stations"}.`}
             icon="▤"
           />
         </div>
