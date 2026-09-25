@@ -20,6 +20,7 @@ import type { SoilField } from "@/types/soil";
 
 import { historyDepthPresentation } from "./historicalDepthPresentation.ts";
 import { areaPoints, historyWindow, type HistoryDays } from "./historicalChartControls.ts";
+import { measurementSummary } from "./historicalSummary.ts";
 import styles from "./HistoricalAnalysis.module.css";
 
 const EMPTY_HISTORY: Record<string, SoilHistoryData> = {};
@@ -174,6 +175,7 @@ export default function HistoricalAnalysis() {
   const series = useMemo(() => hierarchy.stations.flatMap((station) =>
     (historyByStation[station.id]?.series ?? [])
       .filter((item) => item.field === selectedMetric)
+      .filter((item) => item.points.length > 0)
       .filter((item) => item.depthCm == null || selectedDepths.length === 0 || selectedDepths.includes(item.depthCm))
       .map((item, index) => {
         const depthLabel = item.depthCm == null ? "" : `${item.depthCm}cm`;
@@ -218,33 +220,9 @@ export default function HistoricalAnalysis() {
   const allValues = series.flatMap(
     (item) => item.values,
   );
-
-  const average =
-    allValues.length > 0
-      ? allValues.reduce((sum, value) => sum + value, 0) /
-        allValues.length
-      : 0;
-
-  const minimum =
-    allValues.length > 0
-      ? Math.min(...allValues)
-      : 0;
-
-  const maximum =
-    allValues.length > 0
-      ? Math.max(...allValues)
-      : 0;
-
-  const variance =
-    allValues.length > 0
-      ? allValues.reduce(
-          (sum, value) =>
-            sum + Math.pow(value - average, 2),
-          0,
-        ) / allValues.length
-      : 0;
-
-  const standardDeviation = Math.sqrt(variance);
+  const summary = measurementSummary(allValues);
+  const formatMeasurement = (value: number | null) =>
+    value == null ? "N/A" : `${value.toFixed(1)}${metric.unit}`;
 
   const toggleDepth = (depth: number) => {
     setSelectedDepths((current) =>
@@ -429,6 +407,9 @@ export default function HistoricalAnalysis() {
               )
             ))}
           </svg>
+          {series.length === 0 && !hierarchy.loading && !historyLoading && !historyError && (
+            <p className={styles.chartEmpty}>No historical measurements for the selected filters.</p>
+          )}
         </div>
 
         <div className={styles.legend}>
@@ -470,54 +451,40 @@ export default function HistoricalAnalysis() {
             <tbody>
               {series.map((item) => {
                 const values = item.values;
-
-                const avg =
-                  values.reduce(
-                    (sum, value) => sum + value,
-                    0,
-                  ) / values.length;
-
-                const min = Math.min(...values);
-                const max = Math.max(...values);
-
-                const variance =
-                  values.reduce(
-                    (sum, value) =>
-                      sum + Math.pow(value - avg, 2),
-                    0,
-                  ) / values.length;
-
-                const std = Math.sqrt(variance);
+                const itemSummary = measurementSummary(values);
 
                 return (
                   <tr key={item.id}>
                     <td>{item.stationLabel}</td>
                     {depthPresentation.showDepth && <td>{item.depthLabel}</td>}
-                    <td>{avg.toFixed(1)}{metric.unit}</td>
-                    <td>{min.toFixed(1)}{metric.unit}</td>
-                    <td>{max.toFixed(1)}{metric.unit}</td>
-                    <td>{std.toFixed(1)}{metric.unit}</td>
+                    <td>{formatMeasurement(itemSummary.average)}</td>
+                    <td>{formatMeasurement(itemSummary.minimum)}</td>
+                    <td>{formatMeasurement(itemSummary.maximum)}</td>
+                    <td>{formatMeasurement(itemSummary.standardDeviation)}</td>
                   </tr>
                 );
               })}
+              {series.length === 0 && (
+                <tr><td colSpan={depthPresentation.showDepth ? 6 : 5}>No measurements available.</td></tr>
+              )}
             </tbody>
           </table>
         </div>
 
         <div className={styles.insights}>
           <InsightCard
-            title="Highest Moisture Node"
-            value={
-              `${average.toFixed(1)}${metric.unit} average across selected data.`
-            }
+            title="Selected Metric Average"
+            value={summary.average == null
+              ? "No measurements available."
+              : `${formatMeasurement(summary.average)} average across selected data.`}
             icon="↗"
           />
 
           <InsightCard
             title="Root Zone Depletion Warning"
             value={
-              minimum > 0
-                ? `${minimum.toFixed(1)}${metric.unit} is the lowest observed value in the selected range.`
+              summary.minimum != null
+                ? `${formatMeasurement(summary.minimum)} is the lowest observed value in the selected range.`
                 : "No depletion warning available."
             }
             icon="△"
@@ -533,12 +500,8 @@ export default function HistoricalAnalysis() {
       </section>
 
       <div className={styles.summaryFooter}>
-        Average {average.toFixed(1)}
-        {metric.unit} · Min {minimum.toFixed(1)}
-        {metric.unit} · Max {maximum.toFixed(1)}
-        {metric.unit} · Std Dev{" "}
-        {standardDeviation.toFixed(1)}
-        {metric.unit}
+        Average {formatMeasurement(summary.average)} · Min {formatMeasurement(summary.minimum)}
+        {" "}· Max {formatMeasurement(summary.maximum)} · Std Dev {formatMeasurement(summary.standardDeviation)}
       </div>
     </main>
   );

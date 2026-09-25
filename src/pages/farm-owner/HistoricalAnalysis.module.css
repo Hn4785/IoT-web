@@ -219,6 +219,16 @@
   height: 100%;
 }
 
+.chartEmpty {
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: 100%;
+  margin: 0;
+  color: var(--color-text-tertiary);
+  font-size: 11px;
+}
+
 .lineGreen {
   color: var(--color-primary);
   stroke: var(--color-primary);
