@@ -42,8 +42,13 @@ FRONTEND_ORIGIN=http://localhost:5173
 Frontend `.env`:
 
 ```dotenv
-VITE_API_BASE_URL=http://localhost:3000/api/v1
+VITE_API_BASE_URL=/api/v1
 ```
+
+Trong chế độ Vite local, `/api/v1/*` được proxy tới
+`http://127.0.0.1:3000`; không cần tạo `.env` nếu dùng mặc định. Backend cần
+đang chạy ở cổng 3000. Chỉ đặt `DEV_API_PROXY_TARGET` trên tiến trình Vite khi
+backend local chạy tại địa chỉ khác.
 
 ### Pi/ngrok
 
