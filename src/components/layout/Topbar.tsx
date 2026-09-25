@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  Search,
   Bell,
   LogOut,
   KeyRound,
@@ -15,16 +14,11 @@ import { normalizeApiError } from "@/utils/apiError";
 
 import Breadcrumb from "./Breadcrumb";
 import NotificationDropdown from "../notifications/NotificationDropdown";
+import StationSearch from "./StationSearch.tsx";
 
 import styles from "./Topbar.module.css";
 
-interface TopbarProps {
-  onSearch?: (query: string) => void;
-}
-
-export default function Topbar({
-  onSearch,
-}: TopbarProps) {
+export default function Topbar() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
@@ -150,22 +144,7 @@ export default function Topbar({
       </div>
 
       <div className={styles.right}>
-        <div className={styles.searchBox}>
-          <Search
-            size={16}
-            className={styles.searchIcon}
-          />
-
-          <input
-            type="text"
-            className={styles.searchInput}
-            aria-label="Global search"
-            placeholder="Global search devices, stations..."
-            onChange={(event) =>
-              onSearch?.(event.target.value)
-            }
-          />
-        </div>
+        {canViewNotifications && user && <StationSearch role={user.role} />}
 
         {canViewNotifications && <div
           ref={notificationRef}

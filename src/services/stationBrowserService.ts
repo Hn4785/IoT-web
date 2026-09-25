@@ -55,24 +55,24 @@ function dataOf<T>(response: { data: ApiSuccessEnvelope<T> }): T {
 
 export function createStationBrowserService(client: BrowserHttpClient) {
   return {
-    async listFarms(): Promise<CursorPage<BrowserFarm>> {
+    async listFarms(cursor?: string): Promise<CursorPage<BrowserFarm>> {
       return dataOf(await client.get<ApiSuccessEnvelope<CursorPage<BrowserFarm>>>(
         API_ENDPOINTS.farms.base,
-        { params: { limit: 100 } },
+        { params: { limit: 100, ...(cursor ? { cursor } : {}) } },
       ));
     },
 
-    async listPlots(farmId: string): Promise<CursorPage<BrowserPlot>> {
+    async listPlots(farmId: string, cursor?: string): Promise<CursorPage<BrowserPlot>> {
       return dataOf(await client.get<ApiSuccessEnvelope<CursorPage<BrowserPlot>>>(
         API_ENDPOINTS.farms.plots(farmId),
-        { params: { limit: 100 } },
+        { params: { limit: 100, ...(cursor ? { cursor } : {}) } },
       ));
     },
 
-    async listStations(plotId: string): Promise<CursorPage<BrowserStation>> {
+    async listStations(plotId: string, cursor?: string): Promise<CursorPage<BrowserStation>> {
       return dataOf(await client.get<ApiSuccessEnvelope<CursorPage<BrowserStation>>>(
         API_ENDPOINTS.stations.byPlot(plotId),
-        { params: { limit: 100 } },
+        { params: { limit: 100, ...(cursor ? { cursor } : {}) } },
       ));
     },
 
@@ -114,6 +114,51 @@ export function createStationBrowserService(client: BrowserHttpClient) {
       ));
     },
   };
+}
+
+type SearchHierarchy = Pick<ReturnType<typeof createStationBrowserService>,
+  "listFarms" | "listPlots" | "listStations">;
+
+export async function searchAccessibleStations(
+  query: string,
+  hierarchy: SearchHierarchy = stationBrowserService,
+  maxRequests = 50,
+): Promise<BrowserStation[]> {
+  const needle = query.trim().toLocaleLowerCase();
+  if (!needle) return [];
+
+  let requests = 0;
+  async function request<T>(load: () => Promise<T>): Promise<T> {
+    if (requests >= maxRequests) throw new Error("Station scope is too large to search here.");
+    requests += 1;
+    return load();
+  }
+
+  const matches: BrowserStation[] = [];
+  let farmCursor: string | undefined;
+  do {
+    const farms = await request(() => hierarchy.listFarms(farmCursor));
+    for (const farm of farms.items) {
+      let plotCursor: string | undefined;
+      do {
+        const plots = await request(() => hierarchy.listPlots(farm.id, plotCursor));
+        for (const plot of plots.items) {
+          let stationCursor: string | undefined;
+          do {
+            const stations = await request(() => hierarchy.listStations(plot.id, stationCursor));
+            matches.push(...stations.items.filter((station) =>
+              station.code.toLocaleLowerCase().includes(needle)
+              || station.name.toLocaleLowerCase().includes(needle)));
+            stationCursor = stations.nextCursor ?? undefined;
+          } while (stationCursor);
+        }
+        plotCursor = plots.nextCursor ?? undefined;
+      } while (plotCursor);
+    }
+    farmCursor = farms.nextCursor ?? undefined;
+  } while (farmCursor);
+
+  return matches;
 }
 
 export const stationBrowserService = createStationBrowserService({

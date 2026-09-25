@@ -337,7 +337,6 @@
     gap: 8px;
   }
 
-  .searchBox {
-    display: none;
-  }
+  .left { display: none; }
+  .right { flex: 1; min-width: 0; }
 }

@@ -10,11 +10,13 @@ import { stationBrowserService, type BrowserStation } from "@/services/stationBr
 import type { LatestSoilDataDto } from "@/types/soil";
 import { normalizeApiError } from "@/utils/apiError";
 import { formatVietnamDateTime } from "@/utils/formatDateTime";
+import { useAuth } from "@/hooks/useAuth";
 
 import styles from "./AdminStationBrowser.module.css";
 
 export default function StationDetail() {
   const { stationId } = useParams<{ stationId: string }>();
+  const { user } = useAuth();
   const [station, setStation] = useState<BrowserStation | null>(null);
   const [latest, setLatest] = useState<LatestSoilDataDto | null>(null);
   const [error, setError] = useState("");
@@ -53,7 +55,9 @@ export default function StationDetail() {
         description="Station metadata and latest soil readings from the backend."
         actions={<Button variant="outline" icon={<RefreshCw size={16} />} onClick={refresh}>Refresh</Button>}
       />
-      <Link to="/admin/devices">← Back to stations</Link>
+      <Link to={user?.role === "FARMER" ? "/farm-owner/soil-dashboard" : "/admin/devices"}>
+        ← Back to stations
+      </Link>
       {loading && <Loading label="Loading station..." />}
       {error && <ErrorState description={error} onRetry={refresh} />}
       {!loading && station && !error && (

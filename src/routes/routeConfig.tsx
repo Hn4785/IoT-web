@@ -92,6 +92,11 @@ export const protectedRoutes: AppRoute[] = [
     element: <FarmDashboard />,
   },
   {
+    path: "/farm-owner/stations/:stationId",
+    roles: ["FARMER"],
+    element: <StationDetail />,
+  },
+  {
   path: "/farm-owner/soil-dashboard",
   roles: ["FARMER"],
   element: <RealtimeSoilMonitoring />,
