@@ -2,7 +2,7 @@ import type { SchemaObject } from '@nestjs/swagger';
 import { z } from 'zod';
 
 import { AppError } from '../common/errors/app-error.js';
-import { soilAlertFieldSchema } from '../alert-config/alert-rule.contracts.js';
+import { soilAlertFieldSchema } from '../common/soil-alert-fields.js';
 
 const listNotificationsSchema = z.strictObject({
   isRead: z
@@ -117,6 +117,14 @@ export function toNotificationDto(record: {
   readAt: Date | null;
   lifecycleEvent: {
     type: 'OPENED' | 'ACKNOWLEDGED' | 'RESOLVED';
+    deliveryJob?: {
+      stationId: string;
+      stationCode: string;
+      stationName: string;
+      field: string;
+      severity: 'WARNING' | 'CRITICAL';
+      alertStatus: 'OPEN' | 'ACKNOWLEDGED' | 'RESOLVED';
+    } | null;
     alert: {
       id: string;
       status: 'OPEN' | 'ACKNOWLEDGED' | 'RESOLVED';
@@ -128,18 +136,21 @@ export function toNotificationDto(record: {
     };
   };
 }): InAppNotificationDto {
+  const snapshot = record.lifecycleEvent.deliveryJob;
   return {
     id: record.id,
     alertId: record.lifecycleEvent.alert.id,
     eventType: record.lifecycleEvent.type,
     station: {
-      id: record.lifecycleEvent.alert.rule.station.id,
-      code: record.lifecycleEvent.alert.rule.station.upstreamCode,
-      name: record.lifecycleEvent.alert.rule.station.name,
+      id: snapshot?.stationId ?? record.lifecycleEvent.alert.rule.station.id,
+      code: snapshot?.stationCode ?? record.lifecycleEvent.alert.rule.station.upstreamCode,
+      name: snapshot?.stationName ?? record.lifecycleEvent.alert.rule.station.name,
     },
-    field: soilAlertFieldSchema.parse(record.lifecycleEvent.alert.rule.field.toLowerCase()),
-    severity: record.lifecycleEvent.alert.rule.severity,
-    alertStatus: record.lifecycleEvent.alert.status,
+    field: soilAlertFieldSchema.parse(
+      (snapshot?.field ?? record.lifecycleEvent.alert.rule.field).toLowerCase(),
+    ),
+    severity: snapshot?.severity ?? record.lifecycleEvent.alert.rule.severity,
+    alertStatus: snapshot?.alertStatus ?? record.lifecycleEvent.alert.status,
     isRead: record.isRead,
     createdAt: record.createdAt.toISOString(),
     readAt: record.readAt?.toISOString() ?? null,

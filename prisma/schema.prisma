@@ -100,14 +100,15 @@ model User {
   createdAt           DateTime   @default(now()) @db.Timestamptz(3)
   updatedAt           DateTime   @updatedAt @db.Timestamptz(3)
 
-  heldAuthority       SystemAuthority?      @relation("AuthorityHolder")
+  heldAuthority       SystemAuthority?                @relation("AuthorityHolder")
   sessions            Session[]
   farmMemberships     FarmMembership[]
   clientStationGrants ClientStationGrant[]
   apiKeys             ApiKey[]
-  auditEvents         SecurityAuditEvent[]  @relation("AuditActor")
-  alertEvents         AlertLifecycleEvent[] @relation("AlertEventActor")
-  notifications       InAppNotification[]   @relation("NotificationRecipient")
+  auditEvents         SecurityAuditEvent[]            @relation("AuditActor")
+  alertEvents         AlertLifecycleEvent[]           @relation("AlertEventActor")
+  notifications       InAppNotification[]             @relation("NotificationRecipient")
+  deliveryRecipients  NotificationDeliveryRecipient[]
 
   @@index([role, status])
 }
@@ -328,12 +329,43 @@ model AlertLifecycleEvent {
   requestId String                  @db.VarChar(128)
   createdAt DateTime                @default(now()) @db.Timestamptz(3)
 
-  alert         Alert               @relation(fields: [alertId], references: [id], onDelete: Cascade)
-  actor         User?               @relation("AlertEventActor", fields: [actorId], references: [id], onDelete: SetNull)
+  alert         Alert                    @relation(fields: [alertId], references: [id], onDelete: Cascade)
+  actor         User?                    @relation("AlertEventActor", fields: [actorId], references: [id], onDelete: SetNull)
   notifications InAppNotification[]
+  deliveryJob   NotificationDeliveryJob?
 
   @@unique([alertId, revision])
   @@index([createdAt])
+}
+
+model NotificationDeliveryJob {
+  lifecycleEventId    String            @id @db.Uuid
+  farmId              String            @db.Uuid
+  stationId           String            @db.Uuid
+  stationCode         String            @db.VarChar(80)
+  stationName         String            @db.VarChar(160)
+  field               SoilAlertField
+  severity            AlertRuleSeverity
+  alertStatus         AlertStatus
+  cursorUserId        String?           @db.Uuid
+  recipientSnapshotAt DateTime?         @db.Timestamptz(3)
+  deliveredAt         DateTime?         @db.Timestamptz(3)
+  createdAt           DateTime          @default(now()) @db.Timestamptz(3)
+
+  lifecycleEvent AlertLifecycleEvent             @relation(fields: [lifecycleEventId], references: [id], onDelete: Cascade)
+  recipients     NotificationDeliveryRecipient[]
+
+  @@index([deliveredAt, createdAt, lifecycleEventId])
+}
+
+model NotificationDeliveryRecipient {
+  lifecycleEventId String @db.Uuid
+  recipientUserId  String @db.Uuid
+
+  job       NotificationDeliveryJob @relation(fields: [lifecycleEventId], references: [lifecycleEventId], onDelete: Cascade)
+  recipient User                    @relation(fields: [recipientUserId], references: [id], onDelete: Cascade)
+
+  @@id([lifecycleEventId, recipientUserId])
 }
 
 model InAppNotification {

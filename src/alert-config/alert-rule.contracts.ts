@@ -2,7 +2,14 @@ import { z } from 'zod';
 import type { SchemaObject } from '@nestjs/swagger';
 
 import { AppError } from '../common/errors/app-error.js';
+import { SOIL_ALERT_FIELDS, soilAlertFieldSchema } from '../common/soil-alert-fields.js';
 import { utcTimestampSchema } from '../common/validation/utc-timestamp.js';
+
+export {
+  SOIL_ALERT_FIELDS,
+  soilAlertFieldSchema,
+  type SoilAlertField,
+} from '../common/soil-alert-fields.js';
 
 export {
   ALERT_RULE_SORT_CONTRACTS,
@@ -11,19 +18,6 @@ export {
   decodeAlertRuleCursor,
   encodeAlertRuleCursor,
 } from './cursor.js';
-
-export const SOIL_ALERT_FIELDS = [
-  'temperature',
-  'moisture',
-  'ec',
-  'ph',
-  'nitrogen',
-  'phosphorus',
-  'potassium',
-  'light',
-] as const;
-export const soilAlertFieldSchema = z.enum(SOIL_ALERT_FIELDS);
-export type SoilAlertField = z.infer<typeof soilAlertFieldSchema>;
 
 export const ALERT_RULE_SEVERITIES = ['WARNING', 'CRITICAL'] as const;
 export const alertRuleSeveritySchema = z.enum(ALERT_RULE_SEVERITIES);

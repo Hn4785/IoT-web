@@ -1,31 +1,26 @@
 import { Prisma } from '../generated/prisma/client.js';
-import type { OperationsMetrics } from '../operations/operations-signals.js';
 
-export async function deliverLifecycleNotifications(
+/** Runs inside the lifecycle transaction without scanning recipients. */
+export async function queueLifecycleNotifications(
   transaction: Prisma.TransactionClient,
   lifecycleEventId: string,
   farmId: string,
-  metrics?: OperationsMetrics,
 ): Promise<void> {
-  try {
-    const recipients = await transaction.user.findMany({
-      where: {
-        status: 'ACTIVE',
-        OR: [{ role: 'ADMIN' }, { role: 'FARMER', farmMemberships: { some: { farmId } } }],
-      },
-      select: { id: true },
-    });
-    if (recipients.length === 0) {
-      metrics?.recordNotificationDelivery('skipped');
-      return;
-    }
-    await transaction.inAppNotification.createMany({
-      data: recipients.map(({ id }) => ({ lifecycleEventId, recipientUserId: id })),
-      skipDuplicates: true,
-    });
-    metrics?.recordNotificationDelivery('delivered');
-  } catch (error) {
-    metrics?.recordNotificationDelivery('failed');
-    throw error;
-  }
+  const event = await transaction.alertLifecycleEvent.findUniqueOrThrow({
+    where: { id: lifecycleEventId },
+    include: { alert: { include: { rule: { include: { station: true } } } } },
+  });
+  const { alert } = event;
+  await transaction.notificationDeliveryJob.create({
+    data: {
+      lifecycleEventId,
+      farmId,
+      stationId: alert.rule.station.id,
+      stationCode: alert.rule.station.upstreamCode,
+      stationName: alert.rule.station.name,
+      field: alert.rule.field,
+      severity: alert.rule.severity,
+      alertStatus: alert.status,
+    },
+  });
 }

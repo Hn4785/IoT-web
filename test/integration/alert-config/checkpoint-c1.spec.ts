@@ -119,6 +119,75 @@ describeDb('Checkpoint C1 lifecycle gate', () => {
     expect(getLatest).toHaveBeenCalledTimes(1);
   });
 
+  it('renews the evaluator lease while an upstream call is still running', async () => {
+    await prisma.evaluatorLease.deleteMany();
+    await prisma.alertRule.update({
+      where: { id: ruleId },
+      data: {
+        isEnabled: true,
+        evaluationStatus: 'READY',
+        unit: '%',
+        metadataRevision: 'demo:v1:moisture',
+      },
+    });
+    let releaseFirst!: () => void;
+    let signalStarted!: () => void;
+    const started = new Promise<void>((resolve) => {
+      signalStarted = resolve;
+    });
+    const blocked = new Promise<void>((resolve) => {
+      releaseFirst = resolve;
+    });
+    const config = {
+      ...app.get<RuntimeConfig>(RUNTIME_CONFIG),
+      alertEvaluatorLeaseMs: 120,
+    };
+    const metadata = {
+      getFieldMetadata: vi.fn().mockResolvedValue({
+        field: 'moisture',
+        isConfirmed: true,
+        unit: '%',
+        revision: 'demo:v1:moisture',
+      }),
+    } as unknown as SoilMetadataProvider;
+    const first = new AlertEvaluationService(
+      app.get(PrismaService),
+      {
+        getLatest: vi.fn(async () => {
+          signalStarted();
+          await blocked;
+          return { isStale: false, fields: [] };
+        }),
+      } as unknown as StationDataService,
+      config,
+      metadata,
+    );
+    const servicePrisma = app.get(PrismaService);
+    const updateLease = vi
+      .spyOn(servicePrisma.evaluatorLease, 'updateMany')
+      .mockResolvedValue({ count: 1 });
+    const running = first.runOnce();
+    await started;
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 220));
+      type LeaseRenewalInput = {
+        where: { name?: string; holderId?: string; expiresAt?: { gt?: Date } };
+        data: { expiresAt?: Date; updatedAt?: Date };
+      };
+      const renewal = updateLease.mock.calls
+        .map(([input]) => input as unknown as LeaseRenewalInput)
+        .find((input) => input.where.expiresAt?.gt instanceof Date);
+      expect(renewal?.where.name).toBe('alert-evaluator');
+      expect(renewal?.where.holderId?.length).toBeGreaterThan(0);
+      expect(renewal?.data.expiresAt).toBeInstanceOf(Date);
+      expect(renewal?.data.updatedAt).toBeInstanceOf(Date);
+    } finally {
+      releaseFirst();
+      await running;
+      updateLease.mockRestore();
+    }
+  });
+
   it('loads latest data once for all rules on the same station', async () => {
     await prisma.evaluatorLease.deleteMany();
     const original = await prisma.alertRule.findUniqueOrThrow({ where: { id: ruleId } });

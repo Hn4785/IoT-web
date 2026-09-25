@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { Inject, Injectable, Optional } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 
 import type { CurrentPrincipalValue } from '../authorization/current-principal.js';
 import { AppError } from '../common/errors/app-error.js';
@@ -7,8 +7,7 @@ import { RUNTIME_CONFIG } from '../config/runtime-config.module.js';
 import type { RuntimeConfig } from '../config/runtime-config.js';
 import { PrismaService } from '../database/prisma.service.js';
 import { Prisma, type SoilAlertField } from '../generated/prisma/client.js';
-import { deliverLifecycleNotifications } from '../notifications/notification-delivery.js';
-import { OperationsMetrics } from '../operations/operations-signals.js';
+import { queueLifecycleNotifications } from '../notifications/notification-delivery.js';
 import {
   SOIL_METADATA_PROVIDER,
   type SoilMetadataProvider,
@@ -31,7 +30,6 @@ export class AlertRuleService {
     @Inject(SOIL_METADATA_PROVIDER)
     private readonly metadataProvider: SoilMetadataProvider,
     @Inject(RUNTIME_CONFIG) private readonly config: RuntimeConfig,
-    @Optional() private readonly metrics?: OperationsMetrics,
   ) {}
 
   async listRules(
@@ -300,12 +298,7 @@ export class AlertRuleService {
               requestId,
             },
           });
-          await deliverLifecycleNotifications(
-            tx,
-            event.id,
-            current.station.plot.farmId,
-            this.metrics,
-          );
+          await queueLifecycleNotifications(tx, event.id, current.station.plot.farmId);
         }
         const result = await tx.alertRule.updateMany({
           where: { id: current.id, revision: input.expectedRevision },

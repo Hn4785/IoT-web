@@ -4,6 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { AlertEvaluationService } from '../../../src/alert-config/alert-evaluation.service.js';
 import { createApp } from '../../../src/app/create-app.js';
+import { NotificationDeliveryWorker } from '../../../src/notifications/notification-delivery.worker.js';
 import { issueAccessToken } from '../../helpers/access-token.js';
 import { createTestPrismaClient, prepareTestDatabase } from '../../helpers/database.js';
 import { makeTestRuntimeConfig } from '../../helpers/runtime-config.js';
@@ -21,6 +22,7 @@ describeDb('Phase C in-app notifications', () => {
   let farmId: string;
   let ruleId: string;
   let evaluator: AlertEvaluationService;
+  let deliveryWorker: NotificationDeliveryWorker;
 
   beforeAll(async () => {
     prisma = createTestPrismaClient();
@@ -99,6 +101,7 @@ describeDb('Phase C in-app notifications', () => {
     ];
     app = await createApp(config);
     evaluator = app.get(AlertEvaluationService);
+    deliveryWorker = app.get(NotificationDeliveryWorker);
     await evaluator.evaluateRule(
       rule.id,
       { observedAt: new Date('2026-09-18T01:00:00Z'), value: 10, usable: true },
@@ -109,6 +112,8 @@ describeDb('Phase C in-app notifications', () => {
       { observedAt: new Date('2026-09-18T01:01:00Z'), value: 11, usable: true },
       'notification-open-2',
     );
+    expect(await prisma.inAppNotification.count()).toBe(0);
+    await deliveryWorker.runOnce();
   });
 
   afterAll(async () => {
@@ -170,6 +175,56 @@ describeDb('Phase C in-app notifications', () => {
     expect(new Date(page.items[0]?.createdAt ?? '').toISOString()).toBe(page.items[0]?.createdAt);
   });
 
+  it('keeps the event display snapshot when station and rule change later', async () => {
+    const alert = await prisma.alert.findFirstOrThrow({ where: { ruleId } });
+    const original = (await list(adminToken))
+      .json<{
+        data: {
+          items: Array<{
+            alertId: string;
+            station: { name: string };
+            severity: string;
+            alertStatus: string;
+          }>;
+        };
+      }>()
+      .data.items.find((item) => item.alertId === alert.id);
+    expect(original).toMatchObject({
+      station: { name: 'Notification Station' },
+      severity: 'CRITICAL',
+      alertStatus: 'OPEN',
+    });
+    const stationId = (await prisma.alertRule.findUniqueOrThrow({ where: { id: ruleId } }))
+      .stationId;
+    await prisma.station.update({ where: { id: stationId }, data: { name: 'Renamed Station' } });
+    await prisma.alertRule.update({ where: { id: ruleId }, data: { severity: 'WARNING' } });
+    try {
+      const after = (await list(adminToken))
+        .json<{
+          data: {
+            items: Array<{
+              alertId: string;
+              station: { name: string };
+              severity: string;
+              alertStatus: string;
+            }>;
+          };
+        }>()
+        .data.items.find((item) => item.alertId === alert.id);
+      expect(after).toMatchObject({
+        station: { name: 'Notification Station' },
+        severity: 'CRITICAL',
+        alertStatus: 'OPEN',
+      });
+    } finally {
+      await prisma.station.update({
+        where: { id: stationId },
+        data: { name: 'Notification Station' },
+      });
+      await prisma.alertRule.update({ where: { id: ruleId }, data: { severity: 'CRITICAL' } });
+    }
+  });
+
   it('delivers an ACKNOWLEDGED notification once per eligible recipient', async () => {
     const alert = await prisma.alert.findFirstOrThrow({ where: { ruleId } });
     const response = await app.inject({
@@ -179,6 +234,13 @@ describeDb('Phase C in-app notifications', () => {
       payload: { note: 'Reviewed' },
     });
     expect(response.statusCode).toBe(201);
+    expect(
+      await prisma.inAppNotification.count({
+        where: { lifecycleEvent: { alertId: alert.id, type: 'ACKNOWLEDGED' } },
+      }),
+    ).toBe(0);
+    await deliveryWorker.runOnce();
+    await deliveryWorker.runOnce();
     expect(
       await prisma.inAppNotification.count({
         where: { lifecycleEvent: { alertId: alert.id, type: 'ACKNOWLEDGED' } },
@@ -200,6 +262,7 @@ describeDb('Phase C in-app notifications', () => {
       payload: {},
     });
     expect(response.statusCode).toBe(201);
+    await deliveryWorker.runOnce();
     expect(
       await prisma.inAppNotification.count({
         where: { lifecycleEvent: { alertId: alert.id, type: 'RESOLVED' } },

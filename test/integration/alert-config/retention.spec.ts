@@ -120,6 +120,40 @@ describeDb('Phase C retention', () => {
         createdAt: daysAgo(366),
       },
     });
+    const pending = await prisma.alert.create({
+      data: {
+        ruleId: rule.id,
+        status: 'RESOLVED',
+        openedValue: 11,
+        latestValue: 30,
+        openedObservedAt: daysAgo(500),
+        latestObservedAt: daysAgo(366),
+        openedAt: daysAgo(500),
+        resolvedAt: daysAgo(366),
+        resolutionReason: 'RECOVERED',
+      },
+    });
+    const pendingEvent = await prisma.alertLifecycleEvent.create({
+      data: {
+        alertId: pending.id,
+        type: 'RESOLVED',
+        revision: 1,
+        requestId: 'retention-pending-delivery',
+        createdAt: daysAgo(366),
+      },
+    });
+    await prisma.notificationDeliveryJob.create({
+      data: {
+        lifecycleEventId: pendingEvent.id,
+        farmId: farm.id,
+        stationId: station.id,
+        stationCode: station.upstreamCode,
+        stationName: station.name,
+        field: rule.field,
+        severity: rule.severity,
+        alertStatus: 'RESOLVED',
+      },
+    });
     const expiredClaim = await prisma.idempotencyClaim.create({
       data: {
         operation: 'RETENTION_TEST',
@@ -148,6 +182,7 @@ describeDb('Phase C retention', () => {
     expect(result.idempotencyClaimsPurged).toBe(1);
     expect(await prisma.alert.findUnique({ where: { id: unresolved.id } })).not.toBeNull();
     expect(await prisma.alert.findUnique({ where: { id: resolved.id } })).toBeNull();
+    expect(await prisma.alert.findUnique({ where: { id: pending.id } })).not.toBeNull();
     expect(
       await prisma.inAppNotification.findUnique({ where: { id: oldUnresolvedNotification.id } }),
     ).toBeNull();

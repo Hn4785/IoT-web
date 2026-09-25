@@ -37,16 +37,6 @@ export type AlertCursorFilters = Readonly<{
 }>;
 export type AlertCursorPayload = z.infer<typeof alertCursorPayloadSchema>;
 
-const notificationCursorPayloadSchema = z.strictObject({
-  v: z.literal(1),
-  kind: z.literal('notification'),
-  sort: z.literal('createdAt_desc'),
-  isRead: z.boolean().nullable(),
-  createdAt: z.iso.datetime({ offset: true }),
-  id: z.uuid(),
-});
-export type NotificationCursorPayload = z.infer<typeof notificationCursorPayloadSchema>;
-
 function invalidCursor(): AppError {
   return new AppError('VALIDATION_ERROR', 400, 'Cursor is invalid');
 }
@@ -114,20 +104,5 @@ export function decodeAlertCursor(
     alertCursorPayloadSchema,
     value,
     (payload) => JSON.stringify(payload.filters) === normalizedFilters,
-  );
-}
-
-export function encodeNotificationCursor(value: NotificationCursorPayload): string {
-  return encodeCursor(notificationCursorPayloadSchema, value);
-}
-
-export function decodeNotificationCursor(
-  value: string,
-  expectedIsRead?: boolean,
-): NotificationCursorPayload {
-  return decodeCursor(
-    notificationCursorPayloadSchema,
-    value,
-    (payload) => payload.isRead === (expectedIsRead ?? null),
   );
 }

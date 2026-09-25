@@ -60,7 +60,11 @@ export class RetentionService {
               take: PHASE_C_BATCH_SIZE,
             }),
             transaction.alert.findMany({
-              where: { status: 'RESOLVED', resolvedAt: { lt: alertCutoff } },
+              where: {
+                status: 'RESOLVED',
+                resolvedAt: { lt: alertCutoff },
+                events: { none: { deliveryJob: { is: { deliveredAt: null } } } },
+              },
               select: { id: true },
               take: PHASE_C_BATCH_SIZE,
             }),

@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { Inject, Injectable, Optional } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 
 import type { CurrentPrincipalValue } from '../authorization/current-principal.js';
 import { AppError } from '../common/errors/app-error.js';
@@ -7,8 +7,7 @@ import { RUNTIME_CONFIG } from '../config/runtime-config.module.js';
 import type { RuntimeConfig } from '../config/runtime-config.js';
 import { PrismaService } from '../database/prisma.service.js';
 import { Prisma } from '../generated/prisma/client.js';
-import { deliverLifecycleNotifications } from '../notifications/notification-delivery.js';
-import { OperationsMetrics } from '../operations/operations-signals.js';
+import { queueLifecycleNotifications } from '../notifications/notification-delivery.js';
 import { AlertConfigError } from './alert-config.errors.js';
 import {
   type AlertActionInput,
@@ -44,7 +43,6 @@ export class AlertLifecycleService {
   constructor(
     private readonly prisma: PrismaService,
     @Inject(RUNTIME_CONFIG) private readonly config: RuntimeConfig,
-    @Optional() private readonly metrics?: OperationsMetrics,
   ) {}
 
   async list(
@@ -217,12 +215,7 @@ export class AlertLifecycleService {
                 requestId,
               },
             });
-            await deliverLifecycleNotifications(
-              tx,
-              event.id,
-              current.rule.station.plot.farmId,
-              this.metrics,
-            );
+            await queueLifecycleNotifications(tx, event.id, current.rule.station.plot.farmId);
           }
           result = await tx.alert.findUniqueOrThrow({
             where: { id: current.id },
@@ -260,12 +253,7 @@ export class AlertLifecycleService {
                 requestId,
               },
             });
-            await deliverLifecycleNotifications(
-              tx,
-              event.id,
-              current.rule.station.plot.farmId,
-              this.metrics,
-            );
+            await queueLifecycleNotifications(tx, event.id, current.rule.station.plot.farmId);
           }
           result = await tx.alert.findUniqueOrThrow({
             where: { id: current.id },

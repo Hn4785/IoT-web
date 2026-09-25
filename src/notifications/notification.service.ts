@@ -3,7 +3,7 @@ import { Injectable } from '@nestjs/common';
 import type { CurrentPrincipalValue } from '../authorization/current-principal.js';
 import { AppError } from '../common/errors/app-error.js';
 import { PrismaService } from '../database/prisma.service.js';
-import { decodeNotificationCursor, encodeNotificationCursor } from '../alert-config/cursor.js';
+import { decodeNotificationCursor, encodeNotificationCursor } from './notification-cursor.js';
 import {
   type InAppNotificationDto,
   type ListNotificationsQuery,
@@ -14,6 +14,7 @@ import {
 const notificationInclude = {
   lifecycleEvent: {
     include: {
+      deliveryJob: true,
       alert: {
         include: {
           rule: { include: { station: { select: { id: true, upstreamCode: true, name: true } } } },
