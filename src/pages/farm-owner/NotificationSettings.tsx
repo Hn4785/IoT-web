@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Bell, CheckCheck, RefreshCw } from "lucide-react";
 
 import { Button } from "../../components/common/Button.tsx";
@@ -6,6 +6,7 @@ import PageHeader from "../../components/layout/PageHeader.tsx";
 import { notificationService } from "../../services/notificationService.ts";
 import type { NotificationDto } from "../../types/notification.ts";
 import { normalizeApiError } from "../../utils/apiError.ts";
+import { appendNotificationItems } from "./notificationInboxPagination.ts";
 import styles from "./NotificationInbox.module.css";
 
 function formatDate(value: string) {
@@ -18,40 +19,64 @@ function formatDate(value: string) {
 export default function NotificationSettings() {
   const [items, setItems] = useState<NotificationDto[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [showUnread, setShowUnread] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [updatingId, setUpdatingId] = useState("");
   const [error, setError] = useState("");
+  const requestGeneration = useRef(0);
 
   const load = useCallback(async () => {
+    const generation = ++requestGeneration.current;
+    setLoading(true);
+    setLoadingMore(false);
+    setError("");
     try {
       const page = await notificationService.list({ isRead: showUnread ? false : undefined, limit: 100 });
+      if (generation !== requestGeneration.current) return;
       setItems(page.items);
       setUnreadCount(page.unreadCount);
+      setNextCursor(page.nextCursor);
     } catch (reason) {
-      setError(normalizeApiError(reason).message);
+      if (generation === requestGeneration.current) setError(normalizeApiError(reason).message);
     } finally {
-      setLoading(false);
+      if (generation === requestGeneration.current) setLoading(false);
     }
   }, [showUnread]);
 
   useEffect(() => {
     let active = true;
-    notificationService.list({ isRead: showUnread ? false : undefined, limit: 100 }).then(
-      (page) => {
-        if (!active) return;
-        setItems(page.items);
-        setUnreadCount(page.unreadCount);
-        setLoading(false);
-      },
-      (reason) => {
-        if (!active) return;
-        setError(normalizeApiError(reason).message);
-        setLoading(false);
-      },
-    );
-    return () => { active = false; };
-  }, [showUnread]);
+    void Promise.resolve().then(() => {
+      if (active) return load();
+    });
+    return () => {
+      active = false;
+      requestGeneration.current += 1;
+    };
+  }, [load]);
+
+  async function loadMore() {
+    if (!nextCursor || loading || loadingMore) return;
+    const generation = requestGeneration.current;
+    setLoadingMore(true);
+    setError("");
+    try {
+      const page = await notificationService.list({
+        isRead: showUnread ? false : undefined,
+        limit: 100,
+        cursor: nextCursor,
+      });
+      if (generation !== requestGeneration.current) return;
+      setItems((current) => appendNotificationItems(current, page.items));
+      setUnreadCount(page.unreadCount);
+      setNextCursor(page.nextCursor);
+    } catch (reason) {
+      if (generation === requestGeneration.current) setError(normalizeApiError(reason).message);
+    } finally {
+      if (generation === requestGeneration.current) setLoadingMore(false);
+    }
+  }
 
   async function toggleRead(item: NotificationDto) {
     setUpdatingId(item.id);
@@ -74,8 +99,6 @@ export default function NotificationSettings() {
         title="Notifications"
         description="In-app alert notifications delivered for your authorized farms."
         actions={<Button variant="outline" icon={<RefreshCw size={16} />} onClick={() => {
-          setLoading(true);
-          setError("");
           void load();
         }}>Refresh</Button>}
       />
@@ -108,6 +131,13 @@ export default function NotificationSettings() {
           </article>
         ))}
       </section>
+      {!loading && nextCursor && (
+        <div className={styles.pagination}>
+          <Button variant="outline" loading={loadingMore} onClick={() => { void loadMore(); }}>
+            Load more notifications
+          </Button>
+        </div>
+      )}
       <p className={styles.note}>Email and SMS are not enabled in this release; this page reflects the backend in-app notification contract.</p>
     </div>
   );
