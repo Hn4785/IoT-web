@@ -24,7 +24,8 @@ Cập nhật gần nhất: 2026-09-25. Đây là file theo dõi lỗi chính c�
   lấy đúng cửa sổ 30 ngày nhưng người dùng có thể tưởng các điều khiển hoạt động.
   Mã FE local đã thay bằng chọn 7/30/90 ngày gọi lại API trong giới hạn 90 ngày
   của backend, chuyển Line/Area và mở thông tin biểu đồ. Unit test, build, lint
-  đạt; chưa kiểm tra tương tác với tài khoản Farmer và API thật trên browser,
+  đạt; bản xem trước component trong browser xác nhận 7 ngày, Area và thông tin
+  đổi trạng thái đúng. Chưa kiểm tra với tài khoản Farmer và API thật trên browser,
   nên chưa đóng checkpoint Farmer.
 
 ### [Trung bình, Frontend/Farmer] Hộp thông báo chỉ hiển thị trang đầu
