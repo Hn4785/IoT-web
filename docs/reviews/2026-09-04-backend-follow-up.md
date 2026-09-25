@@ -1,23 +1,62 @@
 # Sổ lỗi Backend
 
-Cập nhật gần nhất: 2026-09-22. Đây là file theo dõi lỗi chính của backend. Lỗi chưa hoàn thành luôn đặt ở trên; lỗi đã sửa được chuyển xuống cuối file sau khi có test hoặc bằng chứng kiểm chứng.
+Cập nhật gần nhất: 2026-09-25. Đây là file theo dõi lỗi chính của backend. Lỗi chưa hoàn thành luôn đặt ở trên; lỗi đã sửa được chuyển xuống cuối file sau khi có test hoặc bằng chứng kiểm chứng.
 
 ## Gate hiện tại
 
-- Gate toàn backend ngày 2026-09-22 đạt 58/58 file, 369/369 test; typecheck,
-  lint, format, build và `git diff --check` đều đạt.
-- Rà soát tĩnh toàn backend ngày 2026-09-20: format, typecheck, lint, build và
-  `git diff --check` đạt; 22/22 unit test file, 222/222 test đạt.
-- Phân quyền route, transaction, uniqueness, idempotency, optimistic revision,
-  upstream fail-closed và retention boundary đã được đối chiếu lại với schema và
-  spec. Chưa tìm thấy lỗi logic mới có bằng chứng tái hiện.
-- Checkpoint D1 ngày 2026-09-20 đạt 57/57 file, 365/365 test. Coverage đạt
-  88.48% statements, 77.60% branches, 93.24% functions và 90.29% lines.
-- Checkpoint D-local ngày 2026-09-20 đạt 58/58 file, 369/369 test với cùng mức
-  coverage; image production, restore cô lập, secret scan và contract frontend
-  đều đạt.
+- Gate local ngày 2026-09-25: 59/59 file, 374/374 test đạt; `pnpm verify`
+  đạt format, typecheck, lint và build. Kiểm thử đổi quyền giữa các lô
+  thông báo đỏ trước khi sửa và xanh sau migration snapshot trên `iot_test`.
+- Gate mới nhất ngày 2026-09-23: 59/59 file, 373/373 test đạt; `pnpm verify`
+  đạt toàn bộ format, typecheck, lint, Prisma generate và production build.
+- Checkpoint D-local ngày 2026-09-20 vẫn là baseline xanh gần nhất: 58/58 file,
+  369/369 test; coverage 88.48% statements, 77.60% branches, 93.24% functions,
+  90.29% lines; image, restore cô lập, secret scan và contract frontend đạt.
+- Phân quyền, transaction, idempotency, optimistic revision, upstream fail-closed
+  và retention boundary chưa có lỗi logic mới với bằng chứng tái hiện.
 
 ## Chưa sửa
+
+### [Trung bình, Frontend] Thanh tìm kiếm toàn cục chưa hoạt động
+
+- Bằng chứng ngày 2026-09-24: ảnh Admin ở Device Health và Stations & Devices cho
+  thấy ô tìm kiếm nhận từ khóa `device`, nhưng chưa có kết quả hoặc điều hướng.
+  Người dùng dễ hiểu nhầm tính năng đã sẵn sàng. Chưa kiểm chứng bằng browser.
+- Phạm vi ảnh hưởng: thanh tìm kiếm dùng chung; cần xác định hành vi theo quyền
+  Admin/Super Admin, Farmer và Client Developer. Đây không phải lỗi API backend.
+- Hướng xử lý: nối tìm kiếm với dữ liệu và điều hướng thật theo từng role, hoặc
+  ẩn/vô hiệu hóa ô tìm kiếm cho đến khi sẵn sàng. Cần kiểm tra hồi quy trên các
+  role, kể cả trạng thái không có kết quả và không có quyền truy cập.
+- Mã FE local ngày 2026-09-25 đã tìm station qua phân cấp được cấp quyền,
+  điều hướng theo role và ẩn ô tìm kiếm với Developer; 3 kiểm thử mới đạt.
+  Chưa có browser role matrix, nên chưa đóng lỗi.
+
+### [Thấp, Frontend/UI] Bố cục khoảng 4–5 trang chưa cân đối
+
+- Bằng chứng ngày 2026-09-24: ảnh xác nhận Device Health và Stations & Devices;
+  tên của khoảng 2–3 trang còn lại chưa được xác định. Trên màn hình lớn, khối
+  nội dung/trạng thái chưa khả dụng trải quá rộng và tạo nhiều khoảng trống.
+- Phạm vi ảnh hưởng: khả năng đọc và sự nhất quán giữa các trang; không liên quan
+  đến dữ liệu hay contract backend. Con số 4–5 là ước lượng của người dùng,
+  chưa phải kết quả kiểm tra toàn bộ giao diện.
+- Hướng xử lý: rà soát nhóm trang bị ảnh hưởng, giới hạn chiều rộng và căn chỉnh
+  khoảng cách theo layout chung. Kiểm tra hồi quy ở desktop và màn hình nhỏ,
+  đối chiếu trước/sau bằng ảnh browser rồi mới đánh dấu hoàn thành.
+- Mã FE local ngày 2026-09-25 đã giới hạn chiều rộng của nhóm Device Health,
+  Config Proposals, IoT Config và Stations & Devices. Build/lint đạt; chưa có
+  ảnh browser trước/sau, nên chưa đóng lỗi và chưa khẳng định đủ 4–5 trang.
+
+### [Trung bình, Phase C] Lease evaluator chưa có fencing tại thời điểm ghi
+
+- Heartbeat chỉ cập nhật cờ `leaseHeld` trong bộ nhớ sau khi câu lệnh gia hạn
+  trả về. `evaluateRule`, `blockForMetadata` và `recordSafeResult` không kiểm tra
+  lease/fencing token trong transaction ghi. Nếu tiến trình bị tạm dừng quá TTL,
+  instance khác có thể lấy lease trước khi worker cũ phát hiện và dừng; hai
+  instance có thể cùng làm việc trên một batch. Khóa rule và idempotency giảm
+  nguy cơ lifecycle trùng nhưng không chứng minh chỉ lease holder mới được ghi.
+- Đây là khoảng trống thiết kế xác nhận qua code, chưa tái hiện multi-instance.
+  Cần test mất lease do pause/DB delay và quyết định fencing phù hợp trước khi
+  xem heartbeat là bảo đảm đầy đủ cho triển khai nhiều instance.
 
 ### [Vận hành] Các hardening trước production còn thiếu
 
@@ -33,32 +72,6 @@ Cập nhật gần nhất: 2026-09-22. Đây là file theo dõi lỗi chính c�
 - Dependency audit chỉ phát hiện advisory đã biết, không loại trừ supply-chain compromise.
 - GitHub Actions hiện khóa theo major tag (`v4`), chưa khóa theo commit SHA đã
   duyệt. Trước khi dùng CI bảo vệ production cần pin SHA và có lịch cập nhật.
-
-### [Trung bình, chưa reachable] Advisory `mysql2` từ Prisma tooling
-
-- `pnpm audit --prod` kiểm tra lại ngày 2026-09-20 vẫn báo
-  `GHSA-rgwj-5xj2-c3m3` với `mysql2 <=3.23.0`, được kéo gián tiếp qua Prisma.
-- Backend chỉ cấu hình PostgreSQL và không gọi MySQL protocol, nên chưa tìm thấy đường khai thác trong runtime hiện tại; high/critical audit vẫn đạt.
-- Cần xử lý trong đợt cập nhật dependency có kiểm soát: chờ Prisma dùng bản vá, xem diff lockfile, chạy migration/test đầy đủ. Không dùng `audit fix --force`.
-
-### [Trung bình, Phase C] Lease evaluator chưa được gia hạn giữa batch
-
-- Lease chỉ được cấp ở đầu lượt chạy. Nếu một upstream call kéo dài quá TTL, instance
-  khác có thể nhận lease trước khi lượt cũ kết thúc; khóa hàng và idempotency hiện
-  bảo vệ lifecycle nhưng không loại bỏ công việc trùng.
-- Chưa sửa trong checkpoint này vì cần chốt chiến lược heartbeat/fencing token cho
-  triển khai nhiều instance; không tự mở rộng schema hoặc giao thức scheduler.
-
-### [Thiết kế, Phase C] Notification đồng bộ và DTO dùng trạng thái hiện tại
-
-- Fanout notification đang nằm cùng transaction lifecycle đúng theo spec đã duyệt,
-  nhưng transaction sẽ dài theo số recipient; khi tải thực tế tăng cần chuyển sang
-  outbox/worker mà vẫn giữ idempotency.
-- Notification lưu tham chiếu lifecycle thay vì snapshot hiển thị đầy đủ, nên DTO có
-  thể phản ánh trạng thái alert/rule/station hiện tại. Cần chốt yêu cầu lịch sử trước
-  khi thêm snapshot fields hoặc migration.
-- `alert-config` và `notifications` đang phụ thuộc hai chiều ở source level. Chưa gây
-  lỗi runtime, nhưng nên tách event delivery port khi module tiếp tục lớn lên.
 
 ## Đã kiểm chứng không phải lỗi
 
@@ -83,6 +96,58 @@ Cập nhật gần nhất: 2026-09-22. Đây là file theo dõi lỗi chính c�
   trong bộ nhớ frontend, kể cả request logout thất bại.
 
 ## Đã sửa
+
+### [Trung bình, Phase C] Chốt người nhận ở lô phát đầu tiên
+
+- Kiểm thử tích hợp ngày 2026-09-25 tái hiện lỗi cũ: Farmer mất quyền giữa các
+  lô bị bỏ sót, Farmer mới được cấp quyền giữa các lô lại được nhận. Test đỏ
+  trước thay đổi và xanh sau thay đổi.
+- Worker nay ghi tập người nhận đủ điều kiện một lần trong transaction lô đầu,
+  rồi chỉ phân trang bảng snapshot. Migration thêm bảng recipient và dấu thời
+  điểm snapshot; job cũ đang dở cũng giữ các notification đã phát trước đó.
+- Đã áp dụng migration trên `iot_test`, kiểm thử 374/374 và `pnpm verify` đạt.
+  Chưa triển khai hoặc tái hiện trên Pi; hành vi xóa hẳn User vẫn theo FK cascade.
+
+### [Phase C] Notification phát trong transaction và DTO thay đổi theo dữ liệu hiện tại
+
+- Lifecycle transaction nay chỉ tạo delivery job cùng snapshot hiển thị. Worker
+  phát theo lô tối đa 100 recipient/giao dịch, dùng row lock để nhiều instance
+  không xử lý trùng; unique constraint giữ idempotency khi chạy lại.
+- Inbox dùng snapshot tại thời điểm lifecycle event; dữ liệu lịch sử trước
+  migration được backfill theo giá trị còn có thể đọc, không khôi phục được tên
+  station/severity cũ nếu chúng từng đổi trước migration.
+- Retention giữ alert còn job chưa hoàn tất. Cursor/schema dùng chung được chuyển
+  sang module trung lập nên `notifications` không còn import `alert-config`.
+- Test tích hợp kiểm chứng 205 recipient qua nhiều lô, chạy lại không trùng,
+  snapshot không đổi sau khi sửa station/rule, và retention giữ job pending.
+  Ngày 2026-09-23: 59/59 file, 373/373 test; `pnpm verify`,
+  `pnpm audit --prod` và migration trên `iot_test`/`iot_dev` đều đạt.
+- Delivery là eventual: recipient active/scope được chốt ở lô worker đầu tiên.
+  Nếu worker lỗi, job còn pending và sẽ thử lại ở lần poll sau.
+
+### [Trung bình, dependency] Advisory `mysql2` từ Prisma tooling
+
+- Override gián tiếp của Prisma đã được nâng từ `mysql2 3.22.0` lên bản vá
+  `3.23.1`; không dùng `audit fix --force` và không đổi database provider.
+- Verification ngày 2026-09-23: `pnpm why mysql2` chỉ ra `3.23.1`,
+  `pnpm audit --prod` không còn advisory và `pnpm verify` đạt toàn bộ quality gate.
+
+### [Trung bình, Phase C] Lease evaluator chưa được gia hạn giữa batch
+
+- Evaluator nay gia hạn lease định kỳ trong lúc batch chạy và dừng ghi tiếp nếu
+  heartbeat mất quyền sở hữu hoặc lỗi. Gia hạn chỉ thành công khi holder hiện tại
+  vẫn còn lease chưa hết hạn, nên worker cũ không thể tự giành lại lease đã mất.
+- Regression ngày 2026-09-23 xác minh heartbeat vẫn chạy khi upstream bị chặn;
+  toàn bộ Checkpoint C1 đạt 11/11 test, full suite đạt 58/58 file và 372/372
+  test, `pnpm verify` đạt.
+
+### [Thấp, quality gate] Weather contract không đạt ESLint
+
+- Các capture group của timestamp Weather đã được chuẩn hóa bằng giá trị mặc
+  định an toàn, bỏ toàn bộ non-null assertion bị ESLint chặn.
+- Verification ngày 2026-09-23: focused Weather test đạt 28/28, toàn bộ backend
+  đạt 58/58 file và 371/371 test; `pnpm verify` đạt format, typecheck, lint,
+  Prisma generate và production build.
 
 ### [Triển khai Pi] API không gọi được upstream do mạng Docker bị cô lập
 

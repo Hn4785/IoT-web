@@ -357,6 +357,28 @@ One notification is generated for each eligible recipient and each immutable
 Client Developer accounts never receive Phase C notifications. A uniqueness
 constraint on `(lifecycleEventId, recipientUserId)` makes delivery idempotent.
 
+Delivery revision (2026-09-23): each lifecycle transaction writes one delivery
+job with a station/rule/status display snapshot. A background worker scans
+committed jobs and creates notifications in bounded recipient batches. Eligible
+recipients are active users with the relevant role and farm membership at
+dispatch time. A job cursor advances atomically with each batch; failed batches
+are retried and the notification uniqueness constraint prevents duplicates.
+Inbox delivery is eventually consistent. Retention must not remove an alert
+while its delivery is pending. Existing notifications are backfilled with the
+best available snapshot at migration time; past station/rule values cannot be
+reconstructed.
+
+Recipient-set clarification (2026-09-25): "dispatch time" means the first
+transaction in which a worker claims a pending delivery job. That transaction
+materializes the IDs of all then-eligible active Admin and farm-member Farmer
+accounts in a durable per-job recipient set before sending the first batch.
+Later batches and retries page only this set, never the changing User or
+FarmMembership tables. A grant or revocation after the snapshot does not
+change delivery for that job; it affects subsequent jobs. Current account
+status and station scope are still re-checked on every inbox read, so a
+revoked Farmer cannot view a previously queued notification. Recipient-set
+rows are deleted with their delivery job during normal retention.
+
 ```ts
 type InAppNotificationDto = {
   id: string;
@@ -439,8 +461,9 @@ timestamps are UTC `timestamptz` and all public timestamps are ISO 8601.
 
 The active-rule and unresolved-alert invariants must be backed by database
 constraints or an equivalent atomic key, not only by service-layer checks.
-State transition, lifecycle event and notification creation occur in one
-transaction. A transaction retry must not generate duplicate events.
+State transition, lifecycle event and delivery-job creation occur in one
+transaction. Notification creation happens after commit in bounded batches.
+A transaction or worker retry must not generate duplicate events or deliveries.
 
 ### Retention and privacy
 
