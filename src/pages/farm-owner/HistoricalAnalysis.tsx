@@ -19,6 +19,7 @@ import { normalizeApiError } from "@/utils/apiError";
 import type { SoilField } from "@/types/soil";
 
 import { historyDepthPresentation } from "./historicalDepthPresentation.ts";
+import { areaPoints, historyWindow, type HistoryDays } from "./historicalChartControls.ts";
 import styles from "./HistoricalAnalysis.module.css";
 
 const EMPTY_HISTORY: Record<string, SoilHistoryData> = {};
@@ -116,26 +117,28 @@ export default function HistoricalAnalysis() {
     useState<SoilField>("moisture");
 
   const [selectedDepths, setSelectedDepths] = useState<number[]>([]);
+  const [historyDays, setHistoryDays] = useState<HistoryDays>(30);
+  const [chartView, setChartView] = useState<"line" | "area">("line");
+  const [showChartInfo, setShowChartInfo] = useState(false);
 
   const metric =
     metricOptions.find(
       (item) => item.value === selectedMetric,
     ) ?? metricOptions[0];
 
-  const historyKey = `${selectedMetric}:${hierarchy.stations.map((station) => station.id).join(",")}`;
+  const historyKey = `${selectedMetric}:${historyDays}:${hierarchy.stations.map((station) => station.id).join(",")}`;
 
   useEffect(() => {
     let active = true;
     if (hierarchy.stations.length === 0) return () => { active = false; };
 
-    const end = new Date();
-    const begin = new Date(end.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const { begin, end } = historyWindow(new Date(), historyDays);
     Promise.all(hierarchy.stations.map(async (station) => [
       station.id,
       await stationBrowserService.getHistory(station.id, {
         fields: [selectedMetric],
-        begin: begin.toISOString(),
-        end: end.toISOString(),
+        begin,
+        end,
         interval: "1d",
         aggregate: "mean",
         limit: 500,
@@ -151,7 +154,7 @@ export default function HistoricalAnalysis() {
       },
     );
     return () => { active = false; };
-  }, [hierarchy.stations, historyKey, selectedMetric]);
+  }, [hierarchy.stations, historyDays, historyKey, selectedMetric]);
 
   const currentHistory = historyState?.key === historyKey ? historyState : null;
   const historyByStation = currentHistory?.data ?? EMPTY_HISTORY;
@@ -351,8 +354,15 @@ export default function HistoricalAnalysis() {
 
           <div className={styles.dateFilter}>
             <CalendarDays size={12} />
-            Last 30 Days
-            <ChevronDown size={12} />
+            <select
+              aria-label="History date range"
+              value={historyDays}
+              onChange={(event) => setHistoryDays(Number(event.target.value) as HistoryDays)}
+            >
+              <option value={7}>Last 7 Days</option>
+              <option value={30}>Last 30 Days</option>
+              <option value={90}>Last 90 Days</option>
+            </select>
           </div>
         </div>
       </section>
@@ -367,15 +377,20 @@ export default function HistoricalAnalysis() {
           </div>
 
           <div className={styles.chartControls}>
-            <button className={styles.activeView}>
+            <button type="button" className={chartView === "line" ? styles.activeView : ""} aria-pressed={chartView === "line"} onClick={() => setChartView("line")}>
               Line
             </button>
-            <button>Area</button>
-            <button title="Chart information">
+            <button type="button" className={chartView === "area" ? styles.activeView : ""} aria-pressed={chartView === "area"} onClick={() => setChartView("area")}>Area</button>
+            <button type="button" title="Chart information" aria-label="Chart information" aria-expanded={showChartInfo} onClick={() => setShowChartInfo((current) => !current)}>
               <Info size={12} />
             </button>
           </div>
         </div>
+        {showChartInfo && (
+          <p className={styles.chartInfo}>
+            Daily mean values from authorized stations for the selected {historyDays}-day range. Each series uses its own vertical scale; use the summary table to compare absolute values.
+          </p>
+        )}
 
         <div className={styles.chart}>
           <div className={styles.gridLines}>
@@ -391,23 +406,27 @@ export default function HistoricalAnalysis() {
             className={styles.svg}
           >
             {series.map((item, index) => (
-              <polyline
-                key={item.id}
-                points={linePoints(item.values)}
-                fill="none"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className={
-                  index % 4 === 0
-                    ? styles.lineGreen
-                    : index % 4 === 1
-                      ? styles.lineBlue
-                      : index % 4 === 2
-                        ? styles.lineOrange
-                        : styles.lineSlate
-                }
-              />
+              chartView === "area" ? (
+                <polygon
+                  key={item.id}
+                  points={areaPoints(item.values)}
+                  className={index % 4 === 0 ? styles.lineGreen : index % 4 === 1 ? styles.lineBlue : index % 4 === 2 ? styles.lineOrange : styles.lineSlate}
+                  fill="currentColor"
+                  fillOpacity="0.14"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                />
+              ) : (
+                <polyline
+                  key={item.id}
+                  points={linePoints(item.values)}
+                  fill="none"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className={index % 4 === 0 ? styles.lineGreen : index % 4 === 1 ? styles.lineBlue : index % 4 === 2 ? styles.lineOrange : styles.lineSlate}
+                />
+              )
             ))}
           </svg>
         </div>

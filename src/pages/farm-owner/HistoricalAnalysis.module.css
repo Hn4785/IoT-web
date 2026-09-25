@@ -113,8 +113,13 @@
   padding: 0 7px;
 }
 
-.dateFilter svg:last-child {
-  margin-left: auto;
+.dateFilter select {
+  min-width: 105px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
 }
 
 .chartCard,
@@ -180,6 +185,15 @@
   font-weight: 600;
 }
 
+.chartInfo {
+  margin: 0 0 8px;
+  padding: 8px;
+  border-radius: 5px;
+  background: var(--color-bg-subtle);
+  color: var(--color-text-secondary);
+  font-size: 10px;
+}
+
 .chart {
   position: relative;
   height: 250px;
@@ -206,18 +220,22 @@
 }
 
 .lineGreen {
+  color: var(--color-primary);
   stroke: var(--color-primary);
 }
 
 .lineBlue {
+  color: var(--color-info);
   stroke: var(--color-info);
 }
 
 .lineOrange {
+  color: var(--color-warning);
   stroke: var(--color-warning);
 }
 
 .lineSlate {
+  color: #64748b;
   stroke: #64748b;
 }
 
