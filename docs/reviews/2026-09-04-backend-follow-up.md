@@ -23,6 +23,9 @@ Cập nhật gần nhất: 2026-09-25. Đây là file theo dõi lỗi chính c�
   chưa dùng `nextCursor`. Khi tài khoản có hơn 100 thông báo, các mục cũ hơn
   không thể xem trong trang này. Backend đã trả cursor; cần nút tải thêm hoặc
   phân trang trước khi đánh dấu Farmer browser checkpoint hoàn tất.
+- Mã FE local đã thêm nút tải tiếp theo `nextCursor`, ghép các trang không trùng
+  và bỏ kết quả request cũ khi đổi bộ lọc/làm mới. Kiểm thử unit đỏ trước sửa,
+  xanh sau sửa; chưa thử tài khoản Farmer có hơn 100 mục trên browser/API thật.
 
 ### [Trung bình, Frontend] Thanh tìm kiếm toàn cục chưa hoạt động
 
@@ -51,7 +54,10 @@ Cập nhật gần nhất: 2026-09-25. Đây là file theo dõi lỗi chính c�
   đối chiếu trước/sau bằng ảnh browser rồi mới đánh dấu hoàn thành.
 - Mã FE local ngày 2026-09-25 đã giới hạn chiều rộng của nhóm Device Health,
   Config Proposals, IoT Config và Stations & Devices. Build/lint đạt; chưa có
-  ảnh browser trước/sau, nên chưa đóng lỗi và chưa khẳng định đủ 4–5 trang.
+  ảnh browser trước/sau cho toàn bộ nhóm, nên chưa đóng lỗi và chưa khẳng định
+  đủ 4–5 trang. Bản xem trước component local đã xác nhận Device Health và
+  Stations & Devices không còn khối nội dung tràn rộng ở viewport 1280px;
+  chưa có dữ liệu backend/auth để kiểm tra trang thật theo role.
 
 ### [Trung bình, Phase C] Lease evaluator chưa có fencing tại thời điểm ghi
 
