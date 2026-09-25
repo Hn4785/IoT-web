@@ -17,6 +17,13 @@ Cập nhật gần nhất: 2026-09-25. Đây là file theo dõi lỗi chính c�
 
 ## Chưa sửa
 
+### [Trung bình, Frontend/Farmer] Hộp thông báo chỉ hiển thị trang đầu
+
+- Kiểm tra mã ngày 2026-09-25: trang Farmer gọi inbox với `limit: 100` nhưng
+  chưa dùng `nextCursor`. Khi tài khoản có hơn 100 thông báo, các mục cũ hơn
+  không thể xem trong trang này. Backend đã trả cursor; cần nút tải thêm hoặc
+  phân trang trước khi đánh dấu Farmer browser checkpoint hoàn tất.
+
 ### [Trung bình, Frontend] Thanh tìm kiếm toàn cục chưa hoạt động
 
 - Bằng chứng ngày 2026-09-24: ảnh Admin ở Device Health và Stations & Devices cho
