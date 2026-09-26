@@ -11,12 +11,57 @@ Với mỗi thay đổi:
 3. Ghi rõ kết quả test; không đánh dấu hoàn thành nếu chưa có bằng chứng kiểm tra.
 4. Không ghi secret, mật khẩu, access token, refresh token hoặc API key vào file này.
 
-## Lỗi giao diện ghi nhận sau v2.5.2 — chưa xử lý
+## v2.5.3 — 2026-09-26 (Admin ổn định, Farmer integration)
 
-1. **Thanh tìm kiếm toàn cục chưa hoạt động** (ảnh Admin Device Health/Stations & Devices). Có thể nhập từ khóa nhưng chưa có kết quả hoặc điều hướng tìm thiết bị/trạm; dễ khiến người dùng tưởng tính năng đã sẵn sàng. Khi xử lý, nối nguồn dữ liệu và hành vi tìm kiếm thật cho từng role, hoặc ẩn/vô hiệu hóa ô tìm kiếm cho đến khi có chức năng. Kiểm tra cả Admin, Farmer và Developer.
-2. **Tỷ lệ bố cục chưa cân đối trên khoảng 4–5 trang**. Hai ảnh hiện có cho thấy Device Health và Stations & Devices; các trang còn lại cần xác định khi rà soát, không tự gán tên. Ở Device Health, khối thông báo trải quá rộng trên màn hình lớn, nội dung nằm giữa khoảng trống lớn và không đồng nhịp với các trang Admin khác. Cần rà soát giới hạn chiều rộng, khoảng cách và responsive trên toàn bộ nhóm trang này; kiểm tra ở nhiều kích thước màn hình.
+### Đã sửa và cập nhật
 
-Hai mục trên là lỗi UI/UX, không phải lỗi dữ liệu hay API. Chưa sửa trong bản Pi v2.5.2; chỉ đánh dấu hoàn thành sau khi có kiểm tra giao diện thực tế.
+- Thanh tìm kiếm toàn cục đã được nối với danh sách station được backend cho phép
+  và điều hướng về đúng trang theo role; không còn là ô nhập chỉ có giao diện.
+- Giới hạn chiều rộng cho nhóm trang Admin Device Health, Stations & Devices,
+  Config Proposals và IoT Config để giảm tình trạng khối nội dung trải quá rộng.
+- Nối các trang Farmer với Farm → Plot → Station, latest soil và history thật;
+  ảnh nghiệm thu cho thấy tài khoản Farmer thấy `NODE01`–`NODE06`, chọn `NODE02`
+  và đọc được telemetry/chart từ backend.
+- Bỏ Depth khi provider không trả dữ liệu; trạng thái history rỗng không còn tạo
+  số `0`/`NaN` giả; nối điều khiển history và phân trang notification inbox.
+- Sửa local development proxy để request `/api` đi tới backend, tránh lỗi đăng
+  nhập 404 khi frontend và backend chạy riêng trên máy phát triển.
+- Dropdown notification dùng inbox backend. Backend evaluator cũng đã chuyển
+  lifecycle notification sang hàng đợi bền vững và chốt recipient theo job.
+- Cập nhật nhãn hiển thị thành `v2.5.3` và triển khai image API/Web tương ứng lên Pi.
+- Người dùng đã xác nhận phần Admin hoạt động ổn và nhận đủ dữ liệu 6 station.
+
+### Kiểm tra ảnh hưởng cũ
+
+- Không khôi phục dữ liệu mẫu, Gateway/Sensor giả hoặc thao tác ghi thiết bị khi
+  backend chưa có contract phần cứng.
+- Phạm vi station tiếp tục lấy từ backend; frontend không tự mở rộng quyền.
+- Farmer history vẫn tuân theo cửa sổ tối đa của backend và trạng thái rỗng được
+  trình bày là không có dữ liệu, không thay bằng số giả.
+
+### Bằng chứng kiểm tra
+
+- Frontend: 53/53 test, production build và lint đạt trước khi triển khai.
+- Backend: `pnpm verify`, 50/50 test evaluator/Weather và 2/2 test notification
+  delivery đạt. Full suite đạt 373/374; heartbeat lease kéo dài còn đỏ và không
+  được coi là đã sửa trong bản này.
+- Pi: migration notification delivery/recipient snapshot up to date; container
+  `agrisense-api:v2.5.3` và `agrisense-web:v2.5.3` healthy sau deploy.
+
+### Tồn đọng liên quan
+
+- **Hình ảnh giữa các trang Farmer chưa đồng bộ hoàn toàn.** Dashboard, Soil
+  Dashboard, History Report, Alerts và Alert Center còn khác nhau về mật độ nội
+  dung, khoảng trống, tỷ lệ khối lọc/card/biểu đồ và cách đặt tên metric.
+- Alerts và Alert Center đang có bộ lọc, hai khối trạng thái rỗng và nội dung gần
+  giống nhau; cần xác nhận rõ nhiệm vụ riêng của từng trang trước khi chỉnh UI.
+- Chưa kết luận tất cả là lỗi CSS vì ảnh History Report được chụp ở zoom 67%,
+  không cùng điều kiện với các ảnh còn lại. Khi sửa phải kiểm tra lại ở zoom 100%,
+  cùng viewport/role/station/khoảng thời gian và lưu ảnh trước/sau cho 5 trang.
+- Health metadata của API vẫn trả `2.5.0` dù image là `v2.5.3`; đây là lệch nhãn
+  nội bộ, không làm container mất healthy.
+- Heartbeat/fencing evaluator khi upstream call kéo dài vẫn chưa hoàn tất.
+
 
 ## v2.5.2 — 2026-09-24 (Admin/Super Admin checkpoint)
 
