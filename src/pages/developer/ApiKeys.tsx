@@ -1,9 +1,10 @@
 import { Check, Copy, KeyRound, Plus, RefreshCw, ShieldAlert, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { apiKeyService, type AvailableApiKeyStation, type DeveloperApiKey } from "@/services/apiKeyService";
 import { normalizeApiError } from "@/utils/apiError";
 import { copyText } from "@/utils/credentialInput";
+import { getApiKeyStatus } from "@/utils/developerOverview";
 import styles from "./ApiKeys.module.css";
 
 const formatDate = (value: string | null) => value ? new Date(value).toLocaleString() : "Never";
@@ -20,14 +21,21 @@ export default function ApiKeys() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    let active = true;
-    Promise.all([apiKeyService.list(), apiKeyService.listAvailableStations()]).then(
-      ([items, stations]) => { if (active) { setKeys(items); setAvailableStations(stations); } },
-      (reason) => { if (active) setError(normalizeApiError(reason).message); },
-    ).finally(() => { if (active) setLoading(false); });
-    return () => { active = false; };
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const [items, stations] = await Promise.all([apiKeyService.list(), apiKeyService.listAvailableStations()]);
+      setKeys(items);
+      setAvailableStations(stations);
+    } catch (reason) { setError(normalizeApiError(reason).message); }
+    finally { setLoading(false); }
   }, []);
+
+  useEffect(() => {
+    const task = window.setTimeout(() => void loadData(), 0);
+    return () => window.clearTimeout(task);
+  }, [loadData]);
 
   const createKey = async () => {
     if (!newKeyName.trim()) return;
@@ -61,18 +69,20 @@ export default function ApiKeys() {
     } catch (reason) { setError(normalizeApiError(reason).message); }
   };
 
-  const activeCount = keys.filter((key) => !key.revokedAt && new Date(key.expiresAt) > new Date()).length;
+  const activeCount = keys.filter((key) => getApiKeyStatus(key) === "active").length;
+  const expiredCount = keys.filter((key) => getApiKeyStatus(key) === "expired").length;
+  const revokedCount = keys.filter((key) => getApiKeyStatus(key) === "revoked").length;
 
   return <div className={styles.page}>
     <div className={styles.header}><div><div className={styles.eyebrow}>DEVELOPER PORTAL / SECURITY</div><h1>API Keys</h1><p>Manage credentials used by server-side integrations.</p></div>
       <button className={styles.primaryButton} onClick={() => { setShowCreate(true); setGeneratedSecret(null); setNewKeyName(""); setSelectedStationIds(availableStations.map(({ id }) => id)); setCredentialCopied(false); setCredentialCopyFailed(false); }}><Plus size={17} />Create API Key</button>
     </div>
     <div className={styles.warning}><ShieldAlert size={19} /><div><strong>Keep API secrets secure.</strong><span>Never embed them in browser code or commit them to source control.</span></div></div>
-    {error && <div className={styles.warning} role="alert">{error}</div>}
-    <section className={styles.stats}><div><KeyRound size={19} /><span>Active Keys</span><strong>{activeCount}</strong></div><div><RefreshCw size={19} /><span>Total Keys</span><strong>{keys.length}</strong></div><div><ShieldAlert size={19} /><span>Revoked</span><strong>{keys.filter((key) => key.revokedAt).length}</strong></div></section>
+    {error && <div className={styles.warning} role="alert"><span>{error}</span><button className={styles.secondaryButton} onClick={() => void loadData()}><RefreshCw size={15} />Retry</button></div>}
+    <section className={styles.stats}><div><KeyRound size={19} /><span>Active Keys</span><strong>{activeCount}</strong></div><div><RefreshCw size={19} /><span>Expired</span><strong>{expiredCount}</strong></div><div><ShieldAlert size={19} /><span>Revoked</span><strong>{revokedCount}</strong></div></section>
     <section className={styles.card}><div className={styles.cardHeader}><h2>API Key Management</h2><p>Secrets are shown only after creation or rotation.</p></div>
       <div className={styles.tableWrapper}><table className={styles.table}><thead><tr><th>Name</th><th>Prefix</th><th>Created</th><th>Last used</th><th>Expires</th><th>Rate limit</th><th>Status</th><th>Stations</th><th /></tr></thead>
-      <tbody aria-busy={loading}>{!loading && keys.length === 0 && <tr><td colSpan={9}>No API keys yet.</td></tr>}{keys.map((key) => { const revoked = Boolean(key.revokedAt); return <tr key={key.id}><td><div className={styles.keyName}><span className={styles.keyIcon}><KeyRound size={16} /></span><strong>{key.name}</strong></div></td><td className={styles.mono}>{key.prefix}</td><td>{formatDate(key.createdAt)}</td><td>{formatDate(key.lastUsedAt)}</td><td>{formatDate(key.expiresAt)}</td><td>{key.requestsPerMinute}/min</td><td><span className={`${styles.status} ${revoked ? styles.revoked : styles.active}`}>{revoked ? "Revoked" : "Active"}</span></td><td>{key.stationIds.length || "No access"}</td><td><div className={styles.actions}><button title="Rotate key" aria-label={`Rotate ${key.name}`} disabled={revoked} onClick={() => void rotateKey(key.id)}><RefreshCw size={16} /></button><button title="Revoke key" aria-label={`Revoke ${key.name}`} disabled={revoked} onClick={() => void revokeKey(key.id)}><Trash2 size={16} /></button></div></td></tr>; })}</tbody></table></div>
+      <tbody aria-busy={loading}>{!loading && keys.length === 0 && <tr><td colSpan={9}>No API keys yet.</td></tr>}{keys.map((key) => { const status = getApiKeyStatus(key); const revoked = status === "revoked"; return <tr key={key.id}><td><div className={styles.keyName}><span className={styles.keyIcon}><KeyRound size={16} /></span><strong>{key.name}</strong></div></td><td className={styles.mono}>{key.prefix}</td><td>{formatDate(key.createdAt)}</td><td>{formatDate(key.lastUsedAt)}</td><td>{formatDate(key.expiresAt)}</td><td>{key.requestsPerMinute}/min</td><td><span className={`${styles.status} ${status === "active" ? styles.active : styles.revoked}`}>{status[0].toUpperCase() + status.slice(1)}</span></td><td>{key.stationIds.length || "No access"}</td><td><div className={styles.actions}><button title="Rotate key" aria-label={`Rotate ${key.name}`} disabled={revoked} onClick={() => void rotateKey(key.id)}><RefreshCw size={16} /></button><button title="Revoke key" aria-label={`Revoke ${key.name}`} disabled={revoked} onClick={() => void revokeKey(key.id)}><Trash2 size={16} /></button></div></td></tr>; })}</tbody></table></div>
     </section>
     {showCreate && <div className={styles.overlay} onMouseDown={(event) => { if (event.target === event.currentTarget) setShowCreate(false); }}><div className={styles.modal} role="dialog" aria-modal="true" aria-labelledby="api-key-dialog-title">
       <div className={styles.modalHeader}><div><h2 id="api-key-dialog-title">{generatedSecret ? "API key ready" : "Create API key"}</h2><p>{generatedSecret ? "Copy it now; it will not be shown again." : "Name this server-side integration."}</p></div><button aria-label="Close" onClick={() => setShowCreate(false)}>×</button></div>

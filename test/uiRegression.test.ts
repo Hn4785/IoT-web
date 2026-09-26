@@ -47,8 +47,35 @@ test("login identifies the deployed v2.5 release", () => {
     "utf8",
   );
 
-  assert.match(source, /Monitoring Node System v2\.5\.3/);
+  assert.match(source, /Monitoring Node System v2\.5\.4/);
   assert.doesNotMatch(source, /Monitoring Node System v2\.4/);
+});
+
+test("developer portal fails closed instead of presenting fabricated production analytics", () => {
+  const dashboard = readFileSync(
+    new URL("../src/pages/developer/DeveloperDashboard.tsx", import.meta.url),
+    "utf8",
+  );
+  const metrics = readFileSync(
+    new URL("../src/pages/developer/ApiMetrics.tsx", import.meta.url),
+    "utf8",
+  );
+  const permissions = readFileSync(
+    new URL("../src/pages/developer/ApiPermissions.tsx", import.meta.url),
+    "utf8",
+  );
+  const explorer = readFileSync(
+    new URL("../src/pages/developer/ApiExplorer.tsx", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(dashboard, /summarizeDeveloperAccess/);
+  assert.doesNotMatch(dashboard, /18,426|482,913|99\.99%/);
+  assert.match(metrics, /Backend contract not available/);
+  assert.doesNotMatch(metrics, /requestLogs|98\.76%|18,198/);
+  assert.match(permissions, /getGrantedKeyStations/);
+  assert.doesNotMatch(permissions, /Save Permissions/);
+  assert.match(explorer, /createDeveloperExplorerService/);
 });
 
 test("production API calls default to the same origin proxy", () => {

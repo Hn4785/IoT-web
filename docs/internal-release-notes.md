@@ -13,6 +13,59 @@ Với mỗi thay đổi:
 3. Ghi rõ kết quả test; không đánh dấu hoàn thành nếu chưa có bằng chứng kiểm tra.
 4. Không ghi secret, mật khẩu, access token, refresh token hoặc API key vào file này.
 
+## v2.5.4 — 2026-09-26 (Client Developer integration)
+
+### Đã sửa và cập nhật
+
+- Nối Developer Dashboard với inventory API key, station grant và health thật;
+  bỏ toàn bộ request count, quota, latency, log và phần trăm health giả.
+- API Permissions chuyển thành màn hình chỉ đọc, hiển thị đúng giao của scope
+  trên key và grant hiện tại. Backend chưa có contract sửa scope nên frontend
+  không còn toggle hay nút Save giả; thay đổi scope thực hiện qua API Keys.
+- API Explorer gửi request trực tiếp theo contract `X-API-Key`, hỗ trợ health,
+  station list, latest và history; kiểm tra station/fields/range/aggregate/limit,
+  giữ cursor phân trang và hiển thị rate-limit headers. API key chỉ nằm trong bộ
+  nhớ của trang, không đưa vào response hoặc local storage.
+- API Docs cập nhật kiểu, giới hạn và điều kiện tham số theo backend hiện tại.
+  API Metrics chuyển sang trạng thái `N/A` fail-closed cho đến khi backend có
+  contract analytics theo tài khoản.
+- API Keys phân biệt chính xác Active/Expired/Revoked, có retry khi tải lỗi và
+  không mở rộng key rỗng thành toàn bộ station grant.
+- Sửa interceptor refresh: xử lý 401 ở response interceptor, dùng single-flight
+  cho request đồng thời, không refresh lặp sau lần retry và xóa access token khi
+  refresh thất bại.
+- Đồng bộ nhãn frontend, package frontend, health/OpenAPI backend và image phát
+  hành về cùng phiên bản `2.5.4`.
+
+### Kiểm tra ảnh hưởng cũ
+
+- Không đổi schema database, business endpoint, phân quyền Admin/Farmer hay dữ
+  liệu telemetry. Developer vẫn chỉ đọc station được cấp và API key vẫn bị giới
+  hạn thêm bởi scope riêng của credential.
+- Secret API key chỉ được backend trả một lần khi tạo/rotate; giao diện không ghi
+  secret vào changelog, log hoặc storage.
+- Public health không cần API key; ba endpoint client còn lại không dùng bearer
+  session và luôn gửi `X-API-Key` riêng.
+
+### Bằng chứng kiểm tra
+
+- Frontend: kiểm thử hợp đồng Explorer/permission/status và auth refresh đã đạt;
+  full test, build, lint và kiểm tra sau triển khai được cập nhật khi đóng bản.
+- Backend: health và OpenAPI version test đã đạt; full verify và kết quả Pi được
+  cập nhật khi đóng bản.
+
+### Tồn đọng liên quan
+
+- Giao diện giữa một số trang Admin/Farmer vẫn chưa đồng bộ hoàn toàn về mật độ,
+  khoảng trống và tỷ lệ card/biểu đồ. Cần kiểm tra cùng viewport, zoom 100% và
+  cùng dữ liệu trước khi sửa để tránh kết luận nhầm do ảnh chụp khác điều kiện.
+- Backend chưa có contract metrics/log theo Client Developer; trang API Metrics
+  phải tiếp tục hiển thị `N/A`, không dựng dữ liệu mẫu.
+- Danh sách API key hiện bị chặn ở 100 bản ghi và chưa có contract cursor/count.
+  OpenAPI của latest/history còn thiếu response schema đầy đủ ở một số route.
+- Heartbeat/fencing evaluator khi upstream call kéo dài vẫn là lỗi backend chưa
+  can thiệp trong bản này.
+
 ## v2.5.3 — 2026-09-26 (Admin ổn định, Farmer integration)
 
 ### Đã sửa và cập nhật

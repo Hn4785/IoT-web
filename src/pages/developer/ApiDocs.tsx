@@ -18,7 +18,7 @@ interface Endpoint {
   title: string;
   description: string;
   auth: boolean;
-  parameters: string[];
+  parameters: Array<{ name: string; type: string; description: string }>;
 }
 
 const endpoints: Endpoint[] = [
@@ -38,7 +38,10 @@ const endpoints: Endpoint[] = [
     title: "List Stations",
     description: "Return stations available to the API key.",
     auth: true,
-    parameters: ["cursor", "limit"],
+    parameters: [
+      { name: "limit", type: "integer", description: "Optional page size from 1 to 100; default 50." },
+      { name: "cursor", type: "string", description: "Optional opaque continuation cursor, maximum 2048 characters." },
+    ],
   },
   {
     id: "latest",
@@ -47,7 +50,10 @@ const endpoints: Endpoint[] = [
     title: "Latest Data",
     description: "Retrieve the latest telemetry for authorized stations.",
     auth: true,
-    parameters: ["station", "fields"],
+    parameters: [
+      { name: "station", type: "string", description: "Required station code: letters, digits, underscore or hyphen; maximum 64 characters." },
+      { name: "fields", type: "string", description: "Optional unique comma-separated soil fields with no spaces." },
+    ],
   },
   {
     id: "history",
@@ -57,15 +63,15 @@ const endpoints: Endpoint[] = [
     description: "Retrieve historical telemetry and supported aggregates.",
     auth: true,
     parameters: [
-      "station",
-      "fields",
-      "begin",
-      "end",
-      "interval",
-      "aggregate",
-      "order",
-      "limit",
-      "cursor",
+      { name: "station", type: "string", description: "Required authorized station code." },
+      { name: "fields", type: "string", description: "Optional unique comma-separated soil fields." },
+      { name: "begin", type: "date-time", description: "Required UTC ISO-8601 range start." },
+      { name: "end", type: "date-time", description: "Required UTC ISO-8601 range end." },
+      { name: "interval", type: "enum", description: "raw, 5m, 30m, 1h or 1d; default raw." },
+      { name: "aggregate", type: "enum", description: "Required for non-raw intervals; forbidden for raw. mean, min, max, first or last." },
+      { name: "order", type: "enum", description: "asc or desc; default asc." },
+      { name: "limit", type: "integer", description: "Optional page size from 1 to 500; default 100." },
+      { name: "cursor", type: "string", description: "Optional opaque continuation cursor, maximum 2048 characters." },
     ],
   },
 ];
@@ -75,7 +81,7 @@ const responseExamples: Record<string, string> = {
   "success": true,
   "data": {
   "service": "iot-api",
-  "version": "0.1.0",
+  "version": "2.5.4",
   "status": "healthy",
   "environment": "development",
   "time": "2026-09-12T05:00:00.000Z"
@@ -130,8 +136,7 @@ export default function ApiDocs() {
           <div className={styles.eyebrow}>DEVELOPER PORTAL / REFERENCE</div>
           <h1>API Documentation</h1>
           <p>
-            Weather API v1 compatible endpoints for authorized client
-            integrations.
+            Current Client Developer API v1 endpoints and validation limits.
           </p>
         </div>
 
@@ -220,10 +225,10 @@ export default function ApiDocs() {
                 </div>
 
                 {selected.parameters.map((parameter) => (
-                  <div className={styles.parameterRow} key={parameter}>
-                    <code>{parameter}</code>
-                    <span>string</span>
-                    <span>See API contract for endpoint-specific behavior.</span>
+                  <div className={styles.parameterRow} key={parameter.name}>
+                    <code>{parameter.name}</code>
+                    <span>{parameter.type}</span>
+                    <span>{parameter.description}</span>
                   </div>
                 ))}
               </div>

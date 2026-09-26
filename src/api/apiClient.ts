@@ -43,6 +43,13 @@ apiClient.interceptors.request.use(
 
     return config;
   },
+  (error: AxiosError) => Promise.reject(error),
+);
+
+apiClient.interceptors.response.use(
+  (response) => {
+    return response;
+  },
 
   async (error: AxiosError) => {
     const request = error.config as RetriableRequest | undefined;
@@ -64,15 +71,5 @@ apiClient.interceptors.request.use(
       authStorage.clearAccessToken();
       return Promise.reject(refreshError);
     }
-  }
-);
-
-apiClient.interceptors.response.use(
-  (response) => {
-    return response;
-  },
-
-  (error) => {
-    return Promise.reject(error);
   }
 );
