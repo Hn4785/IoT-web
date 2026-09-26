@@ -1,8 +1,7 @@
 # Hướng dẫn nối Frontend - Backend
 
-Tài liệu này là đầu mối triển khai tích hợp giữa nhánh frontend `FE` tại
-`D:/IoT-web` và backend `BE` tại
-`D:/IoT-api/.worktrees/integration-core`. Không đổi tên route hoặc tự dựng DTO
+Tài liệu này là đầu mối triển khai tích hợp giữa frontend tại `D:/IoT-web` và
+backend checkout đang dùng tại `D:/IoT-api`. Không đổi tên route hoặc tự dựng DTO
 theo giao diện; contract runtime từ backend là nguồn sự thật.
 
 > Trạng thái công việc nằm ở backend `tasks/todo.md`; lỗi nằm ở backend issue
@@ -140,8 +139,8 @@ Trạng thái frontend hiện tại:
 1. `alertService` dùng đúng POST acknowledgement/resolution sub-resource; không
    còn gọi route `PATCH /alerts/:id` hoặc comments không tồn tại.
 2. Farmer và Admin Alert Center dùng chung lifecycle DTO thật.
-3. `notificationService` dùng cursor/unread/mark-read contract thật; UI
-   Notifications còn chờ frontend hoàn thiện và chưa nằm trong checkpoint Admin.
+3. `notificationService` và UI Notifications dùng cursor/unread/mark-read
+   contract thật; inbox Farmer đã có tải trang tiếp theo bằng `nextCursor`.
 4. Các trang cấu hình/thiết bị hiển thị unavailable khi capability trả
    `DEVICE_CONTRACT_PENDING`; không dựng nút publish giả.
 5. Còn phải chạy browser matrix cho quyền Admin/Farmer, mất membership và stale
@@ -191,7 +190,7 @@ trace hoặc raw exception.
 
 ```powershell
 # Backend
-cd D:\IoT-api\.worktrees\integration-core
+cd D:\IoT-api
 docker compose up -d postgres
 pnpm db:status
 pnpm test
@@ -199,9 +198,9 @@ pnpm verify
 
 # Frontend
 cd D:\IoT-web
-pnpm test
-pnpm lint
-pnpm build
+npm test
+npm run lint
+npm run build
 ```
 
 Sau gate tĩnh, chạy browser matrix cho Admin, Farmer và Client Developer trên:
@@ -213,47 +212,16 @@ Sau gate tĩnh, chạy browser matrix cho Admin, Farmer và Client Developer tr�
 
 ## 8. Thứ tự hoàn thiện hiện tại
 
-### Gate trước khi nối toàn diện
+1. Admin/Super Admin đã được người dùng chấp nhận với đủ 6 station; các chức
+   năng không có device contract tiếp tục fail-closed.
+2. Hoàn tất Farmer theo thứ tự Dashboard → Soil Dashboard → Historical Analysis
+   → History Report → Notifications → Alerts/Alert Center. Việc còn lại là chuẩn
+   hóa giao diện và browser matrix cho scope, mất quyền, stale/cache và lỗi upstream.
+3. Chỉ sau khi người dùng kiểm tra Farmer mới chuyển sang Client Developer: API
+   Keys → Permissions → Docs → Explorer → Metrics khi có contract.
+4. Sau ba role, chạy browser matrix liên role và QA recovery; production vẫn cần
+   TLS/proxy, shared limiter, backup ngoài máy, MFA và live-device evidence.
 
-Các adapter và trang Phase B/C có thể hoàn thiện local đã được nối. Gate tiếp
-theo là kiểm thử trình duyệt theo role; provider CENTER/NODE và contract ghi
-thiết bị là phụ thuộc ngoài, phải để fail-closed thay vì dựng dữ liệu giả.
-
-### Thứ tự nối theo role và từng trang
-
-1. **Admin/Super Admin trước:** Dashboard → Users/phân quyền → Stations & Devices
-   → Device Health → Alert Center/rules → Notifications nếu có → Config
-   capability/proposals → Audit Log.
-2. Chạy đủ happy path, sai quyền, session hết hạn và lỗi dependency cho toàn bộ
-   trang Admin/Super Admin; tạo checkpoint riêng trước khi chuyển role.
-3. **Farmer tiếp theo:** Dashboard → Soil Dashboard → Historical Analysis →
-   History Report → Alerts/Alert Center → Notification Inbox/Settings.
-4. Chạy scope Farm/Plot/Station, mất membership, stale/cache và upstream lỗi;
-   tạo checkpoint Farmer riêng.
-5. **Client Developer cuối cùng:** Dashboard → API Keys → API Permissions → API
-   Docs → API Explorer → API Metrics khi đã có contract.
-6. Chạy API-key scope, create/copy/rotate/revoke, rate limit và key hết hạn; tạo
-   checkpoint Developer riêng.
-7. Sau ba checkpoint role mới chạy browser matrix liên role và QA recovery toàn
-   hệ thống.
-8. Chỉ sau đó mới đóng staging/production: TLS/proxy, shared limiter, backup,
-   MFA và metrics tập trung.
-
-### Theo dõi checkpoint Admin/Super Admin v2.5.2
-
-`Đã nối code` chỉ xác nhận frontend gọi API thật và build/test tĩnh đạt; **không**
-đồng nghĩa đã nghiệm thu trên browser với tài khoản thật.
-
-| Trang/luồng | Trạng thái code | Browser role matrix |
-| --- | --- | --- |
-| Dashboard | Đã nối inventory; chỉ số chưa có contract là N/A | Smoke đạt trên Pi với phiên Super Admin; role matrix chưa xong |
-| Users và quyền Farm/Station | Đã nối API tài khoản và cấp/thu hồi scope | Chưa chạy |
-| Stations & Devices, Station Detail | Đã nối hierarchy, station detail, latest soil | Chưa chạy |
-| Device Health | Fail-closed theo capability, chưa có contract health | Chưa chạy |
-| Alert Center/rules | Đã nối contract Phase C | Chưa chạy |
-| Notifications | Tạm hoãn UI Admin; chờ frontend Notifications được push | Chưa chạy |
-| IoT Config, Config Proposals | Không hiển thị thao tác ghi giả; chờ device contract | IoT Config smoke đạt; Config Proposals chưa chạy |
-| Audit Log | Đã nối cursor/filter thật; chỉ Super Admin được đọc | Chưa chạy |
-
-Sau khi kiểm tra từng trang bằng cả Admin lẫn Super Admin, cập nhật cột browser
-và lỗi phát hiện tại `docs/internal-release-notes.md` trước khi chuyển sang Farmer.
+Trạng thái phiên bản và lỗi còn mở chỉ ghi tại
+[`docs/internal-release-notes.md`](../internal-release-notes.md); checklist backend
+chỉ ghi tại `D:/IoT-api/tasks/todo.md`.

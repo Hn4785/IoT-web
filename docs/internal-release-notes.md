@@ -1,6 +1,8 @@
 # Internal change record
 
-Đây là đầu mối duy nhất để ghi thay đổi nội bộ của frontend. Mỗi thay đổi phải được ghi vào file này trước khi tạo checkpoint hoặc phát hành.
+Đây là đầu mối duy nhất để ghi cập nhật phiên bản của toàn dự án frontend,
+backend và Pi. Mỗi thay đổi phát hành phải được ghi vào đúng mục phiên bản trong
+file này trước khi tạo checkpoint hoặc triển khai.
 
 ## Quy tắc cập nhật
 
@@ -30,6 +32,9 @@ Với mỗi thay đổi:
   lifecycle notification sang hàng đợi bền vững và chốt recipient theo job.
 - Cập nhật nhãn hiển thị thành `v2.5.3` và triển khai image API/Web tương ứng lên Pi.
 - Người dùng đã xác nhận phần Admin hoạt động ổn và nhận đủ dữ liệu 6 station.
+- Rút gọn tài liệu vận hành: bỏ trạng thái/checklist trùng, cập nhật đường dẫn và
+  gate hiện tại, gom sổ lỗi backend về các mục còn mở cùng bằng chứng rút gọn.
+  Thêm quy tắc bắt buộc đọc, hiểu và xác nhận skill trước mọi thay đổi.
 
 ### Kiểm tra ảnh hưởng cũ
 
@@ -60,6 +65,8 @@ Với mỗi thay đổi:
   cùng viewport/role/station/khoảng thời gian và lưu ảnh trước/sau cho 5 trang.
 - Health metadata của API vẫn trả `2.5.0` dù image là `v2.5.3`; đây là lệch nhãn
   nội bộ, không làm container mất healthy.
+- `package.json` frontend vẫn mang version `2.5.2` trong khi giao diện/image đã
+  ghi `v2.5.3`; cần gom phiên bản về một nguồn trước bản tiếp theo.
 - Heartbeat/fencing evaluator khi upstream call kéo dài vẫn chưa hoàn tất.
 
 

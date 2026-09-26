@@ -15,15 +15,18 @@ Tài liệu này là điểm bắt đầu duy nhất dành cho tester. Không c�
 | Admin quản lý tài khoản và phân quyền | Hoàn thành |
 | Chuyển giao quyền Super Admin | Hoàn thành; thao tác sẽ đăng xuất cả hai tài khoản |
 | Farm → Plot → Station theo phạm vi Farmer | Hoàn thành |
-| Dữ liệu đất latest/history | Hoàn thành ở contract và dữ liệu giả lập |
+| Dữ liệu đất latest/history | Đã nối provider; còn gate xác minh live CENTER/NODE |
 | Client Developer API và API key | Hoàn thành |
-| Responsive desktop/mobile | Hoàn thành vòng kiểm thử hiện tại |
-| Thiết bị thật CENTER + NODE01–NODE06 | Chờ hệ thống quan trắc cho phép truy cập API |
-| Alert, cấu hình IoT, audit và device-health đầy đủ | Một số màn hình còn dùng dữ liệu mẫu |
+| Responsive desktop/mobile | Có hỗ trợ; còn chuẩn hóa hình ảnh 5 trang Farmer |
+| Thiết bị thật CENTER + NODE01–NODE06 | Đã có credential thử nghiệm; chưa đóng live-device gate |
+| Alert và thông báo in-app | Đã nối backend; còn browser role matrix |
+| Cấu hình/health thiết bị | Hiển thị unavailable có chủ ý khi chưa có contract thiết bị thật |
 | Tạo/sửa/xóa Farm, Plot, Station trên UI | Chưa triển khai |
 | Khôi phục mật khẩu bằng email | Chưa triển khai; hiện liên hệ Admin |
 
-Kết quả kiểm tra gần nhất: frontend `20/20` test, backend `251/251` test, lint và production build đều đạt.
+Gate v2.5.3: frontend `53/53` test, lint và production build đạt. Backend
+`pnpm verify` đạt; full suite `373/374` test, còn một test heartbeat lease đã
+được ghi nhận và chưa coi là đã sửa.
 
 ## 2. Yêu cầu máy
 
@@ -107,7 +110,9 @@ Copy-Item .env.example .env
 npm run dev
 ```
 
-Mở <http://localhost:5173>. Frontend phải dùng `VITE_API_BASE_URL=http://localhost:3000/api/v1`.
+Mở <http://localhost:5173>. Giữ `VITE_API_BASE_URL=/api/v1`; Vite proxy mặc định
+chuyển request tới backend `http://127.0.0.1:3000`. Chỉ đặt
+`DEV_API_PROXY_TARGET` khi backend local chạy ở địa chỉ khác.
 
 ## 6. Trình tự test khuyến nghị
 
@@ -119,7 +124,7 @@ Mở <http://localhost:5173>. Frontend phải dùng `VITE_API_BASE_URL=http://lo
 6. Mở Soil Dashboard, chọn Farm → Plot → Station và kiểm tra latest/history, loading, empty state và nút thử lại khi API lỗi.
 7. Với Client Developer, tạo API key, lưu key lúc hiển thị một lần, sau đó thử `/client/stations`, `/client/data/latest` và `/client/data/history` trong API Explorer.
 8. Kiểm tra `401`, `403`, `404`, `429` và `503` không làm vỡ trang hoặc lộ stack trace.
-9. Kiểm tra desktop và màn hình rộng `390px`; bảng phải cuộn hợp lý và cột Actions vẫn nhìn thấy.
+9. Kiểm tra desktop và mobile khoảng `390px`; bảng phải cuộn hợp lý và cột Actions vẫn nhìn thấy.
 10. Chỉ test chuyển giao Super Admin trên database dùng thử. Sau chuyển giao, người giữ quyền cũ mất quyền và cả hai phiên bị đăng xuất.
 
 Không reset credential của Super Admin hiện tại. Nếu quên mật khẩu Super Admin ở local:
@@ -158,8 +163,15 @@ Log `400`, `401`, `403`, `413`, `415`, `429` hoặc `503` có thể xuất hiệ
 - Không dùng `docker compose down -v` vì có thể xóa dữ liệu PostgreSQL.
 - Không sửa migration history hoặc các cột hash trực tiếp bằng DBeaver.
 - Không dùng dữ liệu production cho bài test reset credential, chuyển Super Admin hoặc retention.
-- API cảm biến thật hiện chưa truy cập được; tester dùng dữ liệu demo/fixture cho đến khi đội thiết bị bàn giao endpoint hoạt động.
+- Không ghi provider API key vào ảnh/tài liệu. Chỉ coi dữ liệu thiết bị là
+  `live-verified` sau khi CENTER và ít nhất một NODE qua gate xác minh có lưu
+  bằng chứng nhưng không lưu credential.
 
 ## 9. Báo lỗi
 
 Mỗi lỗi cần ghi: role, URL, bước tái hiện, kết quả mong đợi, kết quả thực tế, HTTP status/request ID, ảnh chụp và log console đã loại bỏ credential. Phân biệt rõ lỗi giao diện, lỗi API nội bộ và lỗi upstream thiết bị.
+
+## 10. Tài liệu liên quan
+
+- [Hướng dẫn nối frontend–backend](./docs/integration/README.md)
+- [Ghi nhận cập nhật duy nhất](./docs/internal-release-notes.md)
