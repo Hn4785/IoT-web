@@ -49,10 +49,19 @@ Với mỗi thay đổi:
 
 ### Bằng chứng kiểm tra
 
-- Frontend: kiểm thử hợp đồng Explorer/permission/status và auth refresh đã đạt;
-  full test, build, lint và kiểm tra sau triển khai được cập nhật khi đóng bản.
-- Backend: health và OpenAPI version test đã đạt; full verify và kết quả Pi được
-  cập nhật khi đóng bản.
+- Frontend: `npm test` đạt 75/75, `npm run lint`, `npm run build` và
+  `git diff --check` đạt. Kiểm tra trình duyệt local xác nhận Dashboard, API Keys,
+  Permissions, Docs, Explorer và Metrics dùng đúng dữ liệu/trạng thái backend;
+  Explorer gọi health thành công và không lưu API key vào storage.
+- Backend: `pnpm verify` đạt toàn bộ format, typecheck, lint, Prisma generate và
+  production build. Full suite đạt 374/375; test heartbeat lease kéo dài còn đỏ
+  đúng với tồn đọng đã ghi, không phát sinh lỗi mới thuộc phạm vi v2.5.4.
+- Commit nội bộ: frontend `6a0ee14`, backend `9d9a81a`.
+- Trước triển khai Pi đã sao lưu database (113 KB) và compose; hai gói image
+  ARM64 được đối chiếu SHA-256 giữa máy build và Pi, kết quả khớp hoàn toàn.
+- Pi đang chạy `agrisense-api:v2.5.4` và `agrisense-web:v2.5.4`, cả hai healthy.
+  Web health trả `ok`; API health trả version `2.5.4`; endpoint Client Developer
+  khi thiếu `X-API-Key` trả 401 đúng ranh giới xác thực.
 
 ### Tồn đọng liên quan
 
