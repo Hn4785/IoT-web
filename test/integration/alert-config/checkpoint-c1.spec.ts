@@ -188,6 +188,134 @@ describeDb('Checkpoint C1 lifecycle gate', () => {
     }
   });
 
+  it('prevents a new lease holder from overtaking an in-flight evaluation write', async () => {
+    await prisma.evaluatorLease.deleteMany();
+    await prisma.alert.deleteMany({ where: { ruleId } });
+    await prisma.alertRule.update({
+      where: { id: ruleId },
+      data: {
+        isEnabled: true,
+        evaluationStatus: 'READY',
+        unit: '%',
+        metadataRevision: 'demo:v1:moisture',
+      },
+    });
+    await prisma.alertEvaluationState.update({
+      where: { ruleId },
+      data: {
+        lastObservedAt: null,
+        lastValue: null,
+        lastEvaluatedAt: null,
+        lastResult: null,
+        consecutiveBreachCount: 0,
+        consecutiveRecoveryCount: 0,
+      },
+    });
+    await prisma.$executeRawUnsafe(`
+      CREATE OR REPLACE FUNCTION test_delay_evaluation_state_update() RETURNS trigger AS $$
+      BEGIN
+        PERFORM pg_sleep(1);
+        RETURN NEW;
+      END;
+      $$ LANGUAGE plpgsql;
+      CREATE TRIGGER test_delay_evaluation_state_update_trigger
+      BEFORE UPDATE ON "AlertEvaluationState"
+      FOR EACH ROW
+      EXECUTE FUNCTION test_delay_evaluation_state_update();
+    `);
+
+    const config = {
+      ...app.get<RuntimeConfig>(RUNTIME_CONFIG),
+      alertEvaluatorLeaseMs: 200,
+    };
+    const metadata = {
+      getFieldMetadata: vi.fn().mockResolvedValue({
+        field: 'moisture',
+        isConfirmed: true,
+        unit: '%',
+        revision: 'demo:v1:moisture',
+      }),
+    } as unknown as SoilMetadataProvider;
+    const instance = new AlertEvaluationService(
+      app.get(PrismaService),
+      {
+        getLatest: vi.fn().mockResolvedValue({
+          isStale: false,
+          fields: [
+            {
+              field: 'moisture',
+              value: 10,
+              quality: 'good',
+              observedAt: '2026-09-16T00:30:00Z',
+            },
+          ],
+        }),
+      } as unknown as StationDataService,
+      config,
+      metadata,
+    );
+    const servicePrisma = app.get(PrismaService);
+    const renewal = vi.spyOn(servicePrisma.evaluatorLease, 'updateMany').mockResolvedValue({
+      count: 1,
+    });
+    let running: Promise<{ acquired: boolean; evaluated: number }> | undefined;
+    let takeover: Promise<number> | undefined;
+
+    try {
+      running = instance.runOnce();
+      let writeIsDelayed = false;
+      for (let attempt = 0; attempt < 100; attempt += 1) {
+        const [activity] = await prisma.$queryRaw<Array<{ active: boolean }>>`
+          SELECT EXISTS (
+            SELECT 1
+            FROM pg_stat_activity
+            WHERE datname = current_database()
+              AND pid <> pg_backend_pid()
+              AND state = 'active'
+              AND query LIKE '%AlertEvaluationState%'
+          ) AS active
+        `;
+        if (activity?.active) {
+          writeIsDelayed = true;
+          break;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 10));
+      }
+      expect(writeIsDelayed).toBe(true);
+      const heldLease = await prisma.evaluatorLease.findUniqueOrThrow({
+        where: { name: 'alert-evaluator' },
+      });
+      const untilExpiry = heldLease.expiresAt.getTime() - Date.now() + 20;
+      if (untilExpiry > 0) await new Promise((resolve) => setTimeout(resolve, untilExpiry));
+      const takeoverAt = new Date();
+      const contenderExpiry = new Date(takeoverAt.getTime() + 10_000);
+      takeover = prisma.$executeRaw`
+        INSERT INTO "EvaluatorLease" ("name", "holderId", "expiresAt", "updatedAt")
+        VALUES ('alert-evaluator', 'test-contender', ${contenderExpiry}, ${takeoverAt})
+        ON CONFLICT ("name") DO UPDATE SET
+          "holderId" = EXCLUDED."holderId",
+          "expiresAt" = EXCLUDED."expiresAt",
+          "updatedAt" = EXCLUDED."updatedAt"
+        WHERE "EvaluatorLease"."expiresAt" <= ${takeoverAt}
+      `;
+      let takeoverSettled = false;
+      void takeover.then(() => {
+        takeoverSettled = true;
+      });
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      expect(takeoverSettled).toBe(false);
+      await running;
+      expect(await takeover).toBe(1);
+    } finally {
+      await Promise.allSettled([running, takeover].filter(Boolean) as Promise<unknown>[]);
+      renewal.mockRestore();
+      await prisma.$executeRawUnsafe(`
+        DROP TRIGGER IF EXISTS test_delay_evaluation_state_update_trigger ON "AlertEvaluationState";
+        DROP FUNCTION IF EXISTS test_delay_evaluation_state_update();
+      `);
+    }
+  });
+
   it('loads latest data once for all rules on the same station', async () => {
     await prisma.evaluatorLease.deleteMany();
     const original = await prisma.alertRule.findUniqueOrThrow({ where: { id: ruleId } });
