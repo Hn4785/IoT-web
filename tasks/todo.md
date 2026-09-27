@@ -1,6 +1,6 @@
 # Backend delivery checklist
 
-Updated: 2026-09-20
+Updated: 2026-09-23
 
 This is the single short status index for the project. Detailed acceptance
 criteria remain in the
@@ -55,8 +55,11 @@ Evidence: [`2026-09-02-phase-a.md`](../docs/checkpoints/2026-09-02-phase-a.md).
 - [x] SD-4: Add bounded UTC history, aggregation and pagination.
 - [x] SD-5: Add API-key station/latest/history contracts and rate metadata.
 - [x] Checkpoint B-core: Verify backend against controlled sample upstream.
-- [ ] B-integration: Replace remaining frontend station/soil mocks and run the
-      browser role matrix against the current backend.
+- [x] B-integration-code: Replace frontend station/soil mocks with typed
+      hierarchy, latest and history adapters; expose truthful loading, empty and
+      upstream-error states.
+- [ ] B-integration-browser: Run the Admin/Super Admin → Farmer → Client
+      Developer browser role matrix against the current backend.
 - [ ] B-device: Validate CENTER metadata and at least one NODE against the real
       provider before changing status from `sample-verified` to `live-verified`.
 
@@ -72,8 +75,12 @@ Evidence: [`2026-09-10-phase-b-core.md`](../docs/checkpoints/2026-09-10-phase-b-
 - [x] AC-4: Add scoped in-app notification inbox, unread state and retention.
 - [x] C-core: Verify lifecycle, notifications, retention and safe device
       capability response.
-- [ ] C-integration: Connect frontend alert action center and notification inbox,
-      then run Admin/Farmer authorization and stale-session browser cases.
+- [x] C-integration-code: Connect the alert action centers, in-app notification
+      inbox and fail-closed device-capability screens to current backend contracts.
+- [x] C-delivery-hardening: Move notification fanout to a durable bounded worker,
+      freeze display values at transition time, and preserve pending jobs in retention.
+- [ ] C-integration-browser: Run Admin/Farmer authorization, lifecycle and
+      stale-session browser cases.
 - [ ] C-device: Approve real hardware schema, units, command transport,
       acknowledgement and failure behavior before adding configuration writes.
 
@@ -89,7 +96,7 @@ Evidence: [`2026-09-16-c1.md`](../docs/checkpoints/2026-09-16-c1.md).
 - [x] OP-4-local: Backup `iot_dev`, restore into an isolated database and run the
       application against the restore without overwrite/delete behavior.
 - [x] OP-5-local: Pass production-image smoke and frontend OpenAPI contract gates.
-- [x] Checkpoint D-local: Pass 58/58 test files, 369/369 tests, coverage, format,
+- [x] Checkpoint D-local: Pass 58/58 test files, 371/371 tests, coverage, format,
       typecheck, lint, build, migration status, secret scan and diff check.
 - [ ] OP-4-production: Assign RPO/RTO, encrypted off-machine backup destination,
       retention, restore owner and credential-rotation procedure.
@@ -105,17 +112,35 @@ Evidence: [`2026-09-16-c1.md`](../docs/checkpoints/2026-09-16-c1.md).
 Evidence:
 [`2026-09-20-d1.md`](../docs/checkpoints/2026-09-20-d1.md) and
 [`2026-09-20-d-local.md`](../docs/checkpoints/2026-09-20-d-local.md).
+Latest backend regression gate (2026-09-27): 59/59 files, 375/375 tests and
+`pnpm verify`; this does not replace the earlier coverage/image/restore evidence.
 
 ## Frontend and tester integration order
 
-- [ ] FE-1: Freeze the current `/docs-json` contract and generate/update typed
+Implementation mapping, endpoint rules and per-page acceptance steps are kept in
+the frontend integration guide at `D:/IoT-web/docs/integration/README.md`. Use
+that guide together with `/docs-json`; this checklist remains the status index
+and must not duplicate the full contract.
+
+### Agreed sequencing gate
+
+- [x] Complete the locally implementable Phase B/C adapters and pages before the
+      comprehensive browser pass. External provider and hardware contracts stay
+      open and must not be replaced with fabricated data.
+- [ ] After that gate, connect and verify one page at a time in this fixed role
+      order: **Admin/Super Admin first → Farmer second → Client Developer last**.
+- [ ] Finish each role's page matrix, authorization negatives and regression
+      checks before moving to the next role. Shared components may be reused, but
+      unfinished work from two roles must not be mixed into one checkpoint.
+
+- [x] FE-1: Freeze the current `/docs-json` contract and update typed
       frontend DTO/API adapters without renaming backend routes ad hoc.
 - [ ] FE-2: Re-run Phase A browser flows: login, forced password change,
       single-flight refresh, logout, user management, Super Admin transfer and API
       key create/copy/rotate/revoke.
-- [ ] FE-3: Complete B-integration for farm, plot, station, latest, history,
+- [x] FE-3: Complete B-integration code for farm, plot, station, latest, history,
       dashboard, report and Client Developer explorer pages.
-- [ ] FE-4: Complete C-integration for alert rules, alert lifecycle and in-app
+- [x] FE-4: Complete C-integration code for alert rules, alert lifecycle and in-app
       notifications; keep device configuration visibly unavailable.
 - [ ] FE-5: Connect the Admin audit view only to the scoped audit contract; do not
       expose the process-local metrics registry as a public UI API.
@@ -128,7 +153,9 @@ Evidence:
 
 ## Immediate next action
 
-Start at `FE-1`, then complete `FE-2` through `FE-6` using controlled sample
-data. In parallel, wait for real CENTER/NODE access and named production owners.
-Do not block frontend integration on hardware, and do not mark B-device or
-D-production complete using sample data.
+1. Run the remaining browser role matrix one page at a time in the fixed order
+   **Admin/Super Admin → Farmer → Client Developer**.
+2. Record real-provider CENTER/NODE evidence without storing provider credentials.
+3. Obtain the device write contract before enabling configuration mutations.
+4. Keep deployment-owner decisions separate; sample or staging evidence must not
+   close B-device, C-device or D-production.

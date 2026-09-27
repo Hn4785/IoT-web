@@ -1,6 +1,6 @@
 # Delivery, recovery and frontend release gate
 
-Updated: 2026-09-20
+Updated: 2026-09-23
 
 This is the canonical Phase D operator checklist. It prepares a local release
 candidate; it does not replace staging, live-device or production infrastructure
@@ -106,3 +106,16 @@ provider.
 - staging URL/credentials and live CENTER/NODE access.
 
 These are release blockers, not missing application code to guess locally.
+
+## 6. Raspberry Pi staging network
+
+- Keep Ethernet/Windows ICS as the recovery path while changing Wi-Fi.
+- Store the `VJU Student` PSK only in NetworkManager with mode `600`; never put
+  it in Git, compose files, screenshots or issue reports.
+- Activate Wi-Fi, then verify address, default route, DNS, container health and
+  the public tunnel before removing the Ethernet fallback.
+- A successful Wi-Fi association does not prove Internet access: campus captive
+  portal or IP policy must be checked separately. Do not weaken firewall, TLS or
+  application authentication to bypass campus filtering.
+- If Wi-Fi fails, return to the ICS address, inspect `nmcli`/journal evidence and
+  restore service before changing application configuration.

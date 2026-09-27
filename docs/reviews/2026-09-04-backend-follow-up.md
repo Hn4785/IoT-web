@@ -1,10 +1,10 @@
 # Sổ lỗi Backend
 
-Cập nhật gần nhất: 2026-09-25. Đây là file theo dõi lỗi chính của backend. Lỗi chưa hoàn thành luôn đặt ở trên; lỗi đã sửa được chuyển xuống cuối file sau khi có test hoặc bằng chứng kiểm chứng.
+Cập nhật gần nhất: 2026-09-27. Đây là file theo dõi lỗi chính của backend. Lỗi chưa hoàn thành luôn đặt ở trên; lỗi đã sửa được chuyển xuống cuối file sau khi có test hoặc bằng chứng kiểm chứng.
 
 ## Gate hiện tại
 
-- Gate local ngày 2026-09-25: 59/59 file, 374/374 test đạt; `pnpm verify`
+- Gate local ngày 2026-09-27: 59/59 file, 375/375 test đạt; `pnpm verify`
   đạt format, typecheck, lint và build. Kiểm thử đổi quyền giữa các lô
   thông báo đỏ trước khi sửa và xanh sau migration snapshot trên `iot_test`.
 - Gate mới nhất ngày 2026-09-23: 59/59 file, 373/373 test đạt; `pnpm verify`
@@ -14,6 +14,32 @@ Cập nhật gần nhất: 2026-09-25. Đây là file theo dõi lỗi chính c�
   90.29% lines; image, restore cô lập, secret scan và contract frontend đạt.
 - Phân quyền, transaction, idempotency, optimistic revision, upstream fail-closed
   và retention boundary chưa có lỗi logic mới với bằng chứng tái hiện.
+
+## Checkpoint bắt buộc cho lần chạy tiếp theo
+
+Không bắt đầu phần tài khoản hoặc giai đoạn tiếp theo trước khi hoàn thành và
+kiểm chứng đủ các mục sau:
+
+1. Đồng bộ registry local/triển khai để database có đủ `NODE01` đến `NODE06`,
+   sau đó xác nhận Admin và Super Admin nhận đủ sáu trạm qua API và trên browser.
+   Bằng chứng ngày 2026-09-25 cho thấy code seed đã khai báo sáu trạm nhưng
+   database `iot_dev` hiện mới có `NODE01` và `NODE02`; đây là lỗi dữ liệu seed
+   chưa được chạy lại, không phải giới hạn quyền Admin.
+2. Đóng bằng bằng chứng browser ba lỗi đã theo dõi từ ngày 2026-09-24: tìm kiếm
+   toàn cục theo role, bố cục 4–5 trang chưa cân đối, và tính đúng đắn của tập
+   người nhận notification khi quyền thay đổi giữa các lô. Phần notification đã
+   có sửa đổi snapshot và regression test; lần chạy sau phải kiểm tra lại thay vì
+   triển khai lại theo phỏng đoán.
+3. Gán Farm Demo cho tài khoản Farmer và chọn `NODE02` hoặc `NODE03` làm trạm
+   kiểm thử ổn định. Chạy đủ Dashboard, Soil Dashboard, Historical Analysis,
+   History Report, Notifications, Alerts và Alert Center trước khi chuyển sang
+   phần tiếp theo. Quyền Farmer đang ở cấp Farm, vì vậy việc gán Farm Demo sẽ cho
+   phép thấy toàn bộ trạm thuộc farm; `NODE02`/`NODE03` chỉ là trạm chuẩn dùng để
+   kiểm thử, không phải station grant riêng.
+
+Mỗi mục chỉ được đánh dấu hoàn thành sau khi có dữ liệu thật trong database,
+kết quả API đúng scope và kiểm tra browser tương ứng; test/build xanh một mình
+không đủ để đóng checkpoint này.
 
 ## Chưa sửa
 
@@ -76,18 +102,6 @@ Cập nhật gần nhất: 2026-09-25. Đây là file theo dõi lỗi chính c�
   đủ 4–5 trang. Bản xem trước component local đã xác nhận Device Health và
   Stations & Devices không còn khối nội dung tràn rộng ở viewport 1280px;
   chưa có dữ liệu backend/auth để kiểm tra trang thật theo role.
-
-### [Trung bình, Phase C] Lease evaluator chưa có fencing tại thời điểm ghi
-
-- Heartbeat chỉ cập nhật cờ `leaseHeld` trong bộ nhớ sau khi câu lệnh gia hạn
-  trả về. `evaluateRule`, `blockForMetadata` và `recordSafeResult` không kiểm tra
-  lease/fencing token trong transaction ghi. Nếu tiến trình bị tạm dừng quá TTL,
-  instance khác có thể lấy lease trước khi worker cũ phát hiện và dừng; hai
-  instance có thể cùng làm việc trên một batch. Khóa rule và idempotency giảm
-  nguy cơ lifecycle trùng nhưng không chứng minh chỉ lease holder mới được ghi.
-- Đây là khoảng trống thiết kế xác nhận qua code, chưa tái hiện multi-instance.
-  Cần test mất lease do pause/DB delay và quyết định fencing phù hợp trước khi
-  xem heartbeat là bảo đảm đầy đủ cho triển khai nhiều instance.
 
 ### [Vận hành] Các hardening trước production còn thiếu
 
@@ -171,6 +185,19 @@ Cập nhật gần nhất: 2026-09-25. Đây là file theo dõi lỗi chính c�
 - Regression ngày 2026-09-23 xác minh heartbeat vẫn chạy khi upstream bị chặn;
   toàn bộ Checkpoint C1 đạt 11/11 test, full suite đạt 58/58 file và 372/372
   test, `pnpm verify` đạt.
+
+### [Trung bình, Phase C] Lease evaluator chưa có fencing tại thời điểm ghi
+
+- Mỗi ghi của scheduled evaluator nay khóa hàng `EvaluatorLease` và kiểm tra
+  holder/expiry ngay trong cùng transaction trước khi sửa rule, evaluation state,
+  alert hoặc continuation cursor. Contender phải chờ transaction hiện tại kết
+  thúc; worker đã mất lease không thể tiếp tục ghi dựa trên cờ bộ nhớ cũ.
+- Không đổi schema hoặc API công khai. Các lời gọi `evaluateRule` trực tiếp vẫn
+  dùng được cho kiểm thử/nội bộ mà không giả làm scheduled lease holder.
+- Regression ngày 2026-09-27 tái hiện lease hết hạn trong lúc PostgreSQL giữ
+  transaction ghi: đỏ trước sửa, xanh sau sửa. Checkpoint C1 đạt 12/12, nhóm
+  Phase C đạt 101/101, toàn backend đạt 59/59 file và 375/375 test; `pnpm verify`
+  đạt format, typecheck, lint, Prisma generate và production build.
 
 ### [Thấp, quality gate] Weather contract không đạt ESLint
 

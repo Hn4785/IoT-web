@@ -1,52 +1,42 @@
 # Active backend context
 
-Updated: 2026-09-20
+Updated: 2026-09-23
 
-This file is the short entry point for the next work session. Do not copy status
-from specs, completed plans or checkpoints into this file.
+Đây là điểm vào ngắn cho phiên tiếp theo. Không sao chép lại chi tiết từ spec,
+plan đã hoàn thành hoặc checkpoint lịch sử.
 
-## Sources of truth
+## Nguồn sự thật
 
-- Current task state: [`tasks/todo.md`](todo.md)
-- Long-term dependency order and acceptance criteria:
-  [`docs/roadmaps/2026-09-02-backend-completion-roadmap.md`](../docs/roadmaps/2026-09-02-backend-completion-roadmap.md)
-- Open defects and accepted risks:
-  [`docs/reviews/2026-09-04-backend-follow-up.md`](../docs/reviews/2026-09-04-backend-follow-up.md)
-- Local commands and recovery procedures:
-  [`docs/operations/LOCAL-RUNBOOK.md`](../docs/operations/LOCAL-RUNBOOK.md)
-- Approved Phase C behavior:
-  [`docs/superpowers/specs/2026-09-02-alert-config-design.md`](../docs/superpowers/specs/2026-09-02-alert-config-design.md)
-- Approved Phase D scope:
-  [`docs/superpowers/specs/2026-09-20-operations-design.md`](../docs/superpowers/specs/2026-09-20-operations-design.md)
+- Trạng thái và thứ tự làm: [`tasks/todo.md`](todo.md)
+- Acceptance criteria dài hạn:
+  [`backend completion roadmap`](../docs/roadmaps/2026-09-02-backend-completion-roadmap.md)
+- Lỗi và rủi ro còn mở:
+  [`backend issue ledger`](../docs/reviews/2026-09-04-backend-follow-up.md)
+- Lệnh local: [`LOCAL-RUNBOOK.md`](../docs/operations/LOCAL-RUNBOOK.md)
+- Nối frontend/backend: `D:/IoT-web/docs/integration/README.md`
 
-Files under `docs/superpowers/plans/`, `docs/checkpoints/` and dated production
-test reports are implementation history. Load them only when verifying an old
-decision or its evidence.
+`docs/superpowers/plans/`, `docs/checkpoints/` và báo cáo test theo ngày chỉ là
+lịch sử/bằng chứng; chỉ đọc khi cần truy quyết định cũ.
 
-## Current delivery point
+## Trạng thái hiện tại
 
-- Phase A identity/access: complete.
-- Phase B backend core: complete against controlled sample data.
-- Phase B frontend integration and live-device verification: open.
-- Phase C backend core: implemented and verified locally; current changes have
-  not yet been committed as the Phase C baseline.
-- Phase D operations: the local release candidate is implemented and verified;
-  external production/staging decisions remain open.
+- Phase A: hoàn thành.
+- Phase B: backend core và frontend adapter/page đã hoàn thành; còn browser role
+  matrix và xác minh provider CENTER/NODE thật.
+- Phase C: backend core và frontend alert/inbox/capability page đã hoàn thành;
+  còn browser role matrix và contract ghi xuống thiết bị thật.
+- Phase D: local release candidate hoàn thành; production còn phụ thuộc staging,
+  TLS/proxy, shared limiter, backup, MFA và metrics tập trung.
+- Gate gần nhất: backend 59/59 file, 375/375 test đạt và `pnpm verify` xanh;
+  frontend 37/37 test và production build đạt.
 
-Latest local D1 gate on 2026-09-20: 57/57 test files and 365/365 tests; coverage
-is 88.48% statements, 77.60% branches, 93.24% functions and 90.29% lines.
-Format, typecheck, lint, build, migration status and diff check also pass.
+## Thứ tự tiếp theo
 
-## Next checkpoint
+1. Chạy browser matrix theo từng trang và tạo checkpoint theo role:
+   **Admin/Super Admin → Farmer → Client Developer**.
+2. Ghi bằng chứng provider CENTER/NODE thật và giữ device writes unavailable cho
+   tới khi có contract phần cứng.
+3. Chạy QA recovery và chỉ sau đó mới nghiệm thu staging/production.
 
-1. Connect the frontend to the verified Phase A–C OpenAPI contract and execute
-   the browser role matrix against controlled sample data.
-2. Verify CENTER plus one NODE when the provider becomes reachable.
-3. Run the external D-production gate only after staging and infrastructure
-   owners supply the missing deployment decisions.
-
-Initial Phase D assumptions: one backend instance, Node.js 24, PostgreSQL in
-Docker with persistent local data on drive E, structured JSON logs, a separate
-readiness contract, Prometheus-compatible metrics and no secrets in Git. Hosting,
-TLS/proxy topology, RPO/RTO and off-machine backup storage remain deployment
-decisions and must not be guessed in code.
+Không dùng giao diện hiển thị được hoặc dữ liệu mẫu để đóng B-device,
+C-device hay D-production.
