@@ -225,3 +225,37 @@ Sau gate tĩnh, chạy browser matrix cho Admin, Farmer và Client Developer tr�
 Trạng thái phiên bản và lỗi còn mở chỉ ghi tại
 [`docs/internal-release-notes.md`](../internal-release-notes.md); checklist backend
 chỉ ghi tại `D:/IoT-api/tasks/todo.md`.
+
+## 9. Kế hoạch rút gọn trang và Settings
+
+Không thêm route cấp cao mới trước khi xử lý các trang đang trùng nhiệm vụ. Việc
+gộp trang phải giữ nguyên API contract, role guard và redirect từ URL cũ trong ít
+nhất một phiên bản để không làm hỏng bookmark.
+
+| Role      | Trang hiện tại                                                          | Đích đề xuất                                                                                              |
+| --------- | ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| Farmer    | `Alerts`, `Alert Center`                                                | Một trang **Cảnh báo** với tab `Đang hoạt động`, `Lịch sử`, `Quy tắc`; action vẫn phụ thuộc quyền backend |
+| Farmer    | `Historical Analysis`, `History Report`                                 | Một trang **Lịch sử & Báo cáo** gồm biểu đồ, bảng, bộ lọc và xuất CSV                                     |
+| Farmer    | `Dashboard`, `Soil Dashboard`                                           | Giữ riêng nhưng đổi nhãn rõ thành **Tổng quan** và **Theo dõi đất**                                       |
+| Farmer    | `Notifications`                                                         | Giữ thành **Hộp thông báo**; đây không phải trang Settings                                                |
+| Admin     | `Stations & Devices`, `Device Health`, `IoT Config`, `Config Proposals` | Một khu vực **Trạm & Thiết bị** dùng tab; tab chưa có device contract phải ẩn hoặc fail-closed            |
+| Developer | `API Keys`, `API Permissions`                                           | Một trang **API Access** với tab `Keys` và `Phạm vi truy cập`                                             |
+| Developer | `API Docs`, `API Explorer`                                              | Một trang **API Tools** với tab `Tài liệu` và `Thử API`                                                   |
+| Developer | `API Metrics`                                                           | Ẩn khỏi navigation tới khi backend có usage/latency/quota contract thật                                   |
+
+Trang `/settings` dùng chung chỉ được chứa chức năng có nguồn dữ liệu rõ ràng:
+
+- Có thể làm với contract hiện tại: xem thông tin tài khoản, đổi mật khẩu và
+  đăng xuất. Ngôn ngữ, múi giờ hoặc theme chỉ được lưu local nếu sản phẩm thực sự
+  cần và phải ghi rõ đây là tùy chọn trên thiết bị hiện tại.
+- Chưa được dựng toggle giả: Email/SMS/Push, thời gian lưu thông báo, quản lý
+  phiên trên thiết bị khác, usage quota và cấu hình ghi xuống thiết bị.
+- Ngưỡng, số mẫu vi phạm/phục hồi và tần suất nhắc lại thuộc **Quy tắc cảnh
+  báo**, không thuộc Settings chung. `cooldown`/`repeatInterval` hiện chưa có
+  contract; phải cập nhật spec và backend trước khi thêm control frontend.
+- User/Farm/Station assignment tiếp tục thuộc **Người dùng & Phân quyền**; audit
+  tiếp tục chỉ hiện cho Super Admin, không chuyển vào Settings.
+
+Thứ tự thực hiện UI: chốt route map → gộp hai cặp Farmer → gom khu vực Admin →
+gom Developer → bổ sung Settings tối thiểu → chạy lại browser matrix ba role ở
+desktop và mobile. Không chỉnh visual sâu trước khi navigation mới được duyệt.
