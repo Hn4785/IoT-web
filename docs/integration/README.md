@@ -141,8 +141,12 @@ Trạng thái frontend hiện tại:
 2. Farmer và Admin Alert Center dùng chung lifecycle DTO thật.
 3. `notificationService` và UI Notifications dùng cursor/unread/mark-read
    contract thật; inbox Farmer đã có tải trang tiếp theo bằng `nextCursor`.
-4. Các trang cấu hình/thiết bị hiển thị unavailable khi capability trả
-   `DEVICE_CONTRACT_PENDING`; không dựng nút publish giả.
+4. Các route IoT Config/Config Proposals giữ trạng thái không ghi khi capability
+   trả `DEVICE_CONTRACT_PENDING`; không dựng nút publish giả. Theo quyết định bên
+   cung cấp ngày 2026-09-28, web chỉ quản lý ngưỡng cảnh báo tại Alert Center,
+   còn hiệu chuẩn/can thiệp cảm biến được thực hiện trực tiếp tại hiện trường.
+   Reason code hiện tại được giữ để tương thích, không phải cam kết sẽ bổ sung
+   remote write.
 5. Còn phải chạy browser matrix cho quyền Admin/Farmer, mất membership và stale
    session trước khi nghiệm thu tích hợp.
 
@@ -238,7 +242,7 @@ nhất một phiên bản để không làm hỏng bookmark.
 | Farmer    | `Historical Analysis`, `History Report`                                 | Một trang **Lịch sử & Báo cáo** gồm biểu đồ, bảng, bộ lọc và xuất CSV                                     |
 | Farmer    | `Dashboard`, `Soil Dashboard`                                           | Giữ riêng nhưng đổi nhãn rõ thành **Tổng quan** và **Theo dõi đất**                                       |
 | Farmer    | `Notifications`                                                         | Giữ thành **Hộp thông báo**; đây không phải trang Settings                                                |
-| Admin     | `Stations & Devices`, `Device Health`, `IoT Config`, `Config Proposals` | Một khu vực **Trạm & Thiết bị** dùng tab; tab chưa có device contract phải ẩn hoặc fail-closed            |
+| Admin     | `Stations & Devices`, `Device Health`, `IoT Config`, `Config Proposals` | Giữ **Trạm & Thiết bị** và Device Health; ẩn/gỡ IoT Config và Config Proposals khỏi navigation, route cũ chỉ giải thích can thiệp onsite |
 | Developer | `API Keys`, `API Permissions`                                           | Một trang **API Access** với tab `Keys` và `Phạm vi truy cập`                                             |
 | Developer | `API Docs`, `API Explorer`                                              | Một trang **API Tools** với tab `Tài liệu` và `Thử API`                                                   |
 | Developer | `API Metrics`                                                           | Ẩn khỏi navigation tới khi backend có usage/latency/quota contract thật                                   |
@@ -249,10 +253,14 @@ Trang `/settings` dùng chung chỉ được chứa chức năng có nguồn d�
   đăng xuất. Ngôn ngữ, múi giờ hoặc theme chỉ được lưu local nếu sản phẩm thực sự
   cần và phải ghi rõ đây là tùy chọn trên thiết bị hiện tại.
 - Chưa được dựng toggle giả: Email/SMS/Push, thời gian lưu thông báo, quản lý
-  phiên trên thiết bị khác, usage quota và cấu hình ghi xuống thiết bị.
+  phiên trên thiết bị khác và usage quota. Không đưa cấu hình ghi xuống thiết bị
+  vào Settings; remote write nằm ngoài phạm vi sản phẩm hiện tại.
 - Ngưỡng, số mẫu vi phạm/phục hồi và tần suất nhắc lại thuộc **Quy tắc cảnh
   báo**, không thuộc Settings chung. `cooldown`/`repeatInterval` hiện chưa có
   contract; phải cập nhật spec và backend trước khi thêm control frontend.
+- Ngưỡng cảnh báo chỉ điều khiển logic cảnh báo của ứng dụng, không thay đổi
+  cấu hình cảm biến. Hiệu chuẩn hoặc can thiệp thiết bị phải thực hiện trực tiếp
+  tại hiện trường.
 - User/Farm/Station assignment tiếp tục thuộc **Người dùng & Phân quyền**; audit
   tiếp tục chỉ hiện cho Super Admin, không chuyển vào Settings.
 

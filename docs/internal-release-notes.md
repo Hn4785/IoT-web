@@ -13,6 +13,31 @@ Với mỗi thay đổi:
 3. Ghi rõ kết quả test; không đánh dấu hoàn thành nếu chưa có bằng chứng kiểm tra.
 4. Không ghi secret, mật khẩu, access token, refresh token hoặc API key vào file này.
 
+## Quyết định phạm vi — 2026-09-28 (IoT Config và can thiệp thiết bị)
+
+### Quyết định từ bên cung cấp
+
+- Web chỉ quản lý quy tắc/ngưỡng cảnh báo dựa trên dữ liệu thật từ
+  CENTER/NODE. Thay đổi ngưỡng thực hiện tại Alert Center và không được mô tả
+  như một cấu hình gửi xuống cảm biến.
+- Không triển khai gửi cấu hình, hiệu chuẩn, rollback hoặc lệnh điều khiển từ web
+  xuống CENTER/NODE trong phạm vi hiện tại. Khi cần hiệu chuẩn hay can thiệp cảm
+  biến, kỹ thuật viên xử lý trực tiếp tại hiện trường.
+- `IoT Config` và `Config Proposals` không còn là tính năng đang chờ hardware
+  contract. Trong bước giao diện tối thiểu, các route cũ chỉ được giải thích
+  ranh giới này và điều hướng người dùng sang Alert Center; không có nút ghi
+  thiết bị. Có thể ẩn/gỡ chúng khỏi navigation trong lần gom trang sau.
+
+### Phạm vi thay đổi lần này
+
+- Chỉ cập nhật tài liệu và TODO để thống nhất quyết định sản phẩm; chưa đổi route,
+  API, DTO, database hoặc hành vi runtime.
+- Backend vẫn trả `NOT_AVAILABLE / DEVICE_CONTRACT_PENDING` cho route capability
+  hiện có nhằm giữ tương thích. Mã reason cũ không còn được hiểu là cam kết sẽ
+  triển khai remote write.
+- Không cần chạy lại test/build vì không có mã nguồn hoặc cấu hình runtime thay
+  đổi; đã kiểm tra diff và tính nhất quán giữa tài liệu frontend/backend.
+
 ## v2.5.4 — 2026-09-26 (Client Developer integration)
 
 ### Đã sửa và cập nhật
@@ -139,7 +164,7 @@ Với mỗi thay đổi:
 - Nối Audit Log tới `GET /admin/audit-events`, dùng phân trang cursor và bộ lọc kết quả/khoảng ngày; chỉ Super Admin xem được. Bỏ bảng audit, trạng thái service và nút export dữ liệu mẫu.
 - Nối Stations & Devices/Station Detail tới Farm → Plot → Station và latest soil thật. Device Health và Config Proposals tiếp tục fail-closed vì chưa có contract phần cứng.
 - Bật cấp/thu hồi Farm membership cho Farmer và Station grant cho Client Developer trong User Management; sau ghi đọc lại chi tiết user từ backend.
-- IoT Config bỏ các nút tạo/rollback cấu hình chưa có API thật, chuyển người dùng tới Alert Center khi cần sửa ngưỡng cảnh báo. UI Notifications của Admin tạm hoãn đến khi frontend Notifications được push.
+- IoT Config bỏ các nút tạo/rollback cấu hình chưa có API thật, chuyển người dùng tới Alert Center khi cần sửa ngưỡng cảnh báo. Quyết định ngày 2026-09-28 chốt remote device write nằm ngoài phạm vi thay vì tiếp tục chờ contract. UI Notifications của Admin tạm hoãn đến khi frontend Notifications được push.
 - Sửa thống kê Users thành số trên trang hiện tại vì API danh sách phân trang không trả tổng; không hiển thị số scope từ DTO danh sách vốn không chứa assignments.
 - Đổi nhãn và package version sang `v2.5.2`.
 
@@ -160,7 +185,9 @@ Với mỗi thay đổi:
 ### Tồn đọng liên quan
 
 - Dashboard dùng các trang đầu tiên của inventory (tối đa 100 mỗi endpoint), gắn nhãn `Loaded` và cảnh báo khi bị giới hạn; backend chưa có count contract cho tổng toàn hệ thống.
-- Chưa có contract health/ghi cấu hình thiết bị; các trang tương ứng chỉ hiển thị trạng thái chưa khả dụng.
+- Chưa có contract health thiết bị. Remote write không còn là contract đang chờ;
+  các route cấu hình cũ chỉ hiển thị ranh giới không ghi thiết bị và hướng dẫn
+  can thiệp trực tiếp tại hiện trường.
 - Browser matrix cần kiểm tra phân quyền, hết phiên, cấp/thu hồi scope và cảnh báo khi dependency lỗi trước khi chuyển sang Farmer.
 - Chưa mở route Notifications cho Admin ở checkpoint này; sẽ nối sau khi frontend Notifications hoàn tất.
 
