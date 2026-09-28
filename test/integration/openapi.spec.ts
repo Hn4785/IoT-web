@@ -23,6 +23,8 @@ describe('OpenAPI contract', () => {
     expect(response.statusCode).toBe(200);
     const document = response.json<{ paths: Record<string, unknown> }>();
     expect(Object.keys(document.paths)).toEqual([
+      '/api/v1/data-sources',
+      '/api/v1/data-sources/{sourceId}',
       '/api/v1/stations/{stationId}/alert-rules',
       '/api/v1/alert-rules/{ruleId}',
       '/api/v1/alerts',
@@ -63,6 +65,7 @@ describe('OpenAPI contract', () => {
     expect(response.body).not.toContain('WEATHER_API_KEY');
     expect(response.body).toContain('X-API-Key');
     expect(response.body).not.toContain('must-not-appear');
+    expect(response.body).not.toMatch(/keyCiphertext|keyNonce|keyAuthTag/);
   });
 
   it('serves the interactive API documentation at /docs', async () => {
