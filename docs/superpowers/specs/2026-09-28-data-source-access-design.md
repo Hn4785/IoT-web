@@ -78,7 +78,10 @@ upstream code is unique within that source rather than globally.
 Existing environment-configured stations are attached to one immutable system
 source during migration. That system source has no revealable database secret
 and continues using the validated runtime Weather credential until an owner
-explicitly creates a managed source.
+explicitly creates a managed source. On managed-source creation, matching system
+stations in the selected plot are reassigned to that source so their IDs and
+existing relations are preserved; missing upstream stations are created and
+nonmatching legacy stations are left unchanged.
 
 Deleting sources is deferred. The first release supports create, test, list,
 detail, reveal, grant, and revoke only so station/alert history cannot be

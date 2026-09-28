@@ -30,12 +30,26 @@ describe('API source create and list', () => {
   let clientToken: string;
   let plotId: string;
   let otherPlotId: string;
+  let legacyNode01Id: string;
+  let legacyNode02Id: string;
 
   beforeAll(async () => {
     await prepareTestDatabase();
     upstream = await startUpstreamServer([
-      { status: 200, body: { success: true, data: ['CENTER', 'NODE01'] } },
-      { status: 200, body: { success: true, data: ['CENTER', 'NODE01'] } },
+      {
+        status: 200,
+        body: {
+          success: true,
+          data: ['NODE01', 'NODE02', 'NODE03', 'NODE04', 'NODE05', 'NODE06'],
+        },
+      },
+      {
+        status: 200,
+        body: {
+          success: true,
+          data: ['NODE01', 'NODE02', 'NODE03', 'NODE04', 'NODE05', 'NODE06'],
+        },
+      },
       { status: 200, body: { success: true, data: ['NODE02'] } },
       { status: 401, body: { success: false, message: 'invalid key' } },
     ]);
@@ -77,6 +91,22 @@ describe('API source create and list', () => {
     ]);
     plotId = plot.id;
     otherPlotId = otherPlot.id;
+    const [legacyNode01, legacyNode02] = await Promise.all([
+      prisma.station.create({
+        data: { plotId, upstreamCode: 'NODE01', name: 'Legacy NODE01' },
+      }),
+      prisma.station.create({
+        data: { plotId, upstreamCode: 'NODE02', name: 'Legacy NODE02' },
+      }),
+      prisma.station.create({
+        data: { plotId, upstreamCode: 'LEGACY-ONLY', name: 'Legacy only' },
+      }),
+      prisma.station.create({
+        data: { plotId: otherPlotId, upstreamCode: 'NODE06', name: 'Other plot NODE06' },
+      }),
+    ]);
+    legacyNode01Id = legacyNode01.id;
+    legacyNode02Id = legacyNode02.id;
     await prisma.farmMembership.create({ data: { userId: farmer.id, farmId: farm.id } });
     [adminToken, farmerToken, clientToken] = await Promise.all([
       issueAccessToken({ prisma, config, userId: admin.id }),
@@ -112,7 +142,7 @@ describe('API source create and list', () => {
     const item = response.json<{ data: SourceItem }>().data;
     expect(item).toMatchObject({
       name: 'Admin Observation API',
-      stationCount: 2,
+      stationCount: 6,
       visibleAccountCount: 1,
       keyPreview: 'cret',
       connectionStatus: 'CONNECTED',
@@ -125,7 +155,44 @@ describe('API source create and list', () => {
     expect(upstream.requests[0]?.headers['x-api-key']).toBe('admin-provider-secret');
     const stored = await prisma.dataSource.findUniqueOrThrow({ where: { id: item.id } });
     expect(stored.keyCiphertext).not.toContain('admin-provider-secret');
-    expect(await prisma.station.count({ where: { dataSourceId: item.id } })).toBe(2);
+    const managedStations = await prisma.station.findMany({
+      where: { dataSourceId: item.id },
+      orderBy: { upstreamCode: 'asc' },
+      select: { id: true, upstreamCode: true },
+    });
+    expect(managedStations).toHaveLength(6);
+    expect(managedStations.map(({ upstreamCode }) => upstreamCode)).toEqual([
+      'NODE01',
+      'NODE02',
+      'NODE03',
+      'NODE04',
+      'NODE05',
+      'NODE06',
+    ]);
+    expect(managedStations.find(({ upstreamCode }) => upstreamCode === 'NODE01')?.id).toBe(
+      legacyNode01Id,
+    );
+    expect(managedStations.find(({ upstreamCode }) => upstreamCode === 'NODE02')?.id).toBe(
+      legacyNode02Id,
+    );
+    expect(
+      await prisma.station.count({
+        where: {
+          plotId,
+          upstreamCode: 'LEGACY-ONLY',
+          dataSource: { kind: 'SYSTEM' },
+        },
+      }),
+    ).toBe(1);
+    expect(
+      await prisma.station.count({
+        where: {
+          plotId: otherPlotId,
+          upstreamCode: 'NODE06',
+          dataSource: { kind: 'SYSTEM' },
+        },
+      }),
+    ).toBe(1);
 
     const tested = await app.inject({
       method: 'POST',
@@ -135,7 +202,7 @@ describe('API source create and list', () => {
     expect(tested.statusCode).toBe(201);
     expect(tested.json()).toMatchObject({
       success: true,
-      data: { connectionStatus: 'CONNECTED', stationCount: 2 },
+      data: { connectionStatus: 'CONNECTED', stationCount: 6 },
     });
     expect(upstream.requests[1]?.headers['x-api-key']).toBe('admin-provider-secret');
   });

@@ -68,7 +68,7 @@ export class DataSourceRepository {
         select: { id: true },
       });
       if (!plot) throw new AppError('NOT_FOUND', 404, 'Resource not found');
-      const source = await transaction.dataSource.create({
+      const createdSource = await transaction.dataSource.create({
         data: {
           ownerUserId: input.principal.userId,
           name: input.name,
@@ -79,14 +79,28 @@ export class DataSourceRepository {
           keyPreview: input.keyPreview,
           connectionStatus: 'CONNECTED',
           lastCheckedAt: new Date(),
-          stations: {
-            create: input.stationCodes.map((code) => ({
-              plotId: plot.id,
-              upstreamCode: code,
-              name: code,
-            })),
-          },
         },
+        select: { id: true },
+      });
+      await transaction.station.updateMany({
+        where: {
+          plotId: plot.id,
+          upstreamCode: { in: [...input.stationCodes] },
+          dataSource: { kind: 'SYSTEM' },
+        },
+        data: { dataSourceId: createdSource.id },
+      });
+      await transaction.station.createMany({
+        data: input.stationCodes.map((code) => ({
+          plotId: plot.id,
+          dataSourceId: createdSource.id,
+          upstreamCode: code,
+          name: code,
+        })),
+        skipDuplicates: true,
+      });
+      const source = await transaction.dataSource.findUniqueOrThrow({
+        where: { id: createdSource.id },
         select: sourceSelect,
       });
       await this.audits.record(transaction, {
