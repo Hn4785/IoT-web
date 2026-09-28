@@ -67,14 +67,15 @@ Evidence: [`2026-09-02-phase-a.md`](../docs/checkpoints/2026-09-02-phase-a.md).
       issued API reads directly from operating observation stations, values are
       updating, and the provider confirmed the CENTER/NODE data is real sensor
       data. Browser role coverage remains tracked separately.
-- [ ] B-source-1: Add encrypted Admin/Farmer-owned API sources and discover real
+- [x] B-source-1: Add encrypted Admin/Farmer-owned API sources and discover real
       stations only after a successful allowlisted upstream connection.
-- [ ] B-source-2: Add owner-managed Farmer sharing, Admin oversight,
+- [x] B-source-2: Add owner-managed Farmer sharing, Admin oversight,
       `Visible Accounts`, and owner-only audited key reveal.
-- [ ] B-source-3: Route latest/history through each station's source without
+- [x] B-source-3: Route latest/history through each station's source without
       changing public measurement DTOs or Client Developer platform keys.
-- [ ] B-source-FE: Add Admin first, then Farmer source-management screens using
-      English copy, local pasted-text parsing, truthful states, and no `N/A`.
+- [ ] B-source-FE: Admin API Sources is implemented locally with English copy,
+      pasted-text parsing, truthful states and no `N/A`. Farmer remains next;
+      Client Developer stays outside source sharing and Settings stays last.
 
 Evidence: [`2026-09-10-phase-b-core.md`](../docs/checkpoints/2026-09-10-phase-b-core.md).
 
@@ -169,9 +170,8 @@ and must not duplicate the full contract.
 
 ## Immediate next action
 
-1. Implement the approved data-source access design in
-   `docs/superpowers/specs/2026-09-28-data-source-access-design.md`, starting
-   with the encrypted backend registry and contract tests.
+1. Complete the Farmer API Sources frontend using the approved backend contract,
+   then keep Client Developer outside the source-sharing flow and Settings last.
 2. Run the remaining browser role matrix one page at a time in the fixed order
    **Admin/Super Admin → Farmer → Client Developer**.
 3. Complete the remaining browser role matrix and registry checks without
