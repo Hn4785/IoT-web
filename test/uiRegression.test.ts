@@ -120,4 +120,6 @@ test("admin dashboard uses backend services instead of empty mock data", () => {
   assert.doesNotMatch(source, /from "@\/data\/farms"/);
   assert.doesNotMatch(source, /Healthy station percentage/);
   assert.doesNotMatch(source, />95%</);
+  assert.doesNotMatch(source, /Total Gateways/);
+  assert.doesNotMatch(source, /Total Sensors/);
 });

@@ -34,7 +34,7 @@
 
 .kpiGrid {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: var(--spacing-4);
 }
 
@@ -60,11 +60,6 @@
   font-size: 28px;
   line-height: 1;
   color: var(--color-text-primary);
-}
-
-.kpiCard .unavailable {
-  font-size: var(--font-size-body-lg);
-  line-height: 1.25;
 }
 
 .sourceNote {

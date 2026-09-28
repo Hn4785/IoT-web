@@ -30,9 +30,10 @@ test("connection secrets are cleared when the add dialog closes", () => {
   assert.match(page, /currentPassword/);
 });
 
-test("Admin dashboard describes unsupported inventory without N/A", () => {
+test("Admin dashboard omits unsupported hardware inventory", () => {
   assert.doesNotMatch(dashboard, /["']N\/A["']/);
-  assert.match(dashboard, /Not supported/);
+  assert.doesNotMatch(dashboard, /Not supported/);
+  assert.doesNotMatch(dashboard, /Total Gateways|Total Sensors/);
 });
 
 test("Admin operational pages share the same centered content frame", () => {

@@ -1,9 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Activity,
-  Cpu,
   Database,
-  Gauge,
   RefreshCw,
   Server,
   Users,
@@ -103,12 +101,10 @@ export default function AdminDashboard() {
   );
 
   const kpis = [
-    { label: "Loaded Farms", value: data.farms.length, icon: Database, available: true },
-    { label: "Loaded Plots", value: data.plots.length, icon: Activity, available: true },
-    { label: "Loaded Stations", value: data.stations.length, icon: Server, available: true },
-    { label: "Total Gateways", value: 0, icon: Cpu, available: false },
-    { label: "Total Sensors", value: 0, icon: Gauge, available: false },
-    { label: "Loaded Users", value: data.userCount, icon: Users, available: true },
+    { label: "Loaded Farms", value: data.farms.length, icon: Database },
+    { label: "Loaded Plots", value: data.plots.length, icon: Activity },
+    { label: "Loaded Stations", value: data.stations.length, icon: Server },
+    { label: "Loaded Users", value: data.userCount, icon: Users },
   ];
 
   return (
@@ -145,18 +141,14 @@ export default function AdminDashboard() {
       </section>
 
       <section className={styles.kpiGrid} aria-label="System inventory">
-        {kpis.map(({ label, value, icon: Icon, available }) => (
+        {kpis.map(({ label, value, icon: Icon }) => (
           <article className={styles.kpiCard} key={label}>
             <div className={styles.kpiTop}>
               <span>{label}</span>
               <Icon size={18} />
             </div>
-            <strong className={available ? undefined : styles.unavailable}>
-              {available ? value : "Not supported"}
-            </strong>
-            <span className={styles.sourceNote}>
-              {available ? "Live backend data" : "Backend contract not available"}
-            </span>
+            <strong>{value}</strong>
+            <span className={styles.sourceNote}>Live backend data</span>
           </article>
         ))}
       </section>
