@@ -122,6 +122,17 @@ Quy tắc dữ liệu:
   provider.
 - Phân biệt `isFromCache`, `isStale`, upstream lỗi và danh sách rỗng.
 
+Trạng thái nghiệm thu dữ liệu thật:
+
+- Bên cung cấp xác nhận ngày 2026-09-28 rằng toàn bộ dữ liệu CENTER/NODE trả qua
+  `X-API-Key` đã cấp là dữ liệu cảm biến thật và là đầu vào cuối cùng để nghiệm
+  thu. Không lưu API key trong tài liệu, ảnh hoặc log kiểm thử.
+- Xác nhận này đóng câu hỏi nguồn dữ liệu, nhưng chưa tự động chuyển trạng thái
+  sang `live-verified`. Cần đối chiếu danh sách/mã trạm, timestamp đang tăng,
+  trường đo và đơn vị giữa API provider, DTO backend và giao diện.
+- Sau khi đối chiếu đạt, cập nhật checkpoint B-device thành `live-verified`;
+  không cần hỏi lại bên cung cấp dữ liệu thật hay dữ liệu mẫu.
+
 ### Phase C - cảnh báo và thông báo trong ứng dụng
 
 Contract hiện có:

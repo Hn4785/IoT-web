@@ -28,6 +28,15 @@ Với mỗi thay đổi:
   ranh giới này và điều hướng người dùng sang Alert Center; không có nút ghi
   thiết bị. Có thể ẩn/gỡ chúng khỏi navigation trong lần gom trang sau.
 
+### Xác nhận nguồn dữ liệu thật
+
+- Bên cung cấp xác nhận ngày 2026-09-28 rằng toàn bộ dữ liệu CENTER/NODE trả qua
+  `X-API-Key` đã cấp là dữ liệu cảm biến thật và là đầu vào cuối cùng để nghiệm
+  thu. Xác nhận này đóng câu hỏi về nguồn dữ liệu, không cần hỏi lại.
+- Chưa gắn `live-verified` chỉ dựa trên xác nhận bằng lời. Việc còn lại là đối
+  chiếu danh sách/mã trạm, timestamp đang tăng, trường đo và đơn vị giữa API
+  provider, backend và giao diện; bằng chứng không được chứa API key.
+
 ### Phạm vi thay đổi lần này
 
 - Chỉ cập nhật tài liệu và TODO để thống nhất quyết định sản phẩm; chưa đổi route,
