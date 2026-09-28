@@ -1,6 +1,6 @@
 # Sổ lỗi Backend
 
-Cập nhật gần nhất: 2026-09-27. Đây là file theo dõi lỗi chính của backend. Lỗi chưa hoàn thành luôn đặt ở trên; lỗi đã sửa được chuyển xuống cuối file sau khi có test hoặc bằng chứng kiểm chứng.
+Cập nhật gần nhất: 2026-09-28. Đây là file theo dõi lỗi chính của backend. Lỗi chưa hoàn thành luôn đặt ở trên; lỗi đã sửa được chuyển xuống cuối file sau khi có test hoặc bằng chứng kiểm chứng.
 
 ## Gate hiện tại
 
@@ -14,6 +14,10 @@ Cập nhật gần nhất: 2026-09-27. Đây là file theo dõi lỗi chính c�
   90.29% lines; image, restore cô lập, secret scan và contract frontend đạt.
 - Phân quyền, transaction, idempotency, optimistic revision, upstream fail-closed
   và retention boundary chưa có lỗi logic mới với bằng chứng tái hiện.
+- Bên cung cấp xác nhận ngày 2026-09-28 rằng toàn bộ dữ liệu CENTER/NODE trả qua
+  `X-API-Key` là dữ liệu cảm biến thật và là đầu vào cuối cùng để nghiệm thu.
+  Xác nhận này đóng câu hỏi nguồn dữ liệu, nhưng chưa thay thế đối chiếu kỹ thuật
+  API–backend–frontend để gắn `live-verified`.
 
 ## Checkpoint bắt buộc cho lần chạy tiếp theo
 
@@ -24,7 +28,9 @@ kiểm chứng đủ các mục sau:
    sau đó xác nhận Admin và Super Admin nhận đủ sáu trạm qua API và trên browser.
    Bằng chứng ngày 2026-09-25 cho thấy code seed đã khai báo sáu trạm nhưng
    database `iot_dev` hiện mới có `NODE01` và `NODE02`; đây là lỗi dữ liệu seed
-   chưa được chạy lại, không phải giới hạn quyền Admin.
+   chưa được chạy lại, không phải giới hạn quyền Admin. Khi kiểm tra lại, đồng
+   thời đối chiếu mã trạm, timestamp đang tăng, trường đo và đơn vị với API thật;
+   không ghi `X-API-Key` vào log, ảnh hoặc tài liệu.
 2. Đóng bằng bằng chứng browser ba lỗi đã theo dõi từ ngày 2026-09-24: tìm kiếm
    toàn cục theo role, bố cục 4–5 trang chưa cân đối, và tính đúng đắn của tập
    người nhận notification khi quyền thay đổi giữa các lô. Phần notification đã

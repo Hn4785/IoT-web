@@ -60,8 +60,12 @@ Evidence: [`2026-09-02-phase-a.md`](../docs/checkpoints/2026-09-02-phase-a.md).
       upstream-error states.
 - [ ] B-integration-browser: Run the Admin/Super Admin → Farmer → Client
       Developer browser role matrix against the current backend.
-- [ ] B-device: Validate CENTER metadata and at least one NODE against the real
-      provider before changing status from `sample-verified` to `live-verified`.
+- [x] B-device-source: Provider confirmed on 2026-09-28 that all CENTER/NODE
+      data delivered through the issued `X-API-Key` is real sensor data and the
+      final input for acceptance. Do not store the key in evidence.
+- [ ] B-device-live-evidence: Cross-check the current station list, advancing
+      timestamps, fields and units between provider API, backend DTOs and the
+      frontend before changing status from `sample-verified` to `live-verified`.
 
 Evidence: [`2026-09-10-phase-b-core.md`](../docs/checkpoints/2026-09-10-phase-b-core.md).
 
@@ -158,8 +162,10 @@ and must not duplicate the full contract.
 
 1. Run the remaining browser role matrix one page at a time in the fixed order
    **Admin/Super Admin → Farmer → Client Developer**.
-2. Record real-provider CENTER/NODE evidence without storing provider credentials.
+2. Complete B-device live evidence: compare station codes, advancing timestamps,
+   fields and units across provider API, backend DTOs and frontend without
+   storing provider credentials.
 3. Verify retained IoT Config/Config Proposals screens do not offer remote writes:
    threshold changes belong to Alert Center and physical intervention stays onsite.
-4. Keep deployment-owner decisions separate; sample or staging evidence must not
-   close B-device or D-production.
+4. Keep deployment-owner decisions separate; provider confirmation alone must
+   not close B-device live evidence or D-production.
