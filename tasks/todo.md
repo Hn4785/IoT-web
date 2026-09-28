@@ -67,6 +67,14 @@ Evidence: [`2026-09-02-phase-a.md`](../docs/checkpoints/2026-09-02-phase-a.md).
       issued API reads directly from operating observation stations, values are
       updating, and the provider confirmed the CENTER/NODE data is real sensor
       data. Browser role coverage remains tracked separately.
+- [ ] B-source-1: Add encrypted Admin/Farmer-owned API sources and discover real
+      stations only after a successful allowlisted upstream connection.
+- [ ] B-source-2: Add owner-managed Farmer sharing, Admin oversight,
+      `Visible Accounts`, and owner-only audited key reveal.
+- [ ] B-source-3: Route latest/history through each station's source without
+      changing public measurement DTOs or Client Developer platform keys.
+- [ ] B-source-FE: Add Admin first, then Farmer source-management screens using
+      English copy, local pasted-text parsing, truthful states, and no `N/A`.
 
 Evidence: [`2026-09-10-phase-b-core.md`](../docs/checkpoints/2026-09-10-phase-b-core.md).
 
@@ -161,12 +169,15 @@ and must not duplicate the full contract.
 
 ## Immediate next action
 
-1. Run the remaining browser role matrix one page at a time in the fixed order
+1. Implement the approved data-source access design in
+   `docs/superpowers/specs/2026-09-28-data-source-access-design.md`, starting
+   with the encrypted backend registry and contract tests.
+2. Run the remaining browser role matrix one page at a time in the fixed order
    **Admin/Super Admin → Farmer → Client Developer**.
-2. Complete the remaining browser role matrix and registry checks without
+3. Complete the remaining browser role matrix and registry checks without
    storing provider credentials; B-device data provenance is already
    `live-verified`.
-3. Verify retained IoT Config/Config Proposals screens do not offer remote writes:
+4. Verify retained IoT Config/Config Proposals screens do not offer remote writes:
    threshold changes belong to Alert Center and physical intervention stays onsite.
-4. Keep deployment-owner decisions separate; B-device `live-verified` must not
+5. Keep deployment-owner decisions separate; B-device `live-verified` must not
    be used to close the browser matrix or D-production.
