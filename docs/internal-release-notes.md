@@ -33,9 +33,11 @@ Với mỗi thay đổi:
 - Bên cung cấp xác nhận ngày 2026-09-28 rằng toàn bộ dữ liệu CENTER/NODE trả qua
   `X-API-Key` đã cấp là dữ liệu cảm biến thật và là đầu vào cuối cùng để nghiệm
   thu. Xác nhận này đóng câu hỏi về nguồn dữ liệu, không cần hỏi lại.
-- Chưa gắn `live-verified` chỉ dựa trên xác nhận bằng lời. Việc còn lại là đối
-  chiếu danh sách/mã trạm, timestamp đang tăng, trường đo và đơn vị giữa API
-  provider, backend và giao diện; bằng chứng không được chứa API key.
+- B-device được đánh dấu `live-verified` vì API lấy trực tiếp từ các trạm quan
+  trắc đang hoạt động, số liệu cập nhật và bên cung cấp xác nhận dữ liệu là dữ
+  liệu cảm biến thật. Trạng thái này chỉ xác nhận nguồn dữ liệu; registry,
+  browser role matrix và production vẫn là checkpoint riêng. Bằng chứng không
+  được chứa API key.
 
 ### Phạm vi thay đổi lần này
 
