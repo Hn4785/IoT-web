@@ -1,0 +1,29 @@
+.page { display: flex; flex-direction: column; gap: var(--spacing-5); padding: var(--spacing-6); }
+.headerActions, .actions, .modalActions { display: flex; align-items: center; gap: var(--spacing-2); flex-wrap: wrap; }
+.panel { background: var(--color-bg-surface); border: 1px solid var(--color-border-default); border-radius: var(--radius-xl); box-shadow: var(--shadow-sm); }
+.tableWrap { width: 100%; overflow-x: auto; }
+.tableWrap table { width: 100%; min-width: 1120px; border-collapse: collapse; }
+.tableWrap th, .tableWrap td { padding: 14px 16px; text-align: left; border-bottom: 1px solid var(--color-border-subtle); vertical-align: middle; font-size: var(--font-size-body-sm); }
+.tableWrap th { color: var(--color-text-tertiary); font-weight: var(--font-weight-semibold); white-space: nowrap; }
+.tableWrap tbody tr:last-child td { border-bottom: 0; }
+.subtle { display: block; max-width: 260px; margin-top: 3px; overflow: hidden; color: var(--color-text-tertiary); font-size: var(--font-size-caption); text-overflow: ellipsis; white-space: nowrap; }
+.status { display: inline-flex; align-items: center; padding: 5px 9px; border-radius: 999px; font-size: var(--font-size-caption); font-weight: var(--font-weight-semibold); }
+.connected { background: var(--color-success-light); color: var(--color-success-dark); }
+.failed { background: var(--color-danger-light); color: var(--color-danger-dark); }
+.notice { margin: 0; padding: 10px 14px; border: 1px solid var(--color-success); border-radius: var(--radius-md); background: var(--color-success-light); color: var(--color-success-dark); }
+.form { display: flex; flex-direction: column; gap: var(--spacing-4); }
+.form label, .pasteBox label { display: flex; flex: 1; flex-direction: column; gap: 6px; color: var(--color-text-secondary); font-size: var(--font-size-body-sm); font-weight: var(--font-weight-semibold); }
+.form input, .form select, .form textarea, .pasteBox textarea { width: 100%; min-height: var(--height-input-md); padding: 9px 12px; border: 1px solid var(--color-border-default); border-radius: var(--radius-md); background: var(--color-bg-surface); color: var(--color-text-primary); font: inherit; }
+.form textarea, .pasteBox textarea { min-height: 90px; resize: vertical; }
+.pasteBox { display: flex; align-items: flex-end; gap: var(--spacing-3); padding: var(--spacing-4); border-radius: var(--radius-lg); background: var(--color-bg-subtle); }
+.twoColumns { display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-3); }
+.help { margin: -8px 0 0; color: var(--color-text-tertiary); font-size: var(--font-size-caption); }
+.modalActions { justify-content: flex-end; }
+.accountList { display: flex; flex-direction: column; gap: var(--spacing-2); }
+.accountRow { display: flex; align-items: center; justify-content: space-between; gap: var(--spacing-3); padding: 12px 0; border-bottom: 1px solid var(--color-border-subtle); }
+.accountRow div { min-width: 0; }
+.accountRow span { display: block; margin-top: 3px; overflow: hidden; color: var(--color-text-tertiary); font-size: var(--font-size-caption); text-overflow: ellipsis; }
+.secretBox { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--spacing-3); }
+.secretBox code { overflow-x: auto; padding: 12px; border-radius: var(--radius-md); background: var(--color-bg-subtle); }
+.secretBox span { grid-column: 1 / -1; color: var(--color-text-secondary); font-size: var(--font-size-caption); }
+@media (max-width: 700px) { .page { padding: var(--spacing-4); } .twoColumns { grid-template-columns: 1fr; } .pasteBox { align-items: stretch; flex-direction: column; } }

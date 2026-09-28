@@ -3,7 +3,7 @@ import type { UserRole } from "@/types/user";
 export { getDefaultRouteByRole } from "@/auth/defaultRoute";
 
 import {
-  AdminAlertCenter, AdminDashboard, AgriculturalAlerts, AlertActionCenter,
+  AdminAlertCenter, AdminDashboard, AgriculturalAlerts, AlertActionCenter, ApiSources,
   ApiDocs, ApiExplorer, ApiKeys, ApiMetrics, ApiPermissions, AuditLogs,
   ChangePassword, ConfigurationProposals, DeveloperDashboard, DeviceHealth,
   DeviceManagement, FarmDashboard, ForgotPassword, HistoricalAnalysis,
@@ -43,6 +43,11 @@ export const protectedRoutes: AppRoute[] = [
     path: "/admin/users",
     roles: ["ADMIN"],
     element: <UserManagement />,
+  },
+  {
+    path: "/admin/api-sources",
+    roles: ["ADMIN"],
+    element: <ApiSources />,
   },
   {
     path: "/admin/configuration",

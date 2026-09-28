@@ -4,6 +4,7 @@ export const Login = lazy(() => import("@/pages/auth/Login"));
 export const ForgotPassword = lazy(() => import("@/pages/auth/ForgotPassword"));
 export const ChangePassword = lazy(() => import("@/pages/auth/ChangePassword"));
 export const AdminDashboard = lazy(() => import("@/pages/admin/AdminDashboard"));
+export const ApiSources = lazy(() => import("@/pages/admin/ApiSources"));
 export const UserManagement = lazy(() => import("@/pages/admin/UserManagement"));
 export const IoTConfiguration = lazy(() => import("@/pages/admin/IoTConfiguration"));
 export const DeviceManagement = lazy(() => import("@/pages/admin/DeviceManagement"));

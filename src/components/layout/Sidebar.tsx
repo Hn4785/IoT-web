@@ -6,12 +6,11 @@ import {
   History,
   Activity,
   Leaf,
-  ShieldCheck,
   Radio,
   BellRing,
-  GitPullRequest,
   Droplets,
   BarChart3,
+  DatabaseZap,
   type LucideIcon,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
@@ -28,12 +27,10 @@ interface NavItem {
 const NAV_CONFIG: Record<UserRole, NavItem[]> = {
   ADMIN: [
     { label: 'Dashboard', path: '/admin', icon: LayoutDashboard },
-    { label: "Device Health", path: "/admin/device-health", icon: ShieldCheck},
     { label: "Stations & Devices", path: "/admin/devices", icon: Radio},
+    { label: "API Sources", path: "/admin/api-sources", icon: DatabaseZap },
     { label: "Alert Center", path: "/admin/alert-center", icon: BellRing},
-    { label: "Config Proposals", path: "/admin/config-proposals", icon: GitPullRequest},
     { label: 'Users', path: '/admin/users', icon: Users },
-    { label: 'IoT Config', path: '/admin/configuration', icon: Settings },
     { label: 'Audit Log', path: '/admin/audit-logs', icon: History },
   ],
   FARMER: [

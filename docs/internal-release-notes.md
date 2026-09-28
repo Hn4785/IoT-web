@@ -49,6 +49,30 @@ Với mỗi thay đổi:
 - Không cần chạy lại test/build vì không có mã nguồn hoặc cấu hình runtime thay
   đổi; đã kiểm tra diff và tính nhất quán giữa tài liệu frontend/backend.
 
+## v2.5.5-local — 2026-09-28 (Admin API Sources)
+
+### Đã sửa và cập nhật
+
+- Thêm trang Admin `API Sources` theo contract backend: hiển thị chủ sở hữu, số
+  trạm, `Visible Accounts`, trạng thái kết nối và thời điểm cập nhật.
+- Admin có thể thêm nguồn bằng API URL và `X-API-Key`, hoặc dán một đoạn chat,
+  curl hay JSON chứa đúng một URL và một key để điền tự động. Nội dung dán và key
+  được xóa khỏi state khi đóng/tạo xong, không ghi vào storage hay tài liệu.
+- Chỉ chủ sở hữu nguồn mới thấy thao tác kiểm tra kết nối, chia sẻ/thu hồi Farmer
+  và reveal key. Reveal yêu cầu mật khẩu hiện tại và tự đóng sau thời gian backend
+  cho phép; Admin chỉ giám sát nguồn Farmer, không thể thu hồi key Farmer tự nhập.
+- Bỏ các tab Admin đã chốt không dùng khỏi sidebar: `Device Health`,
+  `Config Proposals` và `IoT Config`. Giữ route cũ để không phá bookmark; phần
+  Settings chung vẫn để cuối Phase B. Giao diện mới dùng tiếng Anh và không dùng
+  `N/A` cho trạng thái thiếu dữ liệu.
+
+### Bằng chứng kiểm tra
+
+- TDD cho parser, service adapter và ranh giới UI: 6/6 test mục tiêu đạt.
+- Production build đạt. Browser pass được bỏ theo yêu cầu người dùng; chưa đánh
+  dấu hoàn tất ma trận browser Admin/Farmer/Client.
+- Frontend chỉ commit local, không push.
+
 ## v2.5.4 — 2026-09-26 (Client Developer integration)
 
 ### Đã sửa và cập nhật
