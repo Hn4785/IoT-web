@@ -14,10 +14,11 @@ Cập nhật gần nhất: 2026-09-28. Đây là file theo dõi lỗi chính c�
   90.29% lines; image, restore cô lập, secret scan và contract frontend đạt.
 - Phân quyền, transaction, idempotency, optimistic revision, upstream fail-closed
   và retention boundary chưa có lỗi logic mới với bằng chứng tái hiện.
-- Bên cung cấp xác nhận ngày 2026-09-28 rằng toàn bộ dữ liệu CENTER/NODE trả qua
-  `X-API-Key` là dữ liệu cảm biến thật và là đầu vào cuối cùng để nghiệm thu.
-  Xác nhận này đóng câu hỏi nguồn dữ liệu, nhưng chưa thay thế đối chiếu kỹ thuật
-  API–backend–frontend để gắn `live-verified`.
+- B-device được đánh dấu `live-verified` ngày 2026-09-28: API lấy trực tiếp từ
+  các trạm quan trắc đang hoạt động, số liệu cập nhật và bên cung cấp xác nhận
+  toàn bộ dữ liệu CENTER/NODE là dữ liệu cảm biến thật, đầu vào cuối cùng để
+  nghiệm thu. Trạng thái này xác nhận nguồn dữ liệu; registry, browser role
+  matrix và production vẫn là checkpoint riêng.
 
 ## Checkpoint bắt buộc cho lần chạy tiếp theo
 

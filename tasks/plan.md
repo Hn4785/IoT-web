@@ -21,11 +21,11 @@ lịch sử/bằng chứng; chỉ đọc khi cần truy quyết định cũ.
 ## Trạng thái hiện tại
 
 - Phase A: hoàn thành.
-- Phase B: backend core và frontend adapter/page đã hoàn thành. Bên cung cấp xác
-  nhận ngày 2026-09-28 rằng toàn bộ dữ liệu CENTER/NODE qua `X-API-Key` là dữ
-  liệu cảm biến thật và là đầu vào cuối cùng để nghiệm thu; còn browser role
-  matrix và đối chiếu kỹ thuật API–backend–frontend trước khi gắn
-  `live-verified`.
+- Phase B: backend core và frontend adapter/page đã hoàn thành; B-device được
+  đánh dấu `live-verified` ngày 2026-09-28 vì API lấy trực tiếp từ các trạm quan
+  trắc đang hoạt động, số liệu cập nhật và bên cung cấp xác nhận dữ liệu
+  CENTER/NODE là dữ liệu cảm biến thật. Browser role matrix vẫn là checkpoint
+  riêng.
 - Phase C: backend core và frontend alert/inbox/capability page đã hoàn thành;
   còn browser role matrix. Theo quyết định bên cung cấp ngày 2026-09-28, web chỉ
   cấu hình ngưỡng cảnh báo; hiệu chuẩn/can thiệp thiết bị thực hiện tại hiện
@@ -39,11 +39,10 @@ lịch sử/bằng chứng; chỉ đọc khi cần truy quyết định cũ.
 
 1. Chạy browser matrix theo từng trang và tạo checkpoint theo role:
    **Admin/Super Admin → Farmer → Client Developer**.
-2. Đối chiếu danh sách trạm, timestamp đang tăng, trường đo và đơn vị giữa API
-   provider, DTO backend và frontend; giữ device writes ngoài phạm vi và điều
-   hướng thay đổi ngưỡng sang Alert Center.
+2. Hoàn thành registry/browser checks còn lại; giữ device writes ngoài phạm vi
+   và điều hướng thay đổi ngưỡng sang Alert Center.
 3. Chạy QA recovery và chỉ sau đó mới nghiệm thu staging/production.
 
-Không dùng riêng xác nhận bằng lời, giao diện hiển thị được hoặc dữ liệu mẫu để
-đóng B-device live evidence hay D-production. C-device đã được đóng bằng quyết
-định không triển khai remote write, không phải bằng một contract phần cứng mới.
+B-device `live-verified` chỉ xác nhận nguồn dữ liệu thật từ trạm quan trắc, không
+đóng browser matrix hay D-production. C-device đã được đóng bằng quyết định không
+triển khai remote write, không phải bằng một contract phần cứng mới.

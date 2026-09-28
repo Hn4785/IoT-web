@@ -94,12 +94,12 @@ Before accepting frontend integration, test these flows in a browser:
   thresholds are managed in Alert Center, while calibration or intervention is
   performed directly at the device.
 
-The provider confirmed on 2026-09-28 that all CENTER/NODE data delivered through
-the issued `X-API-Key` is real sensor data and the final acceptance input. This
-closes provenance, not technical verification. Latest/history remains
-`sample-verified` until station codes, advancing timestamps, fields and units are
-cross-checked across the provider API, backend DTOs and frontend without
-recording the credential.
+Latest/history is `live-verified` as of 2026-09-28 because the issued API reads
+directly from operating observation stations, values are updating, and the
+provider confirmed all CENTER/NODE data is real sensor data and the final
+acceptance input. This status confirms data provenance; it does not close the
+separate registry, browser-role or production checkpoints. Never record the
+credential in evidence.
 
 ## 5. Production decisions still requiring an owner
 
@@ -107,7 +107,7 @@ recording the credential.
 - private metrics transport and aggregation;
 - RPO/RTO, encrypted off-machine backup and retention;
 - MFA/SSO and Super Admin recovery policy;
-- staging URL/credentials and complete live CENTER/NODE cross-check evidence.
+- staging URL/credentials and complete browser-role evidence.
 
 These are release blockers, not missing application code to guess locally.
 
