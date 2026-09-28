@@ -1,4 +1,16 @@
-import { Body, Controller, Get, Header, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Header,
+  Param,
+  Post,
+  Put,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiBody,
@@ -18,7 +30,10 @@ import {
   dataSourceOpenApiSchema,
   parseCreateDataSource,
   parseDataSourceId,
+  parseGrantUserId,
   parseListDataSources,
+  parseRevealDataSource,
+  revealDataSourceOpenApiSchema,
 } from './data-source.contracts.js';
 import { DataSourceService } from './data-source.service.js';
 
@@ -63,5 +78,95 @@ export class DataSourceController {
     @Param('sourceId') sourceId: string,
   ) {
     return { success: true, data: await this.sources.get(principal, parseDataSourceId(sourceId)) };
+  }
+
+  @Put(':sourceId/grants/:userId')
+  @Header('Cache-Control', 'no-store')
+  async grant(
+    @CurrentPrincipal() principal: CurrentPrincipalValue,
+    @Param('sourceId') sourceId: string,
+    @Param('userId') userId: string,
+    @Req() request: FastifyRequest,
+  ) {
+    return {
+      success: true,
+      data: await this.sources.setGrant(
+        principal,
+        parseDataSourceId(sourceId),
+        parseGrantUserId(userId),
+        true,
+        request.id,
+      ),
+    };
+  }
+
+  @Get(':sourceId/grants')
+  @Header('Cache-Control', 'no-store')
+  async listGrants(
+    @CurrentPrincipal() principal: CurrentPrincipalValue,
+    @Param('sourceId') sourceId: string,
+    @Query() query: unknown,
+  ) {
+    return {
+      success: true,
+      data: await this.sources.listGrants(
+        principal,
+        parseDataSourceId(sourceId),
+        parseListDataSources(query),
+      ),
+    };
+  }
+
+  @Delete(':sourceId/grants/:userId')
+  @Header('Cache-Control', 'no-store')
+  async revoke(
+    @CurrentPrincipal() principal: CurrentPrincipalValue,
+    @Param('sourceId') sourceId: string,
+    @Param('userId') userId: string,
+    @Req() request: FastifyRequest,
+  ) {
+    return {
+      success: true,
+      data: await this.sources.setGrant(
+        principal,
+        parseDataSourceId(sourceId),
+        parseGrantUserId(userId),
+        false,
+        request.id,
+      ),
+    };
+  }
+
+  @Post(':sourceId/reveal')
+  @Header('Cache-Control', 'no-store')
+  @ApiBody({ schema: revealDataSourceOpenApiSchema })
+  async reveal(
+    @CurrentPrincipal() principal: CurrentPrincipalValue,
+    @Param('sourceId') sourceId: string,
+    @Body() body: unknown,
+    @Req() request: FastifyRequest,
+  ) {
+    return {
+      success: true,
+      data: await this.sources.reveal(
+        principal,
+        parseDataSourceId(sourceId),
+        parseRevealDataSource(body),
+        request.id,
+      ),
+    };
+  }
+
+  @Post(':sourceId/test')
+  @Header('Cache-Control', 'no-store')
+  async testConnection(
+    @CurrentPrincipal() principal: CurrentPrincipalValue,
+    @Param('sourceId') sourceId: string,
+    @Req() request: FastifyRequest,
+  ) {
+    return {
+      success: true,
+      data: await this.sources.testConnection(principal, parseDataSourceId(sourceId), request.id),
+    };
   }
 }

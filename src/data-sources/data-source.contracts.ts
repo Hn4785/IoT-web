@@ -15,8 +15,13 @@ const listDataSourcesSchema = z.strictObject({
   limit: z.coerce.number().int().min(1).max(100).default(50),
 });
 
+const revealDataSourceSchema = z.strictObject({
+  currentPassword: z.string().min(12).max(128),
+});
+
 export type CreateDataSourceInput = z.output<typeof createDataSourceSchema>;
 export type ListDataSourcesQuery = z.output<typeof listDataSourcesSchema>;
+export type RevealDataSourceInput = z.output<typeof revealDataSourceSchema>;
 
 export type DataSourceDto = Readonly<{
   id: string;
@@ -34,6 +39,11 @@ export type DataSourceDto = Readonly<{
   updatedAt: string;
 }>;
 
+export type DataSourceGrantDto = Readonly<{
+  user: Readonly<{ id: string; displayName: string; email: string }>;
+  createdAt: string;
+}>;
+
 function parse<T>(schema: z.ZodType<T>, value: unknown, message: string): T {
   const result = schema.safeParse(value);
   if (!result.success) throw new AppError('VALIDATION_ERROR', 400, message);
@@ -46,6 +56,10 @@ export const parseListDataSources = (value: unknown): ListDataSourcesQuery =>
   parse(listDataSourcesSchema, value, 'Query is invalid');
 export const parseDataSourceId = (value: unknown): string =>
   parse(z.uuid(), value, 'Data source identifier is invalid');
+export const parseGrantUserId = (value: unknown): string =>
+  parse(z.uuid(), value, 'User identifier is invalid');
+export const parseRevealDataSource = (value: unknown): RevealDataSourceInput =>
+  parse(revealDataSourceSchema, value, 'Request body is invalid');
 
 export const createDataSourceOpenApiSchema: SchemaObject = {
   type: 'object',
@@ -100,5 +114,14 @@ export const dataSourceOpenApiSchema: SchemaObject = {
     canRevealKey: { type: 'boolean' },
     createdAt: { type: 'string', format: 'date-time' },
     updatedAt: { type: 'string', format: 'date-time' },
+  },
+};
+
+export const revealDataSourceOpenApiSchema: SchemaObject = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['currentPassword'],
+  properties: {
+    currentPassword: { type: 'string', minLength: 12, maxLength: 128, writeOnly: true },
   },
 };

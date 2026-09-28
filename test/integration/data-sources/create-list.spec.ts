@@ -35,6 +35,7 @@ describe('API source create and list', () => {
     await prepareTestDatabase();
     upstream = await startUpstreamServer([
       { status: 200, body: { success: true, data: ['CENTER', 'NODE01'] } },
+      { status: 200, body: { success: true, data: ['CENTER', 'NODE01'] } },
       { status: 200, body: { success: true, data: ['NODE02'] } },
       { status: 401, body: { success: false, message: 'invalid key' } },
     ]);
@@ -125,6 +126,18 @@ describe('API source create and list', () => {
     const stored = await prisma.dataSource.findUniqueOrThrow({ where: { id: item.id } });
     expect(stored.keyCiphertext).not.toContain('admin-provider-secret');
     expect(await prisma.station.count({ where: { dataSourceId: item.id } })).toBe(2);
+
+    const tested = await app.inject({
+      method: 'POST',
+      url: `/api/v1/data-sources/${item.id}/test`,
+      headers: { authorization: `Bearer ${adminToken}` },
+    });
+    expect(tested.statusCode).toBe(201);
+    expect(tested.json()).toMatchObject({
+      success: true,
+      data: { connectionStatus: 'CONNECTED', stationCount: 2 },
+    });
+    expect(upstream.requests[1]?.headers['x-api-key']).toBe('admin-provider-secret');
   });
 
   it('lets a Farmer create within assigned scope and hides it from other Farmers', async () => {

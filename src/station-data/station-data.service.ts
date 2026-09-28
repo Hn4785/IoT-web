@@ -21,6 +21,7 @@ import type {
   SoilHistoryQuery,
 } from './station-data.contracts.js';
 import type { AuthorizedStation } from './station.repository.js';
+import { StationSourceClientResolver } from './station-source-client.resolver.js';
 
 @Injectable()
 export class StationDataService {
@@ -40,6 +41,8 @@ export class StationDataService {
     @Optional()
     @Inject(HISTORY_SOIL_CACHE)
     historyCache?: BoundedAsyncCache<NormalizedHistoryPage>,
+    @Optional()
+    private readonly sourceClients?: StationSourceClientResolver,
   ) {
     this.clock = clock ?? { now: () => new Date() };
     this.cache =
@@ -62,10 +65,13 @@ export class StationDataService {
 
   async getLatest(station: AuthorizedStation, query: LatestSoilQuery): Promise<LatestSoilDataDto> {
     const now = this.clock.now();
-    const key = `latest:${station.upstreamCode}:${[...query.fields].sort().join(',')}`;
+    const key = `latest:${station.dataSourceId}:${station.upstreamCode}:${[...query.fields].sort().join(',')}`;
 
     const cacheResult = await this.cache.get(key, async () => {
-      const upstream = await this.weather.getLatest({
+      const weather = this.sourceClients
+        ? await this.sourceClients.resolve(station.dataSourceId)
+        : this.weather;
+      const upstream = await weather.getLatest({
         station: [station.upstreamCode],
         type: ['soil'],
         fields: [...query.fields],
@@ -93,15 +99,18 @@ export class StationDataService {
       limit: query.limit,
     };
     const queryFingerprint = historyQueryFingerprint({
-      stationCode: station.upstreamCode,
+      stationCode: `${station.dataSourceId}:${station.upstreamCode}`,
       query: queryWithoutCursor,
     });
     const continuation = query.cursor
       ? decodeHistoryCursor(query.cursor, queryFingerprint)
       : undefined;
-    const key = `history:${station.upstreamCode}:${queryFingerprint}:${query.cursor ?? 'start'}`;
+    const key = `history:${station.dataSourceId}:${station.upstreamCode}:${queryFingerprint}:${query.cursor ?? 'start'}`;
     const cacheResult = await this.historyCache.get(key, async () => {
-      const upstream = await this.weather.getHistory({
+      const weather = this.sourceClients
+        ? await this.sourceClients.resolve(station.dataSourceId)
+        : this.weather;
+      const upstream = await weather.getHistory({
         station: [station.upstreamCode],
         type: ['soil'],
         fields: [...query.fields],

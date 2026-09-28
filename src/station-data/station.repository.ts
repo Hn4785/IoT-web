@@ -16,7 +16,9 @@ import type {
 
 const NO_ACCESS_ID = '00000000-0000-4000-8000-000000000000';
 
-export type AuthorizedStation = Readonly<StationDto & { upstreamCode: string }>;
+export type AuthorizedStation = Readonly<
+  StationDto & { upstreamCode: string; dataSourceId: string }
+>;
 
 const keyset = (name: string, id: string) => ({
   OR: [{ name: { gt: name } }, { name, id: { gt: id } }],
@@ -115,6 +117,7 @@ export class StationRepository {
       },
       select: {
         id: true,
+        dataSourceId: true,
         plotId: true,
         name: true,
         upstreamCode: true,
@@ -154,7 +157,11 @@ export class StationRepository {
   ): Promise<AuthorizedStation | null> {
     const station = await this.findAuthorizedStation(principal, stationId);
     if (!station) return null;
-    return { ...this.toStationDto(station), upstreamCode: station.upstreamCode };
+    return {
+      ...this.toStationDto(station),
+      upstreamCode: station.upstreamCode,
+      dataSourceId: station.dataSourceId,
+    };
   }
 
   async listClientStations(
@@ -170,6 +177,7 @@ export class StationRepository {
       where: { AND: [scope, ...(cursor ? [keyset(cursor.name, cursor.id)] : [])] },
       select: {
         id: true,
+        dataSourceId: true,
         plotId: true,
         name: true,
         upstreamCode: true,
@@ -201,6 +209,7 @@ export class StationRepository {
       },
       select: {
         id: true,
+        dataSourceId: true,
         plotId: true,
         name: true,
         upstreamCode: true,
@@ -208,7 +217,11 @@ export class StationRepository {
       },
     });
     if (!station) return null;
-    return { ...this.toStationDto(station), upstreamCode: station.upstreamCode };
+    return {
+      ...this.toStationDto(station),
+      upstreamCode: station.upstreamCode,
+      dataSourceId: station.dataSourceId,
+    };
   }
 
   private async requireFarm(principal: CurrentPrincipalValue, farmId: string): Promise<void> {
@@ -232,6 +245,7 @@ export class StationRepository {
       where: { AND: [{ id: stationId }, this.stationScope(principal)] },
       select: {
         id: true,
+        dataSourceId: true,
         plotId: true,
         name: true,
         upstreamCode: true,
@@ -244,7 +258,27 @@ export class StationRepository {
     return principal.role === 'ADMIN'
       ? {}
       : principal.role === 'FARMER'
-        ? { memberships: { some: { userId: principal.userId } } }
+        ? {
+            OR: [
+              { memberships: { some: { userId: principal.userId } } },
+              {
+                plots: {
+                  some: {
+                    stations: {
+                      some: {
+                        dataSource: {
+                          OR: [
+                            { ownerUserId: principal.userId },
+                            { grants: { some: { userId: principal.userId } } },
+                          ],
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            ],
+          }
         : { id: NO_ACCESS_ID };
   }
 
@@ -252,7 +286,23 @@ export class StationRepository {
     return principal.role === 'ADMIN'
       ? {}
       : principal.role === 'FARMER'
-        ? { farm: { memberships: { some: { userId: principal.userId } } } }
+        ? {
+            OR: [
+              { farm: { memberships: { some: { userId: principal.userId } } } },
+              {
+                stations: {
+                  some: {
+                    dataSource: {
+                      OR: [
+                        { ownerUserId: principal.userId },
+                        { grants: { some: { userId: principal.userId } } },
+                      ],
+                    },
+                  },
+                },
+              },
+            ],
+          }
         : { id: NO_ACCESS_ID };
   }
 
@@ -260,7 +310,13 @@ export class StationRepository {
     return principal.role === 'ADMIN'
       ? {}
       : principal.role === 'FARMER'
-        ? { plot: { farm: { memberships: { some: { userId: principal.userId } } } } }
+        ? {
+            OR: [
+              { plot: { farm: { memberships: { some: { userId: principal.userId } } } } },
+              { dataSource: { ownerUserId: principal.userId } },
+              { dataSource: { grants: { some: { userId: principal.userId } } } },
+            ],
+          }
         : { id: NO_ACCESS_ID };
   }
 

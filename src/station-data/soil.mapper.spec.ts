@@ -11,6 +11,7 @@ const station: AuthorizedStation = {
   name: 'Station NODE01',
   code: 'NODE01',
   upstreamCode: 'NODE01',
+  dataSourceId: '00000000-0000-0000-0000-000000000001',
 };
 
 const upstream = (soil: Record<string, unknown>): readonly WeatherLatestStation[] =>

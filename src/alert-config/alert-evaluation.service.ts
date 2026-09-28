@@ -164,6 +164,7 @@ export class AlertEvaluationService implements OnApplicationBootstrap, OnModuleD
               name: group.station.name,
               code: group.station.upstreamCode,
               upstreamCode: group.station.upstreamCode,
+              dataSourceId: group.station.dataSourceId,
             },
             { fields: [...group.fields].sort() },
           );

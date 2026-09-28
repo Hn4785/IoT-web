@@ -25,6 +25,10 @@ describe('OpenAPI contract', () => {
     expect(Object.keys(document.paths)).toEqual([
       '/api/v1/data-sources',
       '/api/v1/data-sources/{sourceId}',
+      '/api/v1/data-sources/{sourceId}/grants/{userId}',
+      '/api/v1/data-sources/{sourceId}/grants',
+      '/api/v1/data-sources/{sourceId}/reveal',
+      '/api/v1/data-sources/{sourceId}/test',
       '/api/v1/stations/{stationId}/alert-rules',
       '/api/v1/alert-rules/{ruleId}',
       '/api/v1/alerts',

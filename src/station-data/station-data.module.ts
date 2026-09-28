@@ -2,6 +2,7 @@ import { Logger, Module } from '@nestjs/common';
 
 import { ApiKeyModule } from '../api-keys/api-key.module.js';
 import { AuthModule } from '../auth/auth.module.js';
+import { DataSourceModule } from '../data-sources/data-source.module.js';
 import { RUNTIME_CONFIG } from '../config/runtime-config.module.js';
 import type { RuntimeConfig } from '../config/runtime-config.js';
 import { WeatherModule } from '../integrations/weather/weather.module.js';
@@ -24,14 +25,16 @@ import {
 import type { NormalizedHistoryPage, NormalizedLatestSoil } from './station-data.contracts.js';
 import { StationDataService } from './station-data.service.js';
 import { StationRepository } from './station.repository.js';
+import { StationSourceClientResolver } from './station-source-client.resolver.js';
 
 @Module({
-  imports: [AuthModule, WeatherModule, ApiKeyModule],
+  imports: [AuthModule, WeatherModule, ApiKeyModule, DataSourceModule],
   controllers: [BrowserStationController, ClientController],
   providers: [
     StationRepository,
     HierarchyService,
     StationDataService,
+    StationSourceClientResolver,
     ClientRateLimitStore,
     ClientRateLimitGuard,
     {

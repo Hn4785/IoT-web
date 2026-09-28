@@ -5,7 +5,11 @@ import { AppError } from '../common/errors/app-error.js';
 import { PrismaService } from '../database/prisma.service.js';
 import type { Prisma } from '../generated/prisma/client.js';
 import { SecurityAuditService } from '../security-audit/security-audit.service.js';
-import type { DataSourceDto, ListDataSourcesQuery } from './data-source.contracts.js';
+import type {
+  DataSourceDto,
+  DataSourceGrantDto,
+  ListDataSourcesQuery,
+} from './data-source.contracts.js';
 import type { EncryptedSourceSecret } from './source-secret.service.js';
 
 const sourceSelect = {
@@ -163,6 +167,220 @@ export class DataSourceRepository {
     });
     if (!source) throw new AppError('NOT_FOUND', 404, 'Resource not found');
     return this.toDto(source, principal.userId);
+  }
+
+  async setGrant(input: {
+    principal: CurrentPrincipalValue;
+    sourceId: string;
+    userId: string;
+    assigned: boolean;
+    requestId: string;
+  }): Promise<{ assigned: boolean }> {
+    return this.prisma.$transaction(async (transaction) => {
+      const [source, target] = await Promise.all([
+        transaction.dataSource.findFirst({
+          where: { id: input.sourceId, kind: 'MANAGED' },
+          select: { ownerUserId: true },
+        }),
+        transaction.user.findUnique({
+          where: { id: input.userId },
+          select: { id: true, role: true, status: true },
+        }),
+      ]);
+      if (!source || !target) throw new AppError('NOT_FOUND', 404, 'Resource not found');
+      if (source.ownerUserId !== input.principal.userId) {
+        throw new AppError('FORBIDDEN', 403, 'Only the source owner can manage access');
+      }
+      if (target.role !== 'FARMER' || target.status !== 'ACTIVE') {
+        throw new AppError('CONFLICT', 409, 'Only active Farmer accounts can receive access');
+      }
+      if (target.id === source.ownerUserId) {
+        throw new AppError('CONFLICT', 409, 'The source owner already has access');
+      }
+      if (input.assigned) {
+        await transaction.dataSourceGrant.upsert({
+          where: {
+            dataSourceId_userId: { dataSourceId: input.sourceId, userId: input.userId },
+          },
+          create: { dataSourceId: input.sourceId, userId: input.userId },
+          update: {},
+        });
+      } else {
+        await transaction.dataSourceGrant.deleteMany({
+          where: { dataSourceId: input.sourceId, userId: input.userId },
+        });
+      }
+      await this.audits.record(transaction, {
+        actorUserId: input.principal.userId,
+        action: input.assigned ? 'DATA_SOURCE_ACCESS_GRANTED' : 'DATA_SOURCE_ACCESS_REVOKED',
+        targetType: 'DataSourceGrant',
+        targetId: `${input.sourceId}:${input.userId}`,
+        requestId: input.requestId,
+      });
+      return { assigned: input.assigned };
+    });
+  }
+
+  async listGrants(
+    principal: CurrentPrincipalValue,
+    sourceId: string,
+    query: ListDataSourcesQuery,
+  ): Promise<{ items: DataSourceGrantDto[]; nextCursor: string | null }> {
+    const source = await this.prisma.dataSource.findFirst({
+      where: { id: sourceId, kind: 'MANAGED' },
+      select: { ownerUserId: true },
+    });
+    if (!source) throw new AppError('NOT_FOUND', 404, 'Resource not found');
+    if (source.ownerUserId !== principal.userId) {
+      throw new AppError('FORBIDDEN', 403, 'Only the source owner can manage access');
+    }
+    const cursor = query.cursor
+      ? await this.prisma.dataSourceGrant.findUnique({
+          where: { dataSourceId_userId: { dataSourceId: sourceId, userId: query.cursor } },
+          select: { userId: true, createdAt: true },
+        })
+      : null;
+    if (query.cursor && !cursor) throw new AppError('VALIDATION_ERROR', 400, 'Cursor is invalid');
+    const rows = await this.prisma.dataSourceGrant.findMany({
+      where: {
+        dataSourceId: sourceId,
+        ...(cursor
+          ? {
+              OR: [
+                { createdAt: { lt: cursor.createdAt } },
+                { createdAt: cursor.createdAt, userId: { lt: cursor.userId } },
+              ],
+            }
+          : {}),
+      },
+      select: {
+        userId: true,
+        createdAt: true,
+        user: { select: { id: true, displayName: true, email: true } },
+      },
+      orderBy: [{ createdAt: 'desc' }, { userId: 'desc' }],
+      take: query.limit + 1,
+    });
+    const page = rows.slice(0, query.limit);
+    return {
+      items: page.map((grant) => ({
+        user: grant.user,
+        createdAt: grant.createdAt.toISOString(),
+      })),
+      nextCursor: rows.length > query.limit ? (page.at(-1)?.userId ?? null) : null,
+    };
+  }
+
+  async getOwnedSecret(principal: CurrentPrincipalValue, sourceId: string) {
+    const source = await this.prisma.dataSource.findFirst({
+      where: { id: sourceId, kind: 'MANAGED' },
+      select: {
+        ownerUserId: true,
+        keyCiphertext: true,
+        keyNonce: true,
+        keyAuthTag: true,
+        owner: { select: { passwordHash: true } },
+      },
+    });
+    if (!source) throw new AppError('NOT_FOUND', 404, 'Resource not found');
+    if (source.ownerUserId !== principal.userId) {
+      throw new AppError('FORBIDDEN', 403, 'Only the source owner can reveal the key');
+    }
+    if (!source.owner || !source.keyCiphertext || !source.keyNonce || !source.keyAuthTag) {
+      throw new AppError('INTERNAL_ERROR', 500, 'Stored source credential is invalid');
+    }
+    return {
+      passwordHash: source.owner.passwordHash,
+      encrypted: {
+        ciphertext: source.keyCiphertext,
+        nonce: source.keyNonce,
+        authTag: source.keyAuthTag,
+      },
+    };
+  }
+
+  async getOwnedConnection(principal: CurrentPrincipalValue, sourceId: string) {
+    const source = await this.prisma.dataSource.findFirst({
+      where: { id: sourceId, kind: 'MANAGED' },
+      select: {
+        ownerUserId: true,
+        baseUrl: true,
+        keyCiphertext: true,
+        keyNonce: true,
+        keyAuthTag: true,
+      },
+    });
+    if (!source) throw new AppError('NOT_FOUND', 404, 'Resource not found');
+    if (source.ownerUserId !== principal.userId) {
+      throw new AppError('FORBIDDEN', 403, 'Only the source owner can test the connection');
+    }
+    if (!source.keyCiphertext || !source.keyNonce || !source.keyAuthTag) {
+      throw new AppError('INTERNAL_ERROR', 500, 'Stored source credential is invalid');
+    }
+    return {
+      baseUrl: source.baseUrl,
+      encrypted: {
+        ciphertext: source.keyCiphertext,
+        nonce: source.keyNonce,
+        authTag: source.keyAuthTag,
+      },
+    };
+  }
+
+  async recordConnectionTest(input: {
+    principal: CurrentPrincipalValue;
+    sourceId: string;
+    connected: boolean;
+    stationCount: number;
+    requestId: string;
+  }): Promise<string> {
+    return this.prisma.$transaction(async (transaction) => {
+      const source = await transaction.dataSource.findFirst({
+        where: { id: input.sourceId, kind: 'MANAGED' },
+        select: { ownerUserId: true },
+      });
+      if (!source) throw new AppError('NOT_FOUND', 404, 'Resource not found');
+      if (source.ownerUserId !== input.principal.userId) {
+        throw new AppError('FORBIDDEN', 403, 'Only the source owner can test the connection');
+      }
+      const lastCheckedAt = new Date();
+      await transaction.dataSource.update({
+        where: { id: input.sourceId },
+        data: {
+          connectionStatus: input.connected ? 'CONNECTED' : 'FAILED',
+          lastCheckedAt,
+        },
+      });
+      await this.audits.record(transaction, {
+        actorUserId: input.principal.userId,
+        action: 'DATA_SOURCE_CONNECTION_TESTED',
+        targetType: 'DataSource',
+        targetId: input.sourceId,
+        requestId: input.requestId,
+        metadata: { stationCount: input.stationCount },
+      });
+      return lastCheckedAt.toISOString();
+    });
+  }
+
+  async recordReveal(principal: CurrentPrincipalValue, sourceId: string, requestId: string) {
+    await this.prisma.$transaction(async (transaction) => {
+      const source = await transaction.dataSource.findFirst({
+        where: { id: sourceId, kind: 'MANAGED' },
+        select: { ownerUserId: true },
+      });
+      if (!source) throw new AppError('NOT_FOUND', 404, 'Resource not found');
+      if (source.ownerUserId !== principal.userId) {
+        throw new AppError('FORBIDDEN', 403, 'Only the source owner can reveal the key');
+      }
+      await this.audits.record(transaction, {
+        actorUserId: principal.userId,
+        action: 'DATA_SOURCE_KEY_REVEALED',
+        targetType: 'DataSource',
+        targetId: sourceId,
+        requestId,
+      });
+    });
   }
 
   private toDto(source: SourceRecord, principalId: string): DataSourceDto {

@@ -90,6 +90,17 @@ export class WeatherClientService implements WeatherClient {
     @Optional() private readonly metrics?: OperationsMetrics,
   ) {}
 
+  withConnection(baseUrl: string, apiKey: string): WeatherClientService {
+    return new WeatherClientService(
+      Object.freeze({
+        ...this.config,
+        weatherApiBaseUrl: baseUrl,
+        weatherApiKey: apiKey,
+      }),
+      this.metrics,
+    );
+  }
+
   async getHealth(): Promise<WeatherHealth> {
     const { body } = await this.getJson('/health');
     return this.parseUpstream(() => parseWeatherHealthResponse(body).data);
