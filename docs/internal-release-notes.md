@@ -73,6 +73,17 @@ Với mỗi thay đổi:
   dấu hoàn tất ma trận browser Admin/Farmer/Client.
 - Frontend chỉ commit local, không push.
 
+### Bổ sung ổn định Admin
+
+- Áp dụng hai migration registry nguồn dữ liệu vào database local `iot_dev`;
+  schema đã đồng bộ nên các API Station, API Sources và Alert không còn truy vấn
+  vào bảng/cột chưa tồn tại.
+- Đồng bộ content frame 1280px, padding và design token giữa Dashboard,
+  Stations & Devices, API Sources và Alert Center; sửa Alert Center dùng đúng
+  surface, border, màu trạng thái và khoảng cách chung.
+- Thay `N/A` ở Gateway/Sensor bằng `Not supported` để thể hiện đúng việc backend
+  chưa có contract thay vì một giá trị dữ liệu mơ hồ.
+
 ## v2.5.4 — 2026-09-26 (Client Developer integration)
 
 ### Đã sửa và cập nhật

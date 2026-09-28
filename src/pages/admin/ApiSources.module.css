@@ -1,4 +1,4 @@
-.page { display: flex; flex-direction: column; gap: var(--spacing-5); padding: var(--spacing-6); }
+.page { display: flex; flex-direction: column; gap: var(--spacing-5); width: min(100%, 1280px); margin-inline: auto; padding: var(--spacing-6); box-sizing: border-box; }
 .headerActions, .actions, .modalActions { display: flex; align-items: center; gap: var(--spacing-2); flex-wrap: wrap; }
 .panel { background: var(--color-bg-surface); border: 1px solid var(--color-border-default); border-radius: var(--radius-xl); box-shadow: var(--shadow-sm); }
 .tableWrap { width: 100%; overflow-x: auto; }
@@ -8,9 +8,9 @@
 .tableWrap tbody tr:last-child td { border-bottom: 0; }
 .subtle { display: block; max-width: 260px; margin-top: 3px; overflow: hidden; color: var(--color-text-tertiary); font-size: var(--font-size-caption); text-overflow: ellipsis; white-space: nowrap; }
 .status { display: inline-flex; align-items: center; padding: 5px 9px; border-radius: 999px; font-size: var(--font-size-caption); font-weight: var(--font-weight-semibold); }
-.connected { background: var(--color-success-light); color: var(--color-success-dark); }
-.failed { background: var(--color-danger-light); color: var(--color-danger-dark); }
-.notice { margin: 0; padding: 10px 14px; border: 1px solid var(--color-success); border-radius: var(--radius-md); background: var(--color-success-light); color: var(--color-success-dark); }
+.connected { background: var(--color-primary-light); color: var(--color-primary-dark); }
+.failed { background: var(--color-error-light); color: var(--color-error-dark); }
+.notice { margin: 0; padding: 10px 14px; border: 1px solid var(--color-primary); border-radius: var(--radius-md); background: var(--color-primary-light); color: var(--color-primary-dark); }
 .form { display: flex; flex-direction: column; gap: var(--spacing-4); }
 .form label, .pasteBox label { display: flex; flex: 1; flex-direction: column; gap: 6px; color: var(--color-text-secondary); font-size: var(--font-size-body-sm); font-weight: var(--font-weight-semibold); }
 .form input, .form select, .form textarea, .pasteBox textarea { width: 100%; min-height: var(--height-input-md); padding: 9px 12px; border: 1px solid var(--color-border-default); border-radius: var(--radius-md); background: var(--color-bg-surface); color: var(--color-text-primary); font: inherit; }

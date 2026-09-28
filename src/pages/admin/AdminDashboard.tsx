@@ -151,7 +151,9 @@ export default function AdminDashboard() {
               <span>{label}</span>
               <Icon size={18} />
             </div>
-            <strong>{available ? value : "N/A"}</strong>
+            <strong className={available ? undefined : styles.unavailable}>
+              {available ? value : "Not supported"}
+            </strong>
             <span className={styles.sourceNote}>
               {available ? "Live backend data" : "Backend contract not available"}
             </span>
