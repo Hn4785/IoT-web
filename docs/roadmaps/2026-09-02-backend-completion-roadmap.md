@@ -100,17 +100,18 @@ and one real station validate the physical-data assumptions.
 
 ### Phase C: Alerts and in-app notifications
 
-| ID   | Package                   | Acceptance criteria                                                                                     | Verification                        | Depends on | Scope |
-| ---- | ------------------------- | ------------------------------------------------------------------------------------------------------- | ----------------------------------- | ---------- | ----- |
-| AC-1 | Approve alert design      | Rule model, lifecycle, in-app notifications and device-config deferral approved                         | User reviews committed spec         | SD-4       | S     |
-| AC-2 | Alert rules               | Authorized users create/update bounded threshold rules for their station scope                          | CRUD and cross-scope tests          | AC-1       | M     |
-| AC-3 | Alert lifecycle           | Triggered alerts have deterministic open, acknowledge and resolve transitions with actor/time evidence  | State-machine and idempotency tests | AC-2       | M     |
-| C1   | Lifecycle review gate     | Alert transitions, idempotency and actor evidence are accepted before external providers are connected  | Review checklist and state tests    | AC-3       | S     |
-| AC-4 | In-app notification inbox | Scoped open/acknowledge/resolve notifications are durable, unread-aware and duplicate-safe              | Scope and concurrency tests         | C1         | M     |
-| CDEV | Device-configuration gate | No payload or publish API exists until hardware schema, units and transport receive a separate approval | Contract review                     | B-device   | S     |
+| ID   | Package                      | Acceptance criteria                                                                                     | Verification                        | Depends on | Scope |
+| ---- | ---------------------------- | ------------------------------------------------------------------------------------------------------- | ----------------------------------- | ---------- | ----- |
+| AC-1 | Approve alert design         | Rule model, lifecycle, in-app notifications and no-device-write boundary approved                       | User reviews committed spec         | SD-4       | S     |
+| AC-2 | Alert rules                  | Authorized users create/update bounded threshold rules for their station scope                          | CRUD and cross-scope tests          | AC-1       | M     |
+| AC-3 | Alert lifecycle              | Triggered alerts have deterministic open, acknowledge and resolve transitions with actor/time evidence  | State-machine and idempotency tests | AC-2       | M     |
+| C1   | Lifecycle review gate        | Alert transitions, idempotency and actor evidence are accepted before external providers are connected  | Review checklist and state tests    | AC-3       | S     |
+| AC-4 | In-app notification inbox    | Scoped open/acknowledge/resolve notifications are durable, unread-aware and duplicate-safe              | Scope and concurrency tests         | C1         | M     |
+| CDEV | Device-intervention boundary | Web changes alert thresholds only; no payload or publish API exists and field intervention stays onsite | Product decision review             | AC-1       | S     |
 
 Checkpoint C-core: frontend alert action center and in-app inbox can replace
-mock state; the device-configuration page reports the capability unavailable.
+mock state. Any retained device-configuration route only explains that remote
+writes are outside scope and directs users to alert rules or onsite intervention.
 
 ### Phase D: Operations and production readiness
 

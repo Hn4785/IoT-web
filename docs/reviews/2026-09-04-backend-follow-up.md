@@ -268,11 +268,18 @@ không đủ để đóng checkpoint này.
 - Integration test xác minh cả dữ liệu cũ bị xóa và dữ liệu ngay trong cửa sổ
   retention vẫn được giữ.
 
-### [Phase C] Chưa có capability trung thực cho device configuration
+### [Phase C] Đã chốt ranh giới không ghi cấu hình xuống thiết bị
 
 - `GET /api/v1/device-configurations/capability` cho Admin/Farmer trả cố định
   `NOT_AVAILABLE / DEVICE_CONTRACT_PENDING`; Client Developer bị từ chối.
-- Không tạo bảng, payload, publish route hoặc giả lập acknowledgement thiết bị.
+- Quyết định bên cung cấp ngày 2026-09-28: web chỉ quản lý quy tắc/ngưỡng cảnh
+  báo; hiệu chuẩn hoặc can thiệp cảm biến được thực hiện trực tiếp tại hiện
+  trường. Không tạo bảng, payload, publish route hoặc giả lập acknowledgement
+  thiết bị.
+- `DEVICE_CONTRACT_PENDING` được giữ để tương thích với frontend hiện tại, không
+  còn được hiểu là một hạng mục remote write đang chờ triển khai. IoT Config và
+  Config Proposals chỉ được giải thích ranh giới này hoặc điều hướng sang Alert
+  Center, không được cung cấp nút ghi thiết bị.
 
 ### [Test contract] OpenAPI allowlist thiếu route Phase C mới
 

@@ -90,8 +90,9 @@ Before accepting frontend integration, test these flows in a browser:
 - Farmer-scoped farm/plot/station latest and history views;
 - Client Developer key create/copy/use/rotate/revoke with station scope;
 - alert-rule validation, open/acknowledge/resolve and in-app notifications; and
-- device configuration reports `DEVICE_CONTRACT_PENDING` instead of pretending
-  a hardware write succeeded.
+- the retained device-capability screen does not offer a hardware write: alert
+  thresholds are managed in Alert Center, while calibration or intervention is
+  performed directly at the device.
 
 Latest/history data remains `sample-verified`. The release cannot become
 `live-verified` until CENTER plus at least one NODE are tested against the real

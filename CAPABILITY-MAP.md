@@ -10,7 +10,7 @@ the existing Weather API, and the future PostgreSQL business database.
 | `integration-core` | Runtime configuration, public health check, Weather API client, validation, timeouts, and normalized errors     | -                                     |
 | `identity-access`  | PostgreSQL identity state, sessions, three-role/Super Admin policy, resource authorization, and client API keys | `integration-core`                    |
 | `station-data`     | Authorized stations, latest data, history, metadata enrichment, and frontend DTOs                               | `integration-core`, `identity-access` |
-| `alert-config`     | Alert rules, alert lifecycle, escalation, and IoT configuration                                                 | `station-data`                        |
+| `alert-config`     | Alert rules, alert lifecycle, escalation, notifications, and the no-device-write boundary                       | `station-data`                        |
 | `operations`       | Audit log, monitoring, deployment, backup, and operational documentation                                        | All preceding modules                 |
 
 Build order:
@@ -27,4 +27,7 @@ Build order:
 - Weather API credentials are owned by `integration-core` and are never exposed to consumers.
 - Public station-data endpoints cannot be added before `identity-access` supplies authentication and station authorization.
 - Database models must not leak directly into the public API; each module owns explicit input and output contracts.
+- Web configuration is limited to alert rules. Calibration and other physical
+  intervention happen directly at the device; the backend must not publish
+  commands or configuration to CENTER/NODE.
 - Every module receives its own approved specification and implementation plan before production code is written.

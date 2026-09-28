@@ -1,6 +1,6 @@
 # Backend delivery checklist
 
-Updated: 2026-09-23
+Updated: 2026-09-28
 
 This is the single short status index for the project. Detailed acceptance
 criteria remain in the
@@ -67,7 +67,7 @@ Evidence: [`2026-09-10-phase-b-core.md`](../docs/checkpoints/2026-09-10-phase-b-
 
 ## C. Alerts and in-app notifications — backend core complete
 
-- [x] AC-1: Approve rule, lifecycle, notification and device-deferral design.
+- [x] AC-1: Approve rule, lifecycle, notification and no-device-write design.
 - [x] AC-2: Add scoped alert-rule contracts, validation and mutation APIs.
 - [x] AC-3: Add deterministic evaluator, lease, idempotency and durable
       open/acknowledge/resolve lifecycle.
@@ -81,8 +81,10 @@ Evidence: [`2026-09-10-phase-b-core.md`](../docs/checkpoints/2026-09-10-phase-b-
       freeze display values at transition time, and preserve pending jobs in retention.
 - [ ] C-integration-browser: Run Admin/Farmer authorization, lifecycle and
       stale-session browser cases.
-- [ ] C-device: Approve real hardware schema, units, command transport,
-      acknowledgement and failure behavior before adding configuration writes.
+- [x] C-device-boundary: Record the provider decision that the web configures
+      alert thresholds only. Calibration and other intervention happen directly
+      onsite; no device-write contract, payload or publish API will be added in
+      the current product scope.
 
 Evidence: [`2026-09-16-c1.md`](../docs/checkpoints/2026-09-16-c1.md).
 
@@ -141,7 +143,8 @@ and must not duplicate the full contract.
 - [x] FE-3: Complete B-integration code for farm, plot, station, latest, history,
       dashboard, report and Client Developer explorer pages.
 - [x] FE-4: Complete C-integration code for alert rules, alert lifecycle and in-app
-      notifications; keep device configuration visibly unavailable.
+      notifications; keep remote device writes unavailable and direct threshold
+      changes to Alert Center.
 - [ ] FE-5: Connect the Admin audit view only to the scoped audit contract; do not
       expose the process-local metrics registry as a public UI API.
 - [ ] FE-6: Run automated browser tests plus manual responsive/accessibility
@@ -156,6 +159,7 @@ and must not duplicate the full contract.
 1. Run the remaining browser role matrix one page at a time in the fixed order
    **Admin/Super Admin → Farmer → Client Developer**.
 2. Record real-provider CENTER/NODE evidence without storing provider credentials.
-3. Obtain the device write contract before enabling configuration mutations.
+3. Verify retained IoT Config/Config Proposals screens do not offer remote writes:
+   threshold changes belong to Alert Center and physical intervention stays onsite.
 4. Keep deployment-owner decisions separate; sample or staging evidence must not
-   close B-device, C-device or D-production.
+   close B-device or D-production.

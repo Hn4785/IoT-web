@@ -1,6 +1,8 @@
 # Alert and In-App Notification Design
 
 Date: 2026-09-02
+Amended: 2026-09-28 — remote device writes are outside product scope;
+intervention is onsite
 Status: Approved for implementation against fake metadata; production activation remains blocked by B-device
 Module: `alert-config`
 Depends on: verified `station-data` B-core for implementation and B-device field
@@ -13,8 +15,11 @@ frontend to remain open. It gives authorized Admin and Farmer users a durable,
 auditable alert lifecycle and an in-application notification inbox.
 
 The design deliberately does not invent a hardware configuration schema or
-pretend to deliver configuration to a device. Device configuration becomes a
-separate C-device gate after the hardware team supplies a versioned contract.
+pretend to deliver configuration to a device. The provider decision recorded on
+2026-09-28 limits the web application to alert thresholds: calibration and other
+physical intervention happen directly onsite. Remote configuration of
+CENTER/NODE is outside the current product scope rather than a future C-device
+delivery gate.
 
 Phase C production code must not begin until station-data B-core is implemented
 and verified. C-core can then be implemented and tested with explicit fake field
@@ -43,9 +48,10 @@ station-data B-core
 station-data B-device confirmed field metadata
   -> permit real rule activation
 
-hardware configuration schema
-  -> device configuration design review
-  -> C-device implementation and verification
+provider device-intervention decision
+  -> configure alert thresholds in Alert Center
+  -> perform calibration and physical intervention directly onsite
+  -> do not create a device-write API
 ```
 
 ## 3. Scope
@@ -72,14 +78,21 @@ hardware configuration schema
 
 - Email, SMS, mobile push and every external notification provider.
 - Contact-channel preferences, retries and provider delivery status.
-- Device configuration payloads, drafts, publishing, rollback, transport and
-  device acknowledgement.
 - MQTT/HTTPS device ingestion.
 - Measurement persistence and a time-series alert stream.
 - Sensor-offline alerts, missing-data alerts and derived/agronomic rules.
 - Multi-level escalation policies and on-call routing.
 - User-defined rule expressions, scripts or arbitrary JSON conditions.
 - Distributed scheduling beyond one active evaluator lease.
+
+### Explicitly outside the current product scope
+
+- Device configuration payloads, drafts, publishing, rollback, transport and
+  device acknowledgement.
+- Remote calibration or control commands for CENTER/NODE. Calibration and other
+  physical intervention are performed directly at the device.
+- Treating an alert threshold as a device setting. Thresholds are application
+  rules used to evaluate measurements and create alerts only.
 
 ## 4. Roles and authorization
 
@@ -414,7 +427,7 @@ available for authorized operational retention and audit processing.
 There are no channel-preference, retry, provider or contact-address models in
 C-core.
 
-## 10. Device-configuration boundary
+## 10. Device-intervention boundary
 
 C-core exposes only:
 
@@ -431,15 +444,16 @@ type DeviceConfigurationCapabilityDto = {
 };
 ```
 
-The endpoint lets the frontend disable the configuration page honestly. C-core
-does not create configuration tables, empty versions, arbitrary JSON payloads
-or publish endpoints.
+The endpoint lets the frontend disable legacy configuration routes honestly.
+`DEVICE_CONTRACT_PENDING` is retained as the existing compatibility value; it
+must not be interpreted as a promise that remote writes will be added. The UI
+directs threshold changes to Alert Center and explains that calibration or other
+physical intervention happens onsite.
 
-C-device requires a new approved design covering the hardware schema version,
-allowed fields and units, compatibility rules, transport, desired versus
-reported state, publish authorization, rollback, acknowledgement, timeout and
-failure behavior. That work may add capability states without changing the
-meaning of `NOT_AVAILABLE`.
+C-core does not create configuration tables, empty versions, arbitrary JSON
+payloads or publish endpoints. Adding remote device control would require a new
+product decision and a separately approved public contract; it is not an open
+task in the current scope.
 
 ## 11. Persistence model and concurrency invariants
 
@@ -685,8 +699,8 @@ uses the existing isolated `iot_test` safety boundary.
 - Return or log credentials, tokens, upstream bodies or internal errors.
 - Trust frontend scope checks.
 - Store arbitrary scripts, expressions or device JSON as an alert rule.
-- Claim device configuration is published or acknowledged without a device
-  contract and transport evidence.
+- Claim device configuration is published or acknowledged, or present alert
+  thresholds as settings sent to a device.
 - Accept demo metadata when `NODE_ENV=production`.
 
 ## 19. Delivery checkpoints
@@ -699,8 +713,8 @@ uses the existing isolated `iot_test` safety boundary.
    concurrency and idempotency evidence.
 6. **AC-4:** implement in-app notification inbox and current-scope visibility.
 7. **Checkpoint C-core:** frontend replaces alert and notification mocks.
-8. **C-device design gate:** hardware schema and transport are approved before
-   any configuration implementation.
+8. **C-device boundary:** record the provider decision that remote device writes
+   are outside scope and intervention is performed onsite.
 
 ## 20. Success criteria
 
@@ -716,8 +730,8 @@ C-core is complete only when:
   recipient;
 - restarts, concurrent workers, cache hits and retries do not duplicate counts,
   alerts, events or notifications;
-- device configuration is reported unavailable and no fake publish capability
-  exists;
+- retained device-configuration routes explain the no-write boundary, direct
+  threshold changes to Alert Center and expose no fake publish capability;
 - focused tests, full tests, coverage, formatting, lint, typecheck, build,
   dependency audit, migration checks and secret review pass;
 - the frontend can replace only its alert and in-app notification mock data.
@@ -728,11 +742,10 @@ the station field's unit and metadata revision.
 
 ## 21. Closed and future questions
 
-No open decision blocks C-core specification review. The following are
-explicitly future C-device or provider decisions rather than unspecified work:
+No open decision blocks C-core specification review. Remote device
+configuration is closed as out of scope. The following remain provider or
+production decisions rather than unspecified device-write work:
 
-- official hardware configuration schema and schema-version negotiation;
-- device transport, desired/reported state and acknowledgement timeout;
 - approved sensor units, physical ranges and field-specific stale thresholds;
 - Email/SMS/Push providers, contact verification and delivery preferences;
 - production-scale event ingestion replacing Weather polling.

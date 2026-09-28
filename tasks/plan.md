@@ -1,6 +1,6 @@
 # Active backend context
 
-Updated: 2026-09-23
+Updated: 2026-09-28
 
 Đây là điểm vào ngắn cho phiên tiếp theo. Không sao chép lại chi tiết từ spec,
 plan đã hoàn thành hoặc checkpoint lịch sử.
@@ -24,7 +24,9 @@ lịch sử/bằng chứng; chỉ đọc khi cần truy quyết định cũ.
 - Phase B: backend core và frontend adapter/page đã hoàn thành; còn browser role
   matrix và xác minh provider CENTER/NODE thật.
 - Phase C: backend core và frontend alert/inbox/capability page đã hoàn thành;
-  còn browser role matrix và contract ghi xuống thiết bị thật.
+  còn browser role matrix. Theo quyết định bên cung cấp ngày 2026-09-28, web chỉ
+  cấu hình ngưỡng cảnh báo; hiệu chuẩn/can thiệp thiết bị thực hiện tại hiện
+  trường và không có contract ghi xuống thiết bị trong phạm vi hiện tại.
 - Phase D: local release candidate hoàn thành; production còn phụ thuộc staging,
   TLS/proxy, shared limiter, backup, MFA và metrics tập trung.
 - Gate gần nhất: backend 59/59 file, 375/375 test đạt và `pnpm verify` xanh;
@@ -34,9 +36,10 @@ lịch sử/bằng chứng; chỉ đọc khi cần truy quyết định cũ.
 
 1. Chạy browser matrix theo từng trang và tạo checkpoint theo role:
    **Admin/Super Admin → Farmer → Client Developer**.
-2. Ghi bằng chứng provider CENTER/NODE thật và giữ device writes unavailable cho
-   tới khi có contract phần cứng.
+2. Ghi bằng chứng provider CENTER/NODE thật; giữ device writes ngoài phạm vi và
+   điều hướng thay đổi ngưỡng sang Alert Center.
 3. Chạy QA recovery và chỉ sau đó mới nghiệm thu staging/production.
 
-Không dùng giao diện hiển thị được hoặc dữ liệu mẫu để đóng B-device,
-C-device hay D-production.
+Không dùng giao diện hiển thị được hoặc dữ liệu mẫu để đóng B-device hay
+D-production. C-device đã được đóng bằng quyết định không triển khai remote write,
+không phải bằng một contract phần cứng mới.
