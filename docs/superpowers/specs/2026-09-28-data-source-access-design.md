@@ -4,6 +4,12 @@ Date: 2026-09-28
 
 Status: Approved by product owner for implementation
 
+Follow-up: the approved next Admin checkpoint in
+[`2026-09-28-soil-source-admin-checkpoint-design.md`](./2026-09-28-soil-source-admin-checkpoint-design.md)
+extends this design with soil-only admission, station-scoped grants, source
+removal, alert recipients and simplified account administration. Where the two
+documents differ on grants or deletion, the follow-up design takes precedence.
+
 Module: `station-data` extension
 Depends on: `integration-core`, `identity-access`, `station-data`
 

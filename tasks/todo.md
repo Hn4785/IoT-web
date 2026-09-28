@@ -76,6 +76,13 @@ Evidence: [`2026-09-02-phase-a.md`](../docs/checkpoints/2026-09-02-phase-a.md).
 - [ ] B-source-FE: Admin API Sources is implemented locally with English copy,
       pasted-text parsing, truthful states and no `N/A`. Farmer remains next;
       Client Developer stays outside source sharing and Settings stays last.
+- [ ] B-admin-soil-source-checkpoint: Implement the approved soil-only admission,
+      station-scoped sharing, owner-managed station rules and shared-recipient
+      notifications, recoverable source removal, simplified role-only User
+      editor, read-only shared-access display and protected account deletion.
+      Follow
+      [`2026-09-28-soil-source-admin-checkpoint-design.md`](../docs/superpowers/specs/2026-09-28-soil-source-admin-checkpoint-design.md)
+      in the listed delivery order; commit FE and BE locally and do not push.
 
 Evidence: [`2026-09-10-phase-b-core.md`](../docs/checkpoints/2026-09-10-phase-b-core.md).
 
@@ -170,14 +177,16 @@ and must not duplicate the full contract.
 
 ## Immediate next action
 
-1. Complete the Farmer API Sources frontend using the approved backend contract,
-   then keep Client Developer outside the source-sharing flow and Settings last.
-2. Run the remaining browser role matrix one page at a time in the fixed order
+1. Complete `B-admin-soil-source-checkpoint` in its documented order and stop at
+   the Admin browser checkpoint. Do not start Farmer cleanup in the same slice.
+2. Complete the Farmer API Sources frontend using the resulting station-scoped
+   contract, keep Client Developer outside source sharing and Settings last.
+3. Run the remaining browser role matrix one page at a time in the fixed order
    **Admin/Super Admin → Farmer → Client Developer**.
-3. Complete the remaining browser role matrix and registry checks without
+4. Complete the remaining browser role matrix and registry checks without
    storing provider credentials; B-device data provenance is already
    `live-verified`.
-4. Verify retained IoT Config/Config Proposals screens do not offer remote writes:
+5. Verify retained IoT Config/Config Proposals screens do not offer remote writes:
    threshold changes belong to Alert Center and physical intervention stays onsite.
-5. Keep deployment-owner decisions separate; B-device `live-verified` must not
+6. Keep deployment-owner decisions separate; B-device `live-verified` must not
    be used to close the browser matrix or D-production.
