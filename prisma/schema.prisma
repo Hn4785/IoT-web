@@ -85,6 +85,16 @@ enum IdempotencyClaimStatus {
   COMPLETED
 }
 
+enum DataSourceKind {
+  SYSTEM
+  MANAGED
+}
+
+enum DataSourceConnectionStatus {
+  CONNECTED
+  FAILED
+}
+
 model User {
   id                  String     @id @default(uuid()) @db.Uuid
   email               String     @unique @db.Citext
@@ -109,6 +119,8 @@ model User {
   alertEvents         AlertLifecycleEvent[]           @relation("AlertEventActor")
   notifications       InAppNotification[]             @relation("NotificationRecipient")
   deliveryRecipients  NotificationDeliveryRecipient[]
+  ownedDataSources    DataSource[]                     @relation("DataSourceOwner")
+  dataSourceGrants    DataSourceGrant[]
 
   @@index([role, status])
 }
@@ -170,17 +182,56 @@ model Plot {
 model Station {
   id           String   @id @default(uuid()) @db.Uuid
   plotId       String   @db.Uuid
-  upstreamCode String   @unique @db.VarChar(80)
+  dataSourceId String   @default("00000000-0000-0000-0000-000000000001") @db.Uuid
+  upstreamCode String   @db.VarChar(80)
   name         String   @db.VarChar(160)
   createdAt    DateTime @default(now()) @db.Timestamptz(3)
   updatedAt    DateTime @updatedAt @db.Timestamptz(3)
 
   plot         Plot                 @relation(fields: [plotId], references: [id], onDelete: Restrict)
+  dataSource   DataSource           @relation(fields: [dataSourceId], references: [id], onDelete: Restrict)
   clientGrants ClientStationGrant[]
   apiKeyScopes ApiKeyStationScope[]
   alertRules   AlertRule[]
 
   @@index([plotId])
+  @@index([dataSourceId])
+  @@unique([dataSourceId, upstreamCode])
+}
+
+model DataSource {
+  id               String                     @id @default(uuid()) @db.Uuid
+  kind             DataSourceKind             @default(MANAGED)
+  ownerUserId      String?                    @db.Uuid
+  name             String                     @db.VarChar(160)
+  baseUrl          String                     @db.VarChar(2048)
+  keyCiphertext    String?                    @db.Text
+  keyNonce         String?                    @db.VarChar(64)
+  keyAuthTag       String?                    @db.VarChar(64)
+  keyPreview       String?                    @db.VarChar(4)
+  connectionStatus DataSourceConnectionStatus
+  lastCheckedAt    DateTime                   @db.Timestamptz(3)
+  createdAt        DateTime                   @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime                   @updatedAt @db.Timestamptz(3)
+
+  owner    User?             @relation("DataSourceOwner", fields: [ownerUserId], references: [id], onDelete: Restrict)
+  stations Station[]
+  grants   DataSourceGrant[]
+
+  @@index([ownerUserId, createdAt, id])
+  @@index([connectionStatus, updatedAt])
+}
+
+model DataSourceGrant {
+  dataSourceId String   @db.Uuid
+  userId       String   @db.Uuid
+  createdAt    DateTime @default(now()) @db.Timestamptz(3)
+
+  dataSource DataSource @relation(fields: [dataSourceId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([dataSourceId, userId])
+  @@index([userId, createdAt])
 }
 
 model FarmMembership {

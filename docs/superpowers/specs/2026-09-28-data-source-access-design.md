@@ -177,4 +177,3 @@ shared frontend code, not a duplicated data implementation.
 5. Farmer create/owned/shared source UI.
 6. Client Developer cleanup without joining source sharing.
 7. Minimal account Settings and the final Phase B browser matrix.
-

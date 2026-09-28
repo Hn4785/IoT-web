@@ -105,4 +105,3 @@
 - [ ] Add the minimal Settings route and tests without device/configuration toggles.
 - [ ] Run Admin -> Farmer -> Client responsive browser matrix, session/authorization negatives, console checks, full frontend quality gates, and backend full verification.
 - [ ] Commit frontend locally and record Phase B completion evidence; do not push frontend.
-

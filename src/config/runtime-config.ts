@@ -29,6 +29,37 @@ const frontendOrigin = z.url().transform((value, context) => {
 });
 
 const booleanString = z.enum(['true', 'false']).transform((value) => value === 'true');
+const sourceEncryptionKey = z
+  .string()
+  .regex(/^[A-Za-z0-9+/]+={0,2}$/)
+  .transform((value) => Buffer.from(value, 'base64'))
+  .refine((value) => value.length === 32, 'A 32-byte base64 encryption key is required');
+const sourceOrigin = z.url().transform((value, context) => {
+  const url = new URL(value);
+  if (
+    url.protocol !== 'https:' ||
+    url.username !== '' ||
+    url.password !== '' ||
+    url.pathname !== '/' ||
+    url.search !== '' ||
+    url.hash !== ''
+  ) {
+    context.addIssue({ code: 'custom', message: 'An HTTPS origin is required' });
+    return z.NEVER;
+  }
+  return url.origin;
+});
+const sourceOrigins = z
+  .string()
+  .transform((value) => [
+    ...new Set(
+      value
+        .split(',')
+        .map((origin) => origin.trim())
+        .filter(Boolean),
+    ),
+  ])
+  .pipe(z.array(sourceOrigin).min(1).max(100));
 const stationCodes = z
   .string()
   .transform((value) => [
@@ -54,6 +85,8 @@ const runtimeConfigSchema = z
     FRONTEND_ORIGIN: frontendOrigin,
     JWT_SECRET: z.string().min(32).max(4096),
     CREDENTIAL_PEPPER: z.string().min(32).max(4096),
+    DATA_SOURCE_ENCRYPTION_KEY: sourceEncryptionKey,
+    DATA_SOURCE_ALLOWED_ORIGINS: sourceOrigins,
     SOIL_LATEST_CACHE_TTL_MS: z.coerce.number().int().min(1).max(3_600_000),
     SOIL_HISTORY_CACHE_TTL_MS: z.coerce.number().int().min(1).max(3_600_000),
     SOIL_STALE_AFTER_MS: z.coerce.number().int().min(1).max(3_600_000),
@@ -124,6 +157,8 @@ export type RuntimeConfig = Readonly<{
   frontendOrigin: string;
   jwtSecret: string;
   credentialPepper: string;
+  dataSourceEncryptionKey: Buffer;
+  dataSourceAllowedOrigins: readonly string[];
   soilLatestCacheTtlMs: number;
   soilHistoryCacheTtlMs: number;
   soilStaleAfterMs: number;
@@ -152,6 +187,8 @@ export function parseRuntimeConfig(env: Record<string, string | undefined>): Run
     frontendOrigin: value.FRONTEND_ORIGIN,
     jwtSecret: value.JWT_SECRET,
     credentialPepper: value.CREDENTIAL_PEPPER,
+    dataSourceEncryptionKey: Buffer.from(value.DATA_SOURCE_ENCRYPTION_KEY),
+    dataSourceAllowedOrigins: Object.freeze(value.DATA_SOURCE_ALLOWED_ORIGINS),
     soilLatestCacheTtlMs: value.SOIL_LATEST_CACHE_TTL_MS,
     soilHistoryCacheTtlMs: value.SOIL_HISTORY_CACHE_TTL_MS,
     soilStaleAfterMs: value.SOIL_STALE_AFTER_MS,

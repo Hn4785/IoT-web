@@ -126,10 +126,22 @@ async function main(): Promise<void> {
             }),
           findStationByCode: (upstreamCode) =>
             transaction.station.findUnique({
-              where: { upstreamCode },
+              where: {
+                dataSourceId_upstreamCode: {
+                  dataSourceId: '00000000-0000-0000-0000-000000000001',
+                  upstreamCode,
+                },
+              },
               select: { id: true, plotId: true, upstreamCode: true, name: true },
             }),
-          createStation: (data) => transaction.station.create({ data, select: { id: true } }),
+          createStation: (data) =>
+            transaction.station.create({
+              data: {
+                ...data,
+                dataSourceId: '00000000-0000-0000-0000-000000000001',
+              },
+              select: { id: true },
+            }),
         };
         return ensureDemoRecords(repository);
       },

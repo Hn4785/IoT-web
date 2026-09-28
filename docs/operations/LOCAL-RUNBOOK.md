@@ -16,7 +16,18 @@ Copy-Item .env.example .env
 New-Item -ItemType Directory -Force E:\IoT-data\postgres
 ```
 
-Sau khi copy, mở `.env` và thay các giá trị mẫu. Cần đặt mật khẩu PostgreSQL, Weather API key, `JWT_SECRET` và `CREDENTIAL_PEPPER`. Hai secret phải khác nhau và dài tối thiểu 32 ký tự. Không gửi hoặc commit file `.env`.
+Sau khi copy, mở `.env` và thay các giá trị mẫu. Cần đặt mật khẩu PostgreSQL,
+Weather API key, `JWT_SECRET`, `CREDENTIAL_PEPPER` và
+`DATA_SOURCE_ENCRYPTION_KEY`. Hai secret đăng nhập phải khác nhau và dài tối
+thiểu 32 ký tự. Khóa mã hóa nguồn dữ liệu phải là đúng 32 byte được mã hóa
+base64. `DATA_SOURCE_ALLOWED_ORIGINS` là danh sách origin HTTPS phân cách bằng
+dấu phẩy; không gồm path. Không gửi hoặc commit file `.env`.
+
+Có thể tạo khóa mã hóa cục bộ bằng Node.js rồi dán kết quả vào `.env`:
+
+```powershell
+node -e "console.log(require('node:crypto').randomBytes(32).toString('base64'))"
+```
 
 ## 2. Khởi động database
 

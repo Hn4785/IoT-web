@@ -28,8 +28,18 @@ export async function prepareTestDatabase(): Promise<void> {
   const prisma = createTestPrismaClient();
   try {
     await prisma.$executeRawUnsafe(
-      'TRUNCATE TABLE "EvaluatorLease", "IdempotencyClaim", "InAppNotification", "AlertLifecycleEvent", "Alert", "AlertEvaluationState", "AlertRule", "SecurityAuditEvent", "ApiKeyStationScope", "ApiKey", "ClientStationGrant", "FarmMembership", "Station", "Plot", "Farm", "Session", "SystemAuthority", "User" CASCADE',
+      'TRUNCATE TABLE "EvaluatorLease", "IdempotencyClaim", "InAppNotification", "AlertLifecycleEvent", "Alert", "AlertEvaluationState", "AlertRule", "SecurityAuditEvent", "ApiKeyStationScope", "ApiKey", "ClientStationGrant", "DataSourceGrant", "FarmMembership", "Station", "DataSource", "Plot", "Farm", "Session", "SystemAuthority", "User" CASCADE',
     );
+    await prisma.dataSource.create({
+      data: {
+        id: '00000000-0000-0000-0000-000000000001',
+        kind: 'SYSTEM',
+        name: 'System Weather Source',
+        baseUrl: 'runtime://weather',
+        connectionStatus: 'CONNECTED',
+        lastCheckedAt: new Date(),
+      },
+    });
   } finally {
     await prisma.$disconnect();
   }
