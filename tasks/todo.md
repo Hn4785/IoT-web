@@ -79,7 +79,8 @@ Evidence: [`2026-09-02-phase-a.md`](../docs/checkpoints/2026-09-02-phase-a.md).
 - [ ] B-admin-soil-source-checkpoint: Implement the approved soil-only admission,
       station-scoped sharing, owner-managed station rules and shared-recipient
       notifications, recoverable source removal, simplified role-only User
-      editor, read-only shared-access display and protected account deletion.
+      editor, read-only shared-access display, protected account deletion,
+      Farm/Plot select-or-create and the simplified direct-entry source form.
       Follow
       [`2026-09-28-soil-source-admin-checkpoint-design.md`](../docs/superpowers/specs/2026-09-28-soil-source-admin-checkpoint-design.md)
       in the listed delivery order; commit FE and BE locally and do not push.

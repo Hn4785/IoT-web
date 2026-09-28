@@ -24,14 +24,13 @@ API keys and are outside this source-sharing workflow.
 ## Product language and UI boundary
 
 The UI remains English and keeps the incumbent layout. The primary labels are
-`API Sources`, `Add API Source`, `Paste connection details`, `Test Connection`,
-`Visible Accounts`, `Manage Access`, `Revoke Access`, `Reveal Key`, and
-`Copy Key`.
+`API Sources`, `Add API Source`, `Test Connection`, `Visible Accounts`,
+`Manage Access`, `Revoke Access`, `Reveal Key`, and `Copy Key`.
 
-The browser may parse text copied from chat, JSON, or curl, but sends only the
-extracted base URL and key to the backend. The complete pasted message is never
-sent, persisted, or logged. Direct integrations with chat providers are out of
-scope.
+The approved Admin checkpoint removes `Paste connection details` and its
+`Fill Fields` action. A source is entered through explicit source name, API URL
+and `X-API-Key` fields. Parsing chat, JSON or curl in the browser and direct
+integrations with chat providers are out of scope.
 
 `N/A` is forbidden in these screens. Use `No data`, `No stations found`,
 `Not supported`, or `Connection failed` according to the actual state.

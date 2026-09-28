@@ -57,14 +57,37 @@ Supported soil fields remain the existing contract:
 temperature, moisture, ec, ph, nitrogen, phosphorus, potassium, light
 ```
 
-The frontend proposes an editable source label from safe connection results,
-for example `Quan Trac Gia Lai — 6 soil stations`. This label is the owner's
-personal note; pasted chat text and upstream keys are never used as display
-text or persisted as notes.
+The Add API Source dialog contains only explicit fields: optional source name,
+API URL, `X-API-Key`, Farm and Plot. `Paste connection details` and
+`Fill Fields` are removed. The frontend proposes an editable source label from
+safe connection results, for example `Quan Trac Gia Lai — 6 soil stations`.
+This label is the owner's personal note; pasted chat text and upstream keys are
+never used as display text or persisted as notes.
 
-Farm and Plot are not fabricated from station codes. If only one authorized
-Farm and Plot exists, the form preselects them. Multiple choices still require
-an explicit selection.
+Farm and Plot are local organizational resources and are never fabricated from
+station codes. Each field is a searchable select-or-create control:
+
+- Farm lists authorized existing Farms and offers `Create new farm`.
+- Plot lists only Plots inside the selected Farm and offers `Create new plot`.
+- If exactly one authorized option exists, it is preselected; multiple options
+  require an explicit selection.
+- New names are trimmed, whitespace-normalized and compared
+  case-insensitively inside their scope. The database continues to identify
+  resources by server-generated IDs and prevents duplicate Farm names and
+  duplicate Plot names within one Farm.
+
+External soil validation runs before persistence. Creation of any new Farm,
+new Plot, source, encrypted credential and imported soil stations then occurs
+in one database transaction. A rejected or interrupted connection leaves no
+orphan Farm, Plot or source record.
+
+The Admin dashboard consumes these dynamic names without special demo values.
+Its summary labels are `Farms`, `Plots`, `Soil Stations` and `Users`. Soil
+station totals and Farm distribution exclude `CENTER` and every non-soil
+station. Farm filtering continues to use stable Farm IDs. Empty states use
+plain English such as `No farms connected yet`; the dashboard never displays
+`N/A`. Unsupported operational-health panels stay hidden until a real backend
+contract exists.
 
 ## Station-scoped sharing
 
@@ -184,6 +207,9 @@ Settings remains last for Phase B, after this Admin checkpoint is stable.
 ## Verification gate
 
 - A weather-only, water-only, malformed or zero-soil source stores nothing.
+- A failed source connection creates no orphan Farm or Plot.
+- Select-or-create reuses matching normalized names and rejects duplicates in
+  concurrent requests.
 - `CENTER` is not counted, shared or offered in soil-rule selectors.
 - An accepted source with six soil NODEs displays `6`, not `7`.
 - A grantee can read only selected station data, rules, alerts and future
@@ -195,7 +221,8 @@ Settings remains last for Phase B, after this Admin checkpoint is stable.
 - User Management contains one role editor and read-only shared-access details;
   it does not duplicate Manage Access.
 - Frontend tests cover icons, confirmation dialogs, English copy, keyboard
-  access, responsive layouts and the absence of `N/A`.
+  access, select-or-create behavior, responsive layouts, the absence of the
+  paste helper and the absence of `N/A`.
 - Backend passes focused integration tests plus full test, format, typecheck,
   lint, build, migration-status and secret-scan gates.
 - No new code or documentation contains an upstream credential.
