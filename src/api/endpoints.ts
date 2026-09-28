@@ -26,6 +26,15 @@ export const API_ENDPOINTS = {
 
   auditEvents: "/admin/audit-events",
 
+  dataSources: {
+    base: "/data-sources",
+    byId: (id: string) => `/data-sources/${id}`,
+    grants: (id: string) => `/data-sources/${id}/grants`,
+    grant: (id: string, userId: string) => `/data-sources/${id}/grants/${userId}`,
+    reveal: (id: string) => `/data-sources/${id}/reveal`,
+    test: (id: string) => `/data-sources/${id}/test`,
+  },
+
   apiKeys: {
     base: "/developer/api-keys",
     availableStations: "/developer/api-keys/available-stations",
