@@ -49,7 +49,7 @@ test("Farmer source creation supports explicit fields without paste or curl pars
 
 test("Farmer API Sources page follows the standard centered content frame and design system", () => {
   const pageCss = readFileSync(new URL("../src/pages/farm-owner/ApiSources.module.css", import.meta.url), "utf8");
-  assert.match(pageCss, /width:\s*min\(100%,\s*1280px\)/);
+  assert.match(pageCss, /width:\s*min\(100%,\s*1440px\)/);
   assert.match(pageCss, /margin-inline:\s*auto/);
   assert.match(pageCss, /padding:\s*var\(--spacing-6\)/);
   assert.match(pageCss, /box-sizing:\s*border-box/);

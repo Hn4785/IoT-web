@@ -68,7 +68,7 @@ test("alert rules are created from confirmed station metadata", () => {
 
 test("Admin operational pages share the same centered content frame", () => {
   for (const css of adminPageStyles) {
-    assert.match(css, /width:\s*min\(100%,\s*1280px\)/);
+    assert.match(css, /width:\s*min\(100%,\s*1440px\)/);
     assert.match(css, /margin-inline:\s*auto/);
     assert.match(css, /padding:\s*var\(--spacing-6\)/);
     assert.match(css, /box-sizing:\s*border-box/);
