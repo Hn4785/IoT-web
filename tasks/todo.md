@@ -79,6 +79,14 @@ Evidence: [`2026-09-02-phase-a.md`](../docs/checkpoints/2026-09-02-phase-a.md).
       sharing and Settings stays last.
 - [ ] B-source-FE-farmer: Reuse the approved direct-entry and owned/shared-source
       behavior for Farmer without widening Client Developer access.
+- [ ] B-source-remove-orphan-hierarchy: Fix during Farmer work. Removing the
+      last active API source currently leaves its empty Farm/Plot visible in
+      Stations & Devices. Retire or hide the now-empty Plot and its Farm from
+      the active hierarchy only when no other active source/station uses them;
+      preserve retained station, alert, notification and audit history instead
+      of hard-deleting historical records. Cover both source-created and reused
+      Farm/Plot cases with backend tests and refresh the frontend hierarchy after
+      removal.
 - [x] B-admin-soil-source-checkpoint: Implement the approved soil-only admission,
       station-scoped sharing, owner-managed station rules and shared-recipient
       notifications, recoverable source removal, simplified role-only User
