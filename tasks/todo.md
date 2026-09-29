@@ -109,7 +109,11 @@ Evidence: [`2026-09-02-phase-a.md`](../docs/checkpoints/2026-09-02-phase-a.md).
       intervention because the live stations do not expose confirmed soil field
       metadata for rule creation. Complete this once while implementing Farmer;
       the shared Alert Center change must also apply to Admin. This is alert and
-      notification behavior only, never remote device control.
+      notification behavior only, never remote device control. The shared
+      Admin/Farmer workspace, source-owner capability gate, Automatic/Paused
+      modes and duplicate Farmer-tab cleanup are complete locally; this item
+      remains open only for confirmed live measurement units/revisions needed
+      to enable rule creation truthfully.
 
 Evidence: [`2026-09-10-phase-b-core.md`](../docs/checkpoints/2026-09-10-phase-b-core.md).
 
