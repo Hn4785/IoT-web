@@ -73,9 +73,12 @@ Evidence: [`2026-09-02-phase-a.md`](../docs/checkpoints/2026-09-02-phase-a.md).
       `Visible Accounts`, and owner-only audited key reveal.
 - [x] B-source-3: Route latest/history through each station's source without
       changing public measurement DTOs or Client Developer platform keys.
-- [ ] B-source-FE: Admin API Sources is implemented with English copy, direct
-      connection fields, truthful states and no `N/A`. Farmer remains next;
-      Client Developer stays outside source sharing and Settings stays last.
+- [x] B-source-FE-admin: Admin API Sources is implemented with English copy,
+      direct connection fields, truthful states and no `N/A`; v2.5.6 is healthy
+      on Pi with all 11 migrations applied. Client Developer stays outside source
+      sharing and Settings stays last.
+- [ ] B-source-FE-farmer: Reuse the approved direct-entry and owned/shared-source
+      behavior for Farmer without widening Client Developer access.
 - [x] B-admin-soil-source-checkpoint: Implement the approved soil-only admission,
       station-scoped sharing, owner-managed station rules and shared-recipient
       notifications, recoverable source removal, simplified role-only User
