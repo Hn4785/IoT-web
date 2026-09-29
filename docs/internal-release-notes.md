@@ -66,8 +66,16 @@ Với mỗi thay đổi:
 
 - Test tích hợp tái hiện nguồn `FAILED`, đọc telemetry thật thành công và xác
   nhận database tự phục hồi thành `CONNECTED`.
-- Kết quả full gate và triển khai Pi được bổ sung sau khi image ARM64 vượt kiểm
-  tra và container production trả health thành công.
+- Frontend đạt 87/87 test, production build và lint; backend đạt 405/405 test,
+  `pnpm verify`, production audit và secret scan.
+- Pi đã áp dụng đủ 11/11 Prisma migration và chạy healthy với
+  `agrisense-api:v2.5.6` cùng `agrisense-web:v2.5.6`. `/api/v1/health` trả
+  version `2.5.6`, web health trả `ok`, endpoint bảo vệ khi chưa xác thực trả
+  `401`.
+- Đã giữ image `v2.5.4` làm rollback và xoá image, source snapshot, compose
+  snapshot cùng database backup thuộc `v2.5.3` theo quyết định dọn bản lưu.
+- Database Pi hiện chỉ có system source sau migration; managed source cần được
+  nhập lại trên đúng môi trường Pi để thực hiện browser acceptance với key thật.
 
 ### Tồn đọng Phase B dùng chung
 
