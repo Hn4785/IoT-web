@@ -141,6 +141,18 @@ export class DataSourceController {
     };
   }
 
+  @Get(':sourceId/stations')
+  @Header('Cache-Control', 'no-store')
+  async listStations(
+    @CurrentPrincipal() principal: CurrentPrincipalValue,
+    @Param('sourceId') sourceId: string,
+  ) {
+    return {
+      success: true,
+      data: await this.sources.listStations(principal, parseDataSourceId(sourceId)),
+    };
+  }
+
   @Delete(':sourceId/grants/:userId')
   @Header('Cache-Control', 'no-store')
   async revoke(

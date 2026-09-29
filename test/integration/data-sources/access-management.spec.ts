@@ -135,6 +135,26 @@ describe('API source access management', () => {
     app = await createApp(config);
   });
 
+  it('lists source stations only for the owner', async () => {
+    const ownerResponse = await app.inject({
+      method: 'GET',
+      url: `/api/v1/data-sources/${adminSourceId}/stations`,
+      headers: { authorization: `Bearer ${ownerToken}` },
+    });
+    expect(ownerResponse.statusCode).toBe(200);
+    expect(ownerResponse.json<{ data: { items: unknown[] } }>().data.items).toEqual([
+      expect.objectContaining({ id: adminStationId, code: 'SHARED01' }),
+      expect.objectContaining({ id: secondAdminStationId, code: 'SHARED02' }),
+    ]);
+
+    const oversight = await app.inject({
+      method: 'GET',
+      url: `/api/v1/data-sources/${adminSourceId}/stations`,
+      headers: { authorization: `Bearer ${otherAdminToken}` },
+    });
+    expect(oversight.statusCode).toBe(403);
+  });
+
   afterAll(async () => {
     await app.close();
     await prisma.$disconnect();

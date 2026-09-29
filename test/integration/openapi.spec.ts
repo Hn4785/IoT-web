@@ -28,6 +28,7 @@ describe('OpenAPI contract', () => {
       '/api/v1/data-sources/{sourceId}/grants/{userId}',
       '/api/v1/data-sources/{sourceId}/grants/{userId}/stations',
       '/api/v1/data-sources/{sourceId}/grants',
+      '/api/v1/data-sources/{sourceId}/stations',
       '/api/v1/data-sources/{sourceId}/grants/{userId}/stations/{stationId}',
       '/api/v1/data-sources/{sourceId}/reveal',
       '/api/v1/data-sources/{sourceId}/test',

@@ -521,6 +521,25 @@ export class DataSourceRepository {
     };
   }
 
+  async listStations(principal: CurrentPrincipalValue, sourceId: string) {
+    const source = await this.prisma.dataSource.findFirst({
+      where: { id: sourceId, kind: 'MANAGED', removedAt: null },
+      select: { ownerUserId: true },
+    });
+    if (!source) throw new AppError('NOT_FOUND', 404, 'Resource not found');
+    if (source.ownerUserId !== principal.userId) {
+      throw new AppError('FORBIDDEN', 403, 'Only the source owner can manage access');
+    }
+    const items = await this.prisma.station.findMany({
+      where: { dataSourceId: sourceId },
+      select: { id: true, name: true, upstreamCode: true },
+      orderBy: [{ upstreamCode: 'asc' }, { id: 'asc' }],
+    });
+    return {
+      items: items.map(({ upstreamCode, ...station }) => ({ ...station, code: upstreamCode })),
+    };
+  }
+
   private requireGrantMutation(
     principal: CurrentPrincipalValue,
     source: { ownerUserId: string | null } | null,
