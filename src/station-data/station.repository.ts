@@ -260,19 +260,30 @@ export class StationRepository {
       : principal.role === 'FARMER'
         ? {
             OR: [
-              { memberships: { some: { userId: principal.userId } } },
+              {
+                AND: [
+                  { memberships: { some: { userId: principal.userId } } },
+                  {
+                    plots: {
+                      some: { stations: { some: { dataSource: { kind: 'SYSTEM' } } } },
+                    },
+                  },
+                ],
+              },
               {
                 plots: {
                   some: {
                     stations: {
-                      some: {
-                        dataSource: {
-                          OR: [
-                            { ownerUserId: principal.userId },
-                            { grants: { some: { userId: principal.userId } } },
-                          ],
-                        },
-                      },
+                      some: { dataSource: { ownerUserId: principal.userId } },
+                    },
+                  },
+                },
+              },
+              {
+                plots: {
+                  some: {
+                    stations: {
+                      some: { sourceGrants: { some: { userId: principal.userId } } },
                     },
                   },
                 },
@@ -288,18 +299,17 @@ export class StationRepository {
       : principal.role === 'FARMER'
         ? {
             OR: [
-              { farm: { memberships: { some: { userId: principal.userId } } } },
               {
-                stations: {
-                  some: {
-                    dataSource: {
-                      OR: [
-                        { ownerUserId: principal.userId },
-                        { grants: { some: { userId: principal.userId } } },
-                      ],
-                    },
-                  },
-                },
+                AND: [
+                  { farm: { memberships: { some: { userId: principal.userId } } } },
+                  { stations: { some: { dataSource: { kind: 'SYSTEM' } } } },
+                ],
+              },
+              {
+                stations: { some: { dataSource: { ownerUserId: principal.userId } } },
+              },
+              {
+                stations: { some: { sourceGrants: { some: { userId: principal.userId } } } },
               },
             ],
           }
@@ -312,9 +322,12 @@ export class StationRepository {
       : principal.role === 'FARMER'
         ? {
             OR: [
-              { plot: { farm: { memberships: { some: { userId: principal.userId } } } } },
+              {
+                dataSource: { kind: 'SYSTEM' },
+                plot: { farm: { memberships: { some: { userId: principal.userId } } } },
+              },
               { dataSource: { ownerUserId: principal.userId } },
-              { dataSource: { grants: { some: { userId: principal.userId } } } },
+              { sourceGrants: { some: { userId: principal.userId } } },
             ],
           }
         : { id: NO_ACCESS_ID };

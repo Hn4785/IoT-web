@@ -8,6 +8,7 @@ import type {
   DataSourceDto,
   ListDataSourcesQuery,
   RevealDataSourceInput,
+  SetDataSourceGrantInput,
 } from './data-source.contracts.js';
 import { DataSourceRepository } from './data-source.repository.js';
 import { SourceSecretService } from './source-secret.service.js';
@@ -78,6 +79,40 @@ export class DataSourceService {
   listGrants(principal: CurrentPrincipalValue, sourceId: string, query: ListDataSourcesQuery) {
     this.requireSupportedRole(principal);
     return this.repository.listGrants(principal, sourceId, query);
+  }
+
+  setGrantStations(
+    principal: CurrentPrincipalValue,
+    sourceId: string,
+    userId: string,
+    input: SetDataSourceGrantInput,
+    requestId: string,
+  ) {
+    this.requireSupportedRole(principal);
+    return this.repository.replaceGrantStations({
+      principal,
+      sourceId,
+      userId,
+      stationIds: input.stationIds,
+      requestId,
+    });
+  }
+
+  revokeGrantStation(
+    principal: CurrentPrincipalValue,
+    sourceId: string,
+    userId: string,
+    stationId: string,
+    requestId: string,
+  ) {
+    this.requireSupportedRole(principal);
+    return this.repository.removeGrantStation({
+      principal,
+      sourceId,
+      userId,
+      stationId,
+      requestId,
+    });
   }
 
   async reveal(

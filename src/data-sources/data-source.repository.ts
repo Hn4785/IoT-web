@@ -23,6 +23,12 @@ const sourceSelect = {
   createdAt: true,
   updatedAt: true,
   owner: { select: { id: true, displayName: true, role: true } },
+  grants: {
+    select: {
+      userId: true,
+      _count: { select: { stations: true } },
+    },
+  },
   _count: { select: { stations: true, grants: true } },
 } satisfies Prisma.DataSourceSelect;
 
@@ -297,6 +303,18 @@ export class DataSourceRepository {
     assigned: boolean;
     requestId: string;
   }): Promise<{ assigned: boolean }> {
+    if (input.assigned) {
+      const stationIds = (
+        await this.prisma.station.findMany({
+          where: { dataSourceId: input.sourceId },
+          select: { id: true },
+          orderBy: { id: 'asc' },
+        })
+      ).map(({ id }) => id);
+      if (stationIds.length === 0) throw new AppError('CONFLICT', 409, 'Source has no stations');
+      await this.replaceGrantStations({ ...input, stationIds });
+      return { assigned: true };
+    }
     return this.prisma.$transaction(async (transaction) => {
       const [source, target] = await Promise.all([
         transaction.dataSource.findFirst({
@@ -318,27 +336,133 @@ export class DataSourceRepository {
       if (target.id === source.ownerUserId) {
         throw new AppError('CONFLICT', 409, 'The source owner already has access');
       }
-      if (input.assigned) {
-        await transaction.dataSourceGrant.upsert({
-          where: {
-            dataSourceId_userId: { dataSourceId: input.sourceId, userId: input.userId },
-          },
-          create: { dataSourceId: input.sourceId, userId: input.userId },
-          update: {},
-        });
-      } else {
+      await transaction.dataSourceGrant.deleteMany({
+        where: { dataSourceId: input.sourceId, userId: input.userId },
+      });
+      await this.audits.record(transaction, {
+        actorUserId: input.principal.userId,
+        action: 'DATA_SOURCE_ACCESS_REVOKED',
+        targetType: 'DataSourceGrant',
+        targetId: `${input.sourceId}:${input.userId}`,
+        requestId: input.requestId,
+      });
+      return { assigned: false };
+    });
+  }
+
+  async replaceGrantStations(input: {
+    principal: CurrentPrincipalValue;
+    sourceId: string;
+    userId: string;
+    stationIds: readonly string[];
+    requestId: string;
+  }): Promise<{ assigned: true; stationIds: readonly string[] }> {
+    return this.prisma.$transaction(async (transaction) => {
+      const [source, target, stations] = await Promise.all([
+        transaction.dataSource.findFirst({
+          where: { id: input.sourceId, kind: 'MANAGED' },
+          select: { ownerUserId: true },
+        }),
+        transaction.user.findUnique({
+          where: { id: input.userId },
+          select: { id: true, role: true, status: true },
+        }),
+        transaction.station.findMany({
+          where: { id: { in: [...input.stationIds] }, dataSourceId: input.sourceId },
+          select: { id: true },
+          orderBy: { id: 'asc' },
+        }),
+      ]);
+      this.requireGrantMutation(input.principal, source, target);
+      if (stations.length !== input.stationIds.length) {
+        throw new AppError('NOT_FOUND', 404, 'Resource not found');
+      }
+      await transaction.dataSourceGrant.upsert({
+        where: {
+          dataSourceId_userId: { dataSourceId: input.sourceId, userId: input.userId },
+        },
+        create: { dataSourceId: input.sourceId, userId: input.userId },
+        update: {},
+      });
+      await transaction.dataSourceGrantStation.deleteMany({
+        where: {
+          dataSourceId: input.sourceId,
+          userId: input.userId,
+          stationId: { notIn: [...input.stationIds] },
+        },
+      });
+      await transaction.dataSourceGrantStation.createMany({
+        data: stations.map(({ id }) => ({
+          dataSourceId: input.sourceId,
+          userId: input.userId,
+          stationId: id,
+        })),
+        skipDuplicates: true,
+      });
+      await this.audits.record(transaction, {
+        actorUserId: input.principal.userId,
+        action: 'DATA_SOURCE_ACCESS_GRANTED',
+        targetType: 'DataSourceGrant',
+        targetId: `${input.sourceId}:${input.userId}`,
+        requestId: input.requestId,
+        metadata: { stationCount: stations.length },
+      });
+      return { assigned: true, stationIds: stations.map(({ id }) => id) };
+    });
+  }
+
+  async removeGrantStation(input: {
+    principal: CurrentPrincipalValue;
+    sourceId: string;
+    userId: string;
+    stationId: string;
+    requestId: string;
+  }): Promise<{ assigned: boolean; stationIds: readonly string[] }> {
+    return this.prisma.$transaction(async (transaction) => {
+      const [source, target, station] = await Promise.all([
+        transaction.dataSource.findFirst({
+          where: { id: input.sourceId, kind: 'MANAGED' },
+          select: { ownerUserId: true },
+        }),
+        transaction.user.findUnique({
+          where: { id: input.userId },
+          select: { id: true, role: true, status: true },
+        }),
+        transaction.station.findFirst({
+          where: { id: input.stationId, dataSourceId: input.sourceId },
+          select: { id: true },
+        }),
+      ]);
+      this.requireGrantMutation(input.principal, source, target);
+      if (!station) throw new AppError('NOT_FOUND', 404, 'Resource not found');
+      await transaction.dataSourceGrantStation.deleteMany({
+        where: {
+          dataSourceId: input.sourceId,
+          userId: input.userId,
+          stationId: input.stationId,
+        },
+      });
+      const remaining = await transaction.dataSourceGrantStation.findMany({
+        where: { dataSourceId: input.sourceId, userId: input.userId },
+        select: { stationId: true },
+        orderBy: { stationId: 'asc' },
+      });
+      if (remaining.length === 0) {
         await transaction.dataSourceGrant.deleteMany({
           where: { dataSourceId: input.sourceId, userId: input.userId },
         });
       }
       await this.audits.record(transaction, {
         actorUserId: input.principal.userId,
-        action: input.assigned ? 'DATA_SOURCE_ACCESS_GRANTED' : 'DATA_SOURCE_ACCESS_REVOKED',
-        targetType: 'DataSourceGrant',
-        targetId: `${input.sourceId}:${input.userId}`,
+        action: 'DATA_SOURCE_STATION_ACCESS_REVOKED',
+        targetType: 'DataSourceGrantStation',
+        targetId: `${input.sourceId}:${input.userId}:${input.stationId}`,
         requestId: input.requestId,
       });
-      return { assigned: input.assigned };
+      return {
+        assigned: remaining.length > 0,
+        stationIds: remaining.map(({ stationId }) => stationId),
+      };
     });
   }
 
@@ -378,6 +502,7 @@ export class DataSourceRepository {
         userId: true,
         createdAt: true,
         user: { select: { id: true, displayName: true, email: true } },
+        stations: { select: { stationId: true }, orderBy: { stationId: 'asc' } },
       },
       orderBy: [{ createdAt: 'desc' }, { userId: 'desc' }],
       take: query.limit + 1,
@@ -386,10 +511,28 @@ export class DataSourceRepository {
     return {
       items: page.map((grant) => ({
         user: grant.user,
+        stationIds: grant.stations.map(({ stationId }) => stationId),
         createdAt: grant.createdAt.toISOString(),
       })),
       nextCursor: rows.length > query.limit ? (page.at(-1)?.userId ?? null) : null,
     };
+  }
+
+  private requireGrantMutation(
+    principal: CurrentPrincipalValue,
+    source: { ownerUserId: string | null } | null,
+    target: { id: string; role: string; status: string } | null,
+  ): void {
+    if (!source || !target) throw new AppError('NOT_FOUND', 404, 'Resource not found');
+    if (source.ownerUserId !== principal.userId) {
+      throw new AppError('FORBIDDEN', 403, 'Only the source owner can manage access');
+    }
+    if (target.role !== 'FARMER' || target.status !== 'ACTIVE') {
+      throw new AppError('CONFLICT', 409, 'Only active Farmer accounts can receive access');
+    }
+    if (target.id === source.ownerUserId) {
+      throw new AppError('CONFLICT', 409, 'The source owner already has access');
+    }
   }
 
   async getOwnedSecret(principal: CurrentPrincipalValue, sourceId: string) {
@@ -509,6 +652,7 @@ export class DataSourceRepository {
       throw new AppError('INTERNAL_ERROR', 500, 'Data source owner is invalid');
     }
     const isOwner = source.owner.id === principalId;
+    const principalGrant = source.grants.find((grant) => grant.userId === principalId);
     return {
       id: source.id,
       name: source.name,
@@ -519,7 +663,7 @@ export class DataSourceRepository {
       },
       baseUrl: source.baseUrl,
       keyPreview: source.keyPreview,
-      stationCount: source._count.stations,
+      stationCount: principalGrant?._count.stations ?? source._count.stations,
       visibleAccountCount: 1 + source._count.grants,
       connectionStatus: source.connectionStatus,
       lastCheckedAt: source.lastCheckedAt.toISOString(),

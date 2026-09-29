@@ -21,6 +21,7 @@ describe('API source access management', () => {
   let adminSourceId: string;
   let farmerSourceId: string;
   let adminStationId: string;
+  let secondAdminStationId: string;
   const ownerPassword = 'owner-password-123';
   const providerSecret = 'provider-secret-value';
 
@@ -106,15 +107,26 @@ describe('API source access management', () => {
     const plot = await prisma.plot.create({
       data: { farmId: farm.id, name: 'Shared Source Plot' },
     });
-    const station = await prisma.station.create({
-      data: {
-        plotId: plot.id,
-        dataSourceId: adminSource.id,
-        upstreamCode: 'SHARED01',
-        name: 'Shared Station',
-      },
-    });
+    const [station, secondStation] = await Promise.all([
+      prisma.station.create({
+        data: {
+          plotId: plot.id,
+          dataSourceId: adminSource.id,
+          upstreamCode: 'SHARED01',
+          name: 'Shared Station',
+        },
+      }),
+      prisma.station.create({
+        data: {
+          plotId: plot.id,
+          dataSourceId: adminSource.id,
+          upstreamCode: 'SHARED02',
+          name: 'Second Shared Station',
+        },
+      }),
+    ]);
     adminStationId = station.id;
+    secondAdminStationId = secondStation.id;
     [ownerToken, otherAdminToken, farmerToken] = await Promise.all([
       issueAccessToken({ prisma, config, userId: owner.id }),
       issueAccessToken({ prisma, config, userId: otherAdmin.id }),
@@ -141,12 +153,19 @@ describe('API source access management', () => {
       ...(input.payload === undefined ? {} : { payload: input.payload }),
     });
 
-  it('lets only the owner grant and revoke Farmer access', async () => {
+  it('lets only the owner grant and revoke selected Farmer stations', async () => {
     const grantUrl = `/api/v1/data-sources/${adminSourceId}/grants/${farmerId}`;
-    const granted = await request({ method: 'PUT', url: grantUrl, token: ownerToken });
+    const scopedGrantUrl = `${grantUrl}/stations`;
+    const granted = await request({
+      method: 'PUT',
+      url: scopedGrantUrl,
+      token: ownerToken,
+      payload: { stationIds: [adminStationId] },
+    });
     expect(granted.statusCode).toBe(200);
     expect(granted.json()).toMatchObject({ success: true, data: { assigned: true } });
     expect(await prisma.dataSourceGrant.count()).toBe(1);
+    expect(await prisma.dataSourceGrantStation.count()).toBe(1);
     const grants = await app.inject({
       method: 'GET',
       url: `/api/v1/data-sources/${adminSourceId}/grants`,
@@ -163,6 +182,7 @@ describe('API source access management', () => {
               displayName: 'Access Farmer',
               email: 'access-farmer@example.test',
             },
+            stationIds: [adminStationId],
           },
         ],
       },
@@ -174,9 +194,9 @@ describe('API source access management', () => {
       headers: { authorization: `Bearer ${farmerToken}` },
     });
     expect(source.statusCode).toBe(200);
-    expect(source.json<{ data: { visibleAccountCount: number } }>().data.visibleAccountCount).toBe(
-      2,
-    );
+    expect(
+      source.json<{ data: { visibleAccountCount: number; stationCount: number } }>().data,
+    ).toMatchObject({ visibleAccountCount: 2, stationCount: 1 });
     expect(
       (
         await app.inject({
@@ -187,10 +207,59 @@ describe('API source access management', () => {
       ).statusCode,
     ).toBe(200);
 
+    expect(
+      (
+        await app.inject({
+          method: 'GET',
+          url: `/api/v1/stations/${secondAdminStationId}`,
+          headers: { authorization: `Bearer ${farmerToken}` },
+        })
+      ).statusCode,
+    ).toBe(404);
+
+    expect(
+      (
+        await request({
+          method: 'PUT',
+          url: scopedGrantUrl,
+          token: ownerToken,
+          payload: { stationIds: [adminStationId, secondAdminStationId] },
+        })
+      ).statusCode,
+    ).toBe(200);
+    expect(
+      (
+        await request({
+          method: 'DELETE',
+          url: `${scopedGrantUrl}/${adminStationId}`,
+          token: ownerToken,
+        })
+      ).statusCode,
+    ).toBe(200);
+    expect(
+      (
+        await app.inject({
+          method: 'GET',
+          url: `/api/v1/stations/${adminStationId}`,
+          headers: { authorization: `Bearer ${farmerToken}` },
+        })
+      ).statusCode,
+    ).toBe(404);
+    expect(
+      (
+        await app.inject({
+          method: 'GET',
+          url: `/api/v1/stations/${secondAdminStationId}`,
+          headers: { authorization: `Bearer ${farmerToken}` },
+        })
+      ).statusCode,
+    ).toBe(200);
+
     const revoked = await request({ method: 'DELETE', url: grantUrl, token: ownerToken });
     expect(revoked.statusCode).toBe(200);
     expect(revoked.json()).toMatchObject({ success: true, data: { assigned: false } });
     expect(await prisma.dataSourceGrant.count()).toBe(0);
+    expect(await prisma.dataSourceGrantStation.count()).toBe(0);
     expect(
       (
         await app.inject({
@@ -216,8 +285,9 @@ describe('API source access management', () => {
       (
         await request({
           method: 'PUT',
-          url: `/api/v1/data-sources/${farmerSourceId}/grants/${farmerId}`,
+          url: `/api/v1/data-sources/${farmerSourceId}/grants/${farmerId}/stations`,
           token: otherAdminToken,
+          payload: { stationIds: [adminStationId] },
         })
       ).statusCode,
     ).toBe(403);
@@ -225,8 +295,9 @@ describe('API source access management', () => {
       (
         await request({
           method: 'PUT',
-          url: `/api/v1/data-sources/${adminSourceId}/grants/${clientId}`,
+          url: `/api/v1/data-sources/${adminSourceId}/grants/${clientId}/stations`,
           token: ownerToken,
+          payload: { stationIds: [adminStationId] },
         })
       ).statusCode,
     ).toBe(409);

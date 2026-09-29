@@ -33,7 +33,9 @@ import {
   parseGrantUserId,
   parseListDataSources,
   parseRevealDataSource,
+  parseSetDataSourceGrant,
   revealDataSourceOpenApiSchema,
+  setDataSourceGrantOpenApiSchema,
 } from './data-source.contracts.js';
 import { DataSourceService } from './data-source.service.js';
 
@@ -100,6 +102,28 @@ export class DataSourceController {
     };
   }
 
+  @Put(':sourceId/grants/:userId/stations')
+  @Header('Cache-Control', 'no-store')
+  @ApiBody({ schema: setDataSourceGrantOpenApiSchema })
+  async setGrantStations(
+    @CurrentPrincipal() principal: CurrentPrincipalValue,
+    @Param('sourceId') sourceId: string,
+    @Param('userId') userId: string,
+    @Body() body: unknown,
+    @Req() request: FastifyRequest,
+  ) {
+    return {
+      success: true,
+      data: await this.sources.setGrantStations(
+        principal,
+        parseDataSourceId(sourceId),
+        parseGrantUserId(userId),
+        parseSetDataSourceGrant(body),
+        request.id,
+      ),
+    };
+  }
+
   @Get(':sourceId/grants')
   @Header('Cache-Control', 'no-store')
   async listGrants(
@@ -132,6 +156,27 @@ export class DataSourceController {
         parseDataSourceId(sourceId),
         parseGrantUserId(userId),
         false,
+        request.id,
+      ),
+    };
+  }
+
+  @Delete(':sourceId/grants/:userId/stations/:stationId')
+  @Header('Cache-Control', 'no-store')
+  async revokeGrantStation(
+    @CurrentPrincipal() principal: CurrentPrincipalValue,
+    @Param('sourceId') sourceId: string,
+    @Param('userId') userId: string,
+    @Param('stationId') stationId: string,
+    @Req() request: FastifyRequest,
+  ) {
+    return {
+      success: true,
+      data: await this.sources.revokeGrantStation(
+        principal,
+        parseDataSourceId(sourceId),
+        parseGrantUserId(userId),
+        parseDataSourceId(stationId),
         request.id,
       ),
     };

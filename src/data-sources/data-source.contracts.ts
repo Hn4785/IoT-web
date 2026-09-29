@@ -26,9 +26,20 @@ const revealDataSourceSchema = z.strictObject({
   currentPassword: z.string().min(12).max(128),
 });
 
+const setDataSourceGrantSchema = z.strictObject({
+  stationIds: z
+    .array(z.uuid())
+    .min(1)
+    .max(100)
+    .refine((ids) => new Set(ids).size === ids.length, {
+      message: 'Station identifiers must be unique',
+    }),
+});
+
 export type CreateDataSourceInput = z.output<typeof createDataSourceSchema>;
 export type ListDataSourcesQuery = z.output<typeof listDataSourcesSchema>;
 export type RevealDataSourceInput = z.output<typeof revealDataSourceSchema>;
+export type SetDataSourceGrantInput = z.output<typeof setDataSourceGrantSchema>;
 
 export type DataSourceDto = Readonly<{
   id: string;
@@ -48,6 +59,7 @@ export type DataSourceDto = Readonly<{
 
 export type DataSourceGrantDto = Readonly<{
   user: Readonly<{ id: string; displayName: string; email: string }>;
+  stationIds: readonly string[];
   createdAt: string;
 }>;
 
@@ -67,6 +79,23 @@ export const parseGrantUserId = (value: unknown): string =>
   parse(z.uuid(), value, 'User identifier is invalid');
 export const parseRevealDataSource = (value: unknown): RevealDataSourceInput =>
   parse(revealDataSourceSchema, value, 'Request body is invalid');
+export const parseSetDataSourceGrant = (value: unknown): SetDataSourceGrantInput =>
+  parse(setDataSourceGrantSchema, value, 'Request body is invalid');
+
+export const setDataSourceGrantOpenApiSchema: SchemaObject = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['stationIds'],
+  properties: {
+    stationIds: {
+      type: 'array',
+      minItems: 1,
+      maxItems: 100,
+      uniqueItems: true,
+      items: { type: 'string', format: 'uuid' },
+    },
+  },
+};
 
 export const createDataSourceOpenApiSchema: SchemaObject = {
   type: 'object',
