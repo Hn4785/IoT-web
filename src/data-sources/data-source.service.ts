@@ -81,6 +81,15 @@ export class DataSourceService {
     return this.repository.listGrants(principal, sourceId, query);
   }
 
+  listGrantCandidates(
+    principal: CurrentPrincipalValue,
+    sourceId: string,
+    query: ListDataSourcesQuery,
+  ) {
+    this.requireSupportedRole(principal);
+    return this.repository.listGrantCandidates(principal, sourceId, query);
+  }
+
   listStations(principal: CurrentPrincipalValue, sourceId: string) {
     this.requireSupportedRole(principal);
     return this.repository.listStations(principal, sourceId);

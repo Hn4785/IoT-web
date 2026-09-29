@@ -18,6 +18,7 @@ describe('API source access management', () => {
   let farmerToken: string;
   let clientId: string;
   let farmerId: string;
+  let candidateFarmerId: string;
   let adminSourceId: string;
   let farmerSourceId: string;
   let adminStationId: string;
@@ -33,7 +34,7 @@ describe('API source access management', () => {
       passwords.hash(ownerPassword),
       passwords.hash('farmer-password-123'),
     ]);
-    const [owner, otherAdmin, farmer, client] = await Promise.all([
+    const [owner, otherAdmin, farmer, candidateFarmer, , client] = await Promise.all([
       prisma.user.create({
         data: {
           email: 'access-owner@example.test',
@@ -63,6 +64,24 @@ describe('API source access management', () => {
       }),
       prisma.user.create({
         data: {
+          email: 'candidate-farmer@example.test',
+          displayName: 'Candidate Farmer',
+          passwordHash: farmerHash,
+          role: 'FARMER',
+          status: 'ACTIVE',
+        },
+      }),
+      prisma.user.create({
+        data: {
+          email: 'disabled-farmer@example.test',
+          displayName: 'Disabled Farmer',
+          passwordHash: farmerHash,
+          role: 'FARMER',
+          status: 'DISABLED',
+        },
+      }),
+      prisma.user.create({
+        data: {
           email: 'access-client@example.test',
           displayName: 'Access Client',
           passwordHash: farmerHash,
@@ -72,6 +91,7 @@ describe('API source access management', () => {
       }),
     ]);
     farmerId = farmer.id;
+    candidateFarmerId = candidateFarmer.id;
     clientId = client.id;
     const encrypted = new SourceSecretService(config).encrypt(providerSecret);
     const [adminSource, farmerSource] = await Promise.all([
@@ -164,6 +184,57 @@ describe('API source access management', () => {
       headers: { authorization: `Bearer ${otherAdminToken}` },
     });
     expect(oversight.statusCode).toBe(403);
+  });
+
+  it('lists only active Farmer grant candidates for the source owner', async () => {
+    const ownerResponse = await app.inject({
+      method: 'GET',
+      url: `/api/v1/data-sources/${adminSourceId}/grant-candidates?limit=100`,
+      headers: { authorization: `Bearer ${ownerToken}` },
+    });
+    expect(ownerResponse.statusCode).toBe(200);
+    const ownerPayload = ownerResponse.json<{
+      success: true;
+      data: {
+        items: { id: string; displayName: string; email: string }[];
+        nextCursor: string | null;
+      };
+    }>();
+    expect(ownerPayload.success).toBe(true);
+    expect(ownerPayload.data.nextCursor).toBeNull();
+    expect(
+      ownerPayload.data.items.sort((left, right) => left.email.localeCompare(right.email)),
+    ).toEqual([
+      {
+        id: farmerId,
+        displayName: 'Access Farmer',
+        email: 'access-farmer@example.test',
+      },
+      {
+        id: candidateFarmerId,
+        displayName: 'Candidate Farmer',
+        email: 'candidate-farmer@example.test',
+      },
+    ]);
+    expect(ownerResponse.body).not.toContain('disabled-farmer@example.test');
+    expect(ownerResponse.body).not.toContain('access-admin@example.test');
+    expect(ownerResponse.body).not.toContain('access-client@example.test');
+
+    const farmerOwnerResponse = await app.inject({
+      method: 'GET',
+      url: `/api/v1/data-sources/${farmerSourceId}/grant-candidates?limit=100`,
+      headers: { authorization: `Bearer ${farmerToken}` },
+    });
+    expect(farmerOwnerResponse.statusCode).toBe(200);
+    expect(farmerOwnerResponse.body).not.toContain('access-farmer@example.test');
+    expect(farmerOwnerResponse.body).toContain('candidate-farmer@example.test');
+
+    const nonOwnerResponse = await app.inject({
+      method: 'GET',
+      url: `/api/v1/data-sources/${farmerSourceId}/grant-candidates?limit=100`,
+      headers: { authorization: `Bearer ${otherAdminToken}` },
+    });
+    expect(nonOwnerResponse.statusCode).toBe(403);
   });
 
   afterAll(async () => {

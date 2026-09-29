@@ -106,7 +106,14 @@ POST   /data-sources/:sourceId/reveal
 PUT    /data-sources/:sourceId/grants/:userId
 DELETE /data-sources/:sourceId/grants/:userId
 GET    /data-sources/:sourceId/grants?limit=50&cursor=...
+GET    /data-sources/:sourceId/grant-candidates?limit=50&cursor=...
 ```
+
+`grant-candidates` is owner-only and returns only active Farmer accounts that
+may receive source access. It exposes the minimum account fields required by
+the sharing dialog (`id`, `displayName`, and `email`), excludes the source
+owner, and never grants access to the Admin user-management contract. Admin and
+Farmer owners use this same source-scoped endpoint.
 
 Create input:
 

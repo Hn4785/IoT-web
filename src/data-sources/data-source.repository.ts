@@ -8,6 +8,7 @@ import { SecurityAuditService } from '../security-audit/security-audit.service.j
 import { queueLifecycleNotifications } from '../notifications/notification-delivery.js';
 import type {
   DataSourceDto,
+  DataSourceGrantCandidateDto,
   DataSourceGrantDto,
   ListDataSourcesQuery,
   ResourceChoice,
@@ -528,6 +529,53 @@ export class DataSourceRepository {
         createdAt: grant.createdAt.toISOString(),
       })),
       nextCursor: rows.length > query.limit ? (page.at(-1)?.userId ?? null) : null,
+    };
+  }
+
+  async listGrantCandidates(
+    principal: CurrentPrincipalValue,
+    sourceId: string,
+    query: ListDataSourcesQuery,
+  ): Promise<{ items: DataSourceGrantCandidateDto[]; nextCursor: string | null }> {
+    const source = await this.prisma.dataSource.findFirst({
+      where: { id: sourceId, kind: 'MANAGED', removedAt: null },
+      select: { ownerUserId: true },
+    });
+    if (!source) throw new AppError('NOT_FOUND', 404, 'Resource not found');
+    if (source.ownerUserId !== principal.userId) {
+      throw new AppError('FORBIDDEN', 403, 'Only the source owner can manage access');
+    }
+
+    const cursor = query.cursor
+      ? await this.prisma.user.findFirst({
+          where: { id: query.cursor, role: 'FARMER', status: 'ACTIVE' },
+          select: { id: true, createdAt: true },
+        })
+      : null;
+    if (query.cursor && !cursor) throw new AppError('VALIDATION_ERROR', 400, 'Cursor is invalid');
+
+    const rows = await this.prisma.user.findMany({
+      where: {
+        role: 'FARMER',
+        status: 'ACTIVE',
+        id: { not: source.ownerUserId },
+        ...(cursor
+          ? {
+              OR: [
+                { createdAt: { lt: cursor.createdAt } },
+                { createdAt: cursor.createdAt, id: { lt: cursor.id } },
+              ],
+            }
+          : {}),
+      },
+      select: { id: true, displayName: true, email: true, createdAt: true },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: query.limit + 1,
+    });
+    const page = rows.slice(0, query.limit);
+    return {
+      items: page.map(({ id, displayName, email }) => ({ id, displayName, email })),
+      nextCursor: rows.length > query.limit ? (page.at(-1)?.id ?? null) : null,
     };
   }
 

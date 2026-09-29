@@ -63,6 +63,12 @@ export type DataSourceGrantDto = Readonly<{
   createdAt: string;
 }>;
 
+export type DataSourceGrantCandidateDto = Readonly<{
+  id: string;
+  displayName: string;
+  email: string;
+}>;
+
 function parse<T>(schema: z.ZodType<T>, value: unknown, message: string): T {
   const result = schema.safeParse(value);
   if (!result.success) throw new AppError('VALIDATION_ERROR', 400, message);

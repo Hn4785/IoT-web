@@ -141,6 +141,23 @@ export class DataSourceController {
     };
   }
 
+  @Get(':sourceId/grant-candidates')
+  @Header('Cache-Control', 'no-store')
+  async listGrantCandidates(
+    @CurrentPrincipal() principal: CurrentPrincipalValue,
+    @Param('sourceId') sourceId: string,
+    @Query() query: unknown,
+  ) {
+    return {
+      success: true,
+      data: await this.sources.listGrantCandidates(
+        principal,
+        parseDataSourceId(sourceId),
+        parseListDataSources(query),
+      ),
+    };
+  }
+
   @Get(':sourceId/stations')
   @Header('Cache-Control', 'no-store')
   async listStations(
