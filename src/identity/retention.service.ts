@@ -100,6 +100,7 @@ export class RetentionService {
             transaction.apiKey.deleteMany({ where: { ownerUserId: user.id } }),
             transaction.farmMembership.deleteMany({ where: { userId: user.id } }),
             transaction.clientStationGrant.deleteMany({ where: { userId: user.id } }),
+            transaction.dataSourceGrant.deleteMany({ where: { userId: user.id } }),
           ]);
           await transaction.user.update({
             where: { id: user.id },

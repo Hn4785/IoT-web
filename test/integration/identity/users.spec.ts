@@ -4,6 +4,7 @@ import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { createApp } from '../../../src/app/create-app.js';
+import { SourceSecretService } from '../../../src/data-sources/source-secret.service.js';
 import { createTestPrismaClient, prepareTestDatabase } from '../../helpers/database.js';
 import { makeTestRuntimeConfig } from '../../helpers/runtime-config.js';
 
@@ -23,7 +24,14 @@ type ProvisionResponse = {
 type ErrorResponse = { error: { code: string } };
 type UserListResponse = { data: { items: unknown[]; nextCursor: string | null } };
 type UserDetailResponse = {
-  data: { assignments: { farmIds: string[]; stationIds: string[] } };
+  data: {
+    assignments: { farmIds: string[]; stationIds: string[] };
+    sharedSources: Array<{
+      id: string;
+      name: string;
+      stations: Array<{ id: string; name: string; code: string }>;
+    }>;
+  };
 };
 type OpenApiResponse = {
   paths: Record<string, unknown>;
@@ -402,6 +410,35 @@ describe('administrator user provisioning', () => {
         farmMemberships: { create: { farmId: farm.id } },
       },
     });
+    const root = await prisma.systemAuthority.findUniqueOrThrow({
+      where: { authority: 'SUPER_ADMIN' },
+      select: { holderUserId: true },
+    });
+    const encrypted = new SourceSecretService(config).encrypt('assignment-source-secret');
+    const source = await prisma.dataSource.create({
+      data: {
+        ownerUserId: root.holderUserId,
+        name: 'Shared assignment source',
+        baseUrl: 'https://assignment.example.test/api/v1',
+        keyCiphertext: encrypted.ciphertext,
+        keyNonce: encrypted.nonce,
+        keyAuthTag: encrypted.authTag,
+        keyPreview: 'cret',
+        connectionStatus: 'CONNECTED',
+        lastCheckedAt: new Date(),
+      },
+    });
+    await prisma.station.update({
+      where: { id: station.id },
+      data: { dataSourceId: source.id },
+    });
+    await prisma.dataSourceGrant.create({
+      data: {
+        dataSourceId: source.id,
+        userId: farmer.id,
+        stations: { create: { stationId: station.id } },
+      },
+    });
     const client = await prisma.user.create({
       data: {
         email: 'assignment-client@example.test',
@@ -429,11 +466,19 @@ describe('administrator user provisioning', () => {
       farmIds: [farm.id],
       stationIds: [],
     });
+    expect(farmerResponse.json<UserDetailResponse>().data.sharedSources).toEqual([
+      {
+        id: source.id,
+        name: 'Shared assignment source',
+        stations: [{ id: station.id, name: 'Assignment Station', code: 'ASSIGNMENT01' }],
+      },
+    ]);
     expect(clientResponse.statusCode).toBe(200);
     expect(clientResponse.json<UserDetailResponse>().data.assignments).toEqual({
       farmIds: [],
       stationIds: [station.id],
     });
+    expect(clientResponse.json<UserDetailResponse>().data.sharedSources).toEqual([]);
     expect(farmerResponse.body).not.toMatch(/upstreamCode|passwordHash|keyHash/);
 
     const meResponse = await app.inject({
@@ -450,6 +495,82 @@ describe('administrator user provisioning', () => {
     expect(meResponse.body).not.toContain('assignments');
     expect(missingResponse.statusCode).toBe(404);
     expect(missingResponse.json<ErrorResponse>().error.code).toBe('NOT_FOUND');
+  });
+
+  it('allows only the Super Admin to request account deletion and revokes access atomically', async () => {
+    const target = await prisma.user.create({
+      data: {
+        email: 'delete-account@example.test',
+        displayName: 'Delete Account',
+        passwordHash: '$argon2id$test',
+        role: 'FARMER',
+        status: 'ACTIVE',
+      },
+    });
+    const targetToken = await accessToken(target.id);
+    const root = await prisma.systemAuthority.findUniqueOrThrow({
+      where: { authority: 'SUPER_ADMIN' },
+      select: { holderUserId: true },
+    });
+    const encrypted = new SourceSecretService(config).encrypt('delete-share-secret');
+    const source = await prisma.dataSource.create({
+      data: {
+        ownerUserId: root.holderUserId,
+        name: 'Delete share source',
+        baseUrl: 'https://delete-share.example.test/api/v1',
+        keyCiphertext: encrypted.ciphertext,
+        keyNonce: encrypted.nonce,
+        keyAuthTag: encrypted.authTag,
+        keyPreview: 'cret',
+        connectionStatus: 'CONNECTED',
+        lastCheckedAt: new Date(),
+      },
+    });
+    await prisma.dataSourceGrant.create({
+      data: { dataSourceId: source.id, userId: target.id },
+    });
+
+    const denied = await app.inject({
+      method: 'DELETE',
+      url: `/api/v1/admin/users/${target.id}`,
+      headers: bearer(adminToken),
+    });
+    expect(denied.statusCode).toBe(403);
+
+    const deleted = await app.inject({
+      method: 'DELETE',
+      url: `/api/v1/admin/users/${target.id}`,
+      headers: bearer(rootToken),
+    });
+    expect(deleted.statusCode).toBe(200);
+    expect(deleted.json()).toEqual({ success: true, data: { deletionRequested: true } });
+
+    const user = await prisma.user.findUniqueOrThrow({ where: { id: target.id } });
+    expect(user.status).toBe('DISABLED');
+    expect(user.deletionRequestedAt).toBeInstanceOf(Date);
+    expect(await prisma.session.count({ where: { userId: target.id, revokedAt: null } })).toBe(0);
+    expect(await prisma.dataSourceGrant.count({ where: { userId: target.id } })).toBe(0);
+    expect(
+      (await app.inject({
+        method: 'GET',
+        url: '/api/v1/auth/me',
+        headers: bearer(targetToken),
+      })).statusCode,
+    ).toBe(401);
+
+    const retry = await app.inject({
+      method: 'DELETE',
+      url: `/api/v1/admin/users/${target.id}`,
+      headers: bearer(rootToken),
+    });
+    expect(retry.statusCode).toBe(200);
+
+    const selfDelete = await app.inject({
+      method: 'DELETE',
+      url: `/api/v1/admin/users/${root.holderUserId}`,
+      headers: bearer(rootToken),
+    });
+    expect(selfDelete.statusCode).toBe(409);
   });
 
   it('rate limits password reset to ten requests per minute', async () => {

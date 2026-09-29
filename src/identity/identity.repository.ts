@@ -12,6 +12,7 @@ export const safeUserSelect = {
   status: true,
   createdAt: true,
   updatedAt: true,
+  deletionRequestedAt: true,
   heldAuthority: { select: { authority: true } },
 } as const;
 
@@ -19,6 +20,19 @@ const safeUserDetailSelect = {
   ...safeUserSelect,
   farmMemberships: { select: { farmId: true }, orderBy: { farmId: 'asc' as const } },
   clientStationGrants: { select: { stationId: true }, orderBy: { stationId: 'asc' as const } },
+  dataSourceGrants: {
+    where: { dataSource: { removedAt: null } },
+    select: {
+      dataSource: { select: { id: true, name: true } },
+      stations: {
+        select: {
+          station: { select: { id: true, name: true, upstreamCode: true } },
+        },
+        orderBy: { stationId: 'asc' as const },
+      },
+    },
+    orderBy: { dataSourceId: 'asc' as const },
+  },
 } as const;
 
 @Injectable()

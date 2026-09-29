@@ -130,6 +130,20 @@ export class IdentityController {
     };
   }
 
+  @Delete(':userId')
+  @ApiParam({ name: 'userId', format: 'uuid' })
+  @Header('Cache-Control', 'no-store')
+  async requestDeletion(
+    @CurrentPrincipal() actor: CurrentPrincipalValue,
+    @Param('userId') userId: string,
+    @Req() request: FastifyRequest,
+  ) {
+    return {
+      success: true,
+      data: await this.identities.requestDeletion(actor, parseUserId(userId), request.id),
+    };
+  }
+
   @Post(':userId/reset-password')
   @ApiParam({ name: 'userId', format: 'uuid' })
   @ApiCreatedResponse({ schema: provisionUserOpenApiSchema })

@@ -59,6 +59,15 @@ export class IdentityService {
         farmIds: user.farmMemberships.map(({ farmId }) => farmId),
         stationIds: user.clientStationGrants.map(({ stationId }) => stationId),
       },
+      sharedSources: user.dataSourceGrants.map((grant) => ({
+        id: grant.dataSource.id,
+        name: grant.dataSource.name,
+        stations: grant.stations.map(({ station }) => ({
+          id: station.id,
+          name: station.name,
+          code: station.upstreamCode,
+        })),
+      })),
     };
   }
 
@@ -166,6 +175,9 @@ export class IdentityService {
         if (input.role !== 'CLIENT_DEVELOPER') {
           await transaction.clientStationGrant.deleteMany({ where: { userId } });
         }
+        if (input.role !== 'FARMER') {
+          await transaction.dataSourceGrant.deleteMany({ where: { userId } });
+        }
       }
       const changed = await transaction.user.update({
         where: { id: userId },
@@ -188,6 +200,54 @@ export class IdentityService {
       return changed;
     });
     return toUserDto(updated);
+  }
+
+  async requestDeletion(
+    actor: CurrentPrincipalValue,
+    userId: string,
+    requestId: string,
+  ): Promise<{ deletionRequested: true }> {
+    return this.repository.transaction(async (transaction) => {
+      const [target, authority] = await Promise.all([
+        transaction.user.findUnique({ where: { id: userId }, select: safeUserSelect }),
+        transaction.systemAuthority.findUnique({
+          where: { authority: 'SUPER_ADMIN' },
+          select: { holderUserId: true },
+        }),
+      ]);
+      if (!target) throw new AppError('NOT_FOUND', 404, 'User not found');
+      if (authority?.holderUserId !== actor.userId) {
+        throw new AppError('FORBIDDEN', 403, 'Only the Super Admin can delete an account');
+      }
+      if (target.id === authority.holderUserId || target.heldAuthority) {
+        throw new AppError('CONFLICT', 409, 'Transfer Super Admin authority first');
+      }
+      if (target.deletionRequestedAt) return { deletionRequested: true };
+
+      const now = new Date();
+      await Promise.all([
+        this.sessions.revokeAll(transaction, userId, 'ACCOUNT_DELETION_REQUESTED'),
+        transaction.apiKey.updateMany({
+          where: { ownerUserId: userId, revokedAt: null },
+          data: { revokedAt: now },
+        }),
+        transaction.farmMembership.deleteMany({ where: { userId } }),
+        transaction.clientStationGrant.deleteMany({ where: { userId } }),
+        transaction.dataSourceGrant.deleteMany({ where: { userId } }),
+      ]);
+      await transaction.user.update({
+        where: { id: userId },
+        data: { status: 'DISABLED', deletionRequestedAt: now },
+      });
+      await this.audits.record(transaction, {
+        actorUserId: actor.userId,
+        action: 'USER_DELETION_REQUESTED',
+        targetType: 'User',
+        targetId: userId,
+        requestId,
+      });
+      return { deletionRequested: true };
+    });
   }
 
   async resetPassword(

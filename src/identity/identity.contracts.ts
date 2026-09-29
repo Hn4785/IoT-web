@@ -50,6 +50,11 @@ export type UserDto = Readonly<{
 export type UserDetailDto = UserDto &
   Readonly<{
     assignments: Readonly<{ farmIds: readonly string[]; stationIds: readonly string[] }>;
+    sharedSources: readonly Readonly<{
+      id: string;
+      name: string;
+      stations: readonly Readonly<{ id: string; name: string; code: string }>[];
+    }>[];
   }>;
 
 export const createUserOpenApiSchema: SchemaObject = {
@@ -101,7 +106,7 @@ export const userOpenApiSchema: SchemaObject = {
 
 export const userDetailOpenApiSchema: SchemaObject = {
   ...userOpenApiSchema,
-  required: [...(userOpenApiSchema.required ?? []), 'assignments'],
+  required: [...(userOpenApiSchema.required ?? []), 'assignments', 'sharedSources'],
   properties: {
     ...userOpenApiSchema.properties,
     assignments: {
@@ -111,6 +116,32 @@ export const userDetailOpenApiSchema: SchemaObject = {
       properties: {
         farmIds: { type: 'array', items: { type: 'string', format: 'uuid' } },
         stationIds: { type: 'array', items: { type: 'string', format: 'uuid' } },
+      },
+    },
+    sharedSources: {
+      type: 'array',
+      readOnly: true,
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['id', 'name', 'stations'],
+        properties: {
+          id: { type: 'string', format: 'uuid' },
+          name: { type: 'string' },
+          stations: {
+            type: 'array',
+            items: {
+              type: 'object',
+              additionalProperties: false,
+              required: ['id', 'name', 'code'],
+              properties: {
+                id: { type: 'string', format: 'uuid' },
+                name: { type: 'string' },
+                code: { type: 'string' },
+              },
+            },
+          },
+        },
       },
     },
   },
