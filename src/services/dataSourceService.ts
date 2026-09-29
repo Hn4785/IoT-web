@@ -24,6 +24,12 @@ export interface DataSourceGrant {
   createdAt: string;
 }
 
+export interface DataSourceGrantCandidate {
+  id: string;
+  displayName: string;
+  email: string;
+}
+
 export interface DataSourceStation {
   id: string;
   name: string;
@@ -73,6 +79,13 @@ export function createDataSourceService(client: HttpClient) {
     async listStations(sourceId: string): Promise<{ items: DataSourceStation[] }> {
       const response = await client.get<ApiSuccessEnvelope<{ items: DataSourceStation[] }>>(
         API_ENDPOINTS.dataSources.stations(sourceId),
+      );
+      return unwrapApiResponse(response.data);
+    },
+    async listGrantCandidates(sourceId: string, cursor?: string): Promise<CursorPage<DataSourceGrantCandidate>> {
+      const response = await client.get<ApiSuccessEnvelope<CursorPage<DataSourceGrantCandidate>>>(
+        API_ENDPOINTS.dataSources.grantCandidates(sourceId),
+        { params: cursor ? { cursor, limit: 100 } : { limit: 100 } },
       );
       return unwrapApiResponse(response.data);
     },

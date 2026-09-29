@@ -6,7 +6,7 @@ import {
   AdminAlertCenter, AdminDashboard, AgriculturalAlerts, AlertActionCenter, ApiSources,
   ApiDocs, ApiExplorer, ApiKeys, ApiMetrics, ApiPermissions, AuditLogs,
   ChangePassword, ConfigurationProposals, DeveloperDashboard, DeviceHealth,
-  DeviceManagement, FarmDashboard, ForgotPassword, HistoricalAnalysis,
+  DeviceManagement, FarmDashboard, FarmerApiSources, ForgotPassword, HistoricalAnalysis,
   HistoryReport, IoTConfiguration, Login, NotificationSettings,
   RealtimeSoilMonitoring, StationDetail, UserManagement,
 } from "./routeComponents";
@@ -127,9 +127,14 @@ export const protectedRoutes: AppRoute[] = [
     element: <AlertActionCenter />,
   },
   {
-  path: "/farm-owner/alerts",
-  roles: ["FARMER"],
-  element: <AgriculturalAlerts />,
+    path: "/farm-owner/api-sources",
+    roles: ["FARMER"],
+    element: <FarmerApiSources />,
+  },
+  {
+    path: "/farm-owner/alerts",
+    roles: ["FARMER"],
+    element: <AgriculturalAlerts />,
   },
 
   // =========================

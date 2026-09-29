@@ -268,7 +268,7 @@ export default function ApiSources() {
                   </span></td>
                   <td>{formatVietnamDateTime(source.lastCheckedAt)}</td>
                   <td><div className={styles.actions}>
-                    <Button size="sm" variant="ghost" icon={<BarChart3 size={14} />} onClick={() => navigate("/admin/devices")}>View Data</Button>
+                    <Button size="sm" variant="ghost" icon={<BarChart3 size={14} />} onClick={() => navigate("/farm-owner/soil-dashboard")}>View Data</Button>
                     {source.canManageAccess && <Button size="sm" variant="ghost" icon={<Share2 size={14} />} onClick={() => void openAccess(source)}>Manage Access</Button>}
                     {source.canManageAccess && <Button size="sm" variant="ghost" icon={<TestTube2 size={14} />} loading={busyId === source.id} onClick={() => void testConnection(source)}>Test</Button>}
                     {source.canRevealKey && <Button size="sm" variant="ghost" icon={<Eye size={14} />} onClick={() => setRevealSource(source)}>Reveal Key</Button>}
@@ -285,12 +285,12 @@ export default function ApiSources() {
         <form className={styles.form} onSubmit={addSource}>
           <label>Source name <span className={styles.optional}>(optional)</span><input maxLength={160} value={name} onChange={(event) => setName(event.target.value)} placeholder="Generated from the connection when left blank" /></label>
           <div className={styles.twoColumns}>
-            <label>Farm<input required list="api-source-farms" value={farmName} onChange={(event) => {
+            <label>Farm<input required list="farmer-api-source-farms" value={farmName} onChange={(event) => {
               setFarmName(event.target.value);
               const farm = hierarchy.farms.find((item) => item.name === event.target.value);
               if (farm) hierarchy.setSelectedFarmId(farm.id);
-            }} placeholder="Select or enter a farm" /><datalist id="api-source-farms">{hierarchy.farms.map((farm) => <option key={farm.id} value={farm.name} />)}</datalist></label>
-            <label>Plot<input required list="api-source-plots" value={plotName} onChange={(event) => setPlotName(event.target.value)} placeholder="Select or enter a plot" /><datalist id="api-source-plots">{hierarchy.plots.map((plot) => <option key={plot.id} value={plot.name} />)}</datalist></label>
+            }} placeholder="Select or enter a farm" /><datalist id="farmer-api-source-farms">{hierarchy.farms.map((farm) => <option key={farm.id} value={farm.name} />)}</datalist></label>
+            <label>Plot<input required list="farmer-api-source-plots" value={plotName} onChange={(event) => setPlotName(event.target.value)} placeholder="Select or enter a plot" /><datalist id="farmer-api-source-plots">{hierarchy.plots.map((plot) => <option key={plot.id} value={plot.name} />)}</datalist></label>
           </div>
           <label>API URL<input required type="url" value={baseUrl} onChange={(event) => setBaseUrl(event.target.value)} placeholder="https://provider.example/api/v1" /></label>
           <label>X-API-Key<input required type="password" autoComplete="off" value={xApiKey} onChange={(event) => setXApiKey(event.target.value)} placeholder="Enter the source key" /></label>

@@ -20,6 +20,7 @@ export const AgriculturalAlerts = lazy(() => import("@/pages/farm-owner/Agricult
 export const HistoryReport = lazy(() => import("@/pages/farm-owner/HistoryReport"));
 export const NotificationSettings = lazy(() => import("@/pages/farm-owner/NotificationSettings"));
 export const AlertActionCenter = lazy(() => import("@/pages/farm-owner/AlertActionCenter"));
+export const FarmerApiSources = lazy(() => import("@/pages/farm-owner/ApiSources"));
 export const DeveloperDashboard = lazy(() => import("@/pages/developer/DeveloperDashboard"));
 export const ApiKeys = lazy(() => import("@/pages/developer/ApiKeys"));
 export const ApiPermissions = lazy(() => import("@/pages/developer/ApiPermissions"));

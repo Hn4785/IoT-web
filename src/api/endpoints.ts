@@ -33,6 +33,7 @@ export const API_ENDPOINTS = {
     grant: (id: string, userId: string) => `/data-sources/${id}/grants/${userId}`,
     grantStations: (id: string, userId: string) => `/data-sources/${id}/grants/${userId}/stations`,
     stations: (id: string) => `/data-sources/${id}/stations`,
+    grantCandidates: (id: string) => `/data-sources/${id}/grant-candidates`,
     reveal: (id: string) => `/data-sources/${id}/reveal`,
     test: (id: string) => `/data-sources/${id}/test`,
   },

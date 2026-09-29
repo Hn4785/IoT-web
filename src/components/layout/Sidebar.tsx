@@ -38,6 +38,7 @@ const NAV_CONFIG: Record<UserRole, NavItem[]> = {
     { label: 'Soil Dashboard', path: '/farm-owner/soil-dashboard', icon: Droplets},
     { label: 'Historical Analysis', path: '/farm-owner/historical-analysis', icon: BarChart3 },
     { label: 'History Report', path: '/farm-owner/history-reports', icon: History },
+    { label: 'API Sources', path: '/farm-owner/api-sources', icon: DatabaseZap },
     { label: 'Notifications', path: '/farm-owner/notifications', icon: Settings },
     { label: 'Alerts', path: '/farm-owner/alerts', icon: Activity},
     { label: 'Alert Center', path: '/farm-owner/alert-center', icon: Activity },
