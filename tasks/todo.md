@@ -105,15 +105,13 @@ Evidence: [`2026-09-02-phase-a.md`](../docs/checkpoints/2026-09-02-phase-a.md).
       Follow
       [`2026-09-28-soil-source-admin-checkpoint-design.md`](../docs/superpowers/specs/2026-09-28-soil-source-admin-checkpoint-design.md)
       in the listed delivery order; commit FE and BE locally and do not push.
-- [ ] B-alert-center-shared: Alert Center is not yet accepted for user-facing
-      intervention because the live stations do not expose confirmed soil field
-      metadata for rule creation. Complete this once while implementing Farmer;
-      the shared Alert Center change must also apply to Admin. This is alert and
-      notification behavior only, never remote device control. The shared
-      Admin/Farmer workspace, source-owner capability gate, Automatic/Paused
-      modes and duplicate Farmer-tab cleanup are complete locally; this item
-      remains open only for confirmed live measurement units/revisions needed
-      to enable rule creation truthfully.
+- [x] B-alert-center-shared: Admin and Farmer now share one Alert Center with
+      confirmed canonical soil field units/revisions, source-owner rule
+      management, Automatic/Paused modes and read-only shared-recipient access.
+      Automatic rules evaluate new samples and create in-app notifications for
+      the source owner and authorized station viewers; they never control remote
+      devices. Browser role acceptance remains tracked by
+      B-integration-browser and C-integration-browser.
 
 Evidence: [`2026-09-10-phase-b-core.md`](../docs/checkpoints/2026-09-10-phase-b-core.md).
 
@@ -208,15 +206,14 @@ and must not duplicate the full contract.
 
 ## Immediate next action
 
-1. Finish the shared Alert Center metadata/rule flow. Reuse the same alert behavior for
-   Admin, keep Client Developer outside source sharing and Settings last. Back
-   up and clean the Pi demo hierarchy only when this Farmer release is deployed.
-2. Run the remaining browser role matrix one page at a time in the fixed order
+1. Run the remaining browser role matrix one page at a time in the fixed order
    **Admin/Super Admin → Farmer → Client Developer**.
-3. Complete the remaining browser role matrix and registry checks without
+2. Complete the remaining browser role matrix and registry checks without
    storing provider credentials; B-device data provenance is already
    `live-verified`.
-4. Verify retained IoT Config/Config Proposals screens do not offer remote writes:
+3. Verify retained IoT Config/Config Proposals screens do not offer remote writes:
    threshold changes belong to Alert Center and physical intervention stays onsite.
+4. Back up and clean the Pi demo hierarchy only when this Farmer release is
+   deployed; local implementation must not mutate Pi state early.
 5. Keep deployment-owner decisions separate; B-device `live-verified` must not
    be used to close the browser matrix or D-production.
