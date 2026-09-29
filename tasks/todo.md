@@ -73,8 +73,8 @@ Evidence: [`2026-09-02-phase-a.md`](../docs/checkpoints/2026-09-02-phase-a.md).
       `Visible Accounts`, and owner-only audited key reveal.
 - [x] B-source-3: Route latest/history through each station's source without
       changing public measurement DTOs or Client Developer platform keys.
-- [ ] B-source-FE: Admin API Sources is implemented locally with English copy,
-      pasted-text parsing, truthful states and no `N/A`. Farmer remains next;
+- [ ] B-source-FE: Admin API Sources is implemented with English copy, direct
+      connection fields, truthful states and no `N/A`. Farmer remains next;
       Client Developer stays outside source sharing and Settings stays last.
 - [x] B-admin-soil-source-checkpoint: Implement the approved soil-only admission,
       station-scoped sharing, owner-managed station rules and shared-recipient
@@ -84,6 +84,11 @@ Evidence: [`2026-09-02-phase-a.md`](../docs/checkpoints/2026-09-02-phase-a.md).
       Follow
       [`2026-09-28-soil-source-admin-checkpoint-design.md`](../docs/superpowers/specs/2026-09-28-soil-source-admin-checkpoint-design.md)
       in the listed delivery order; commit FE and BE locally and do not push.
+- [ ] B-alert-center-shared: Alert Center is not yet accepted for user-facing
+      intervention because the live stations do not expose confirmed soil field
+      metadata for rule creation. Complete this once while implementing Farmer;
+      the shared Alert Center change must also apply to Admin. This is alert and
+      notification behavior only, never remote device control.
 
 Evidence: [`2026-09-10-phase-b-core.md`](../docs/checkpoints/2026-09-10-phase-b-core.md).
 
@@ -178,8 +183,9 @@ and must not duplicate the full contract.
 
 ## Immediate next action
 
-1. Complete the Farmer API Sources frontend using the resulting station-scoped
-   contract, keep Client Developer outside source sharing and Settings last.
+1. Complete the Farmer API Sources frontend and the shared Alert Center metadata
+   and rule flow; reuse the same behavior for Admin, keep Client Developer outside
+   source sharing and Settings last.
 2. Run the remaining browser role matrix one page at a time in the fixed order
    **Admin/Super Admin → Farmer → Client Developer**.
 3. Complete the remaining browser role matrix and registry checks without
