@@ -5,7 +5,11 @@ import { createApp } from '../../../src/app/create-app.js';
 import { issueAccessToken } from '../../helpers/access-token.js';
 import { createTestPrismaClient, prepareTestDatabase } from '../../helpers/database.js';
 import { makeTestRuntimeConfig } from '../../helpers/runtime-config.js';
-import { startUpstreamServer, type UpstreamServer } from '../../helpers/upstream-server.js';
+import {
+  startUpstreamServer,
+  type CapturedRequest,
+  type UpstreamServer,
+} from '../../helpers/upstream-server.js';
 
 const prisma = createTestPrismaClient();
 const soilCodes = ['NODE01', 'NODE02', 'NODE03', 'NODE04', 'NODE05', 'NODE06'] as const;
@@ -30,6 +34,12 @@ const soilLatestResponse = {
     })),
   },
 } as const;
+const sourceFixture = (request: CapturedRequest) => {
+  if (request.headers['x-api-key'] === 'wrong-key') {
+    return { status: 401, body: { success: false, message: 'invalid key' } };
+  }
+  return request.path.includes('/data/latest') ? soilLatestResponse : stationListResponse;
+};
 
 type SourceItem = {
   id: string;
@@ -50,6 +60,8 @@ describe('API source create and list', () => {
   let adminToken: string;
   let farmerToken: string;
   let clientToken: string;
+  let farmId: string;
+  let otherFarmId: string;
   let plotId: string;
   let otherPlotId: string;
   let legacyNode01Id: string;
@@ -57,15 +69,7 @@ describe('API source create and list', () => {
 
   beforeAll(async () => {
     await prepareTestDatabase();
-    upstream = await startUpstreamServer([
-      stationListResponse,
-      soilLatestResponse,
-      stationListResponse,
-      soilLatestResponse,
-      stationListResponse,
-      soilLatestResponse,
-      { status: 401, body: { success: false, message: 'invalid key' } },
-    ]);
+    upstream = await startUpstreamServer(Array.from({ length: 20 }, () => sourceFixture));
     const config = makeTestRuntimeConfig({ dataSourceAllowedOrigins: [upstream.baseUrl] });
     const [admin, farmer, client, farm, otherFarm] = await Promise.all([
       prisma.user.create({
@@ -102,6 +106,8 @@ describe('API source create and list', () => {
       prisma.plot.create({ data: { farmId: farm.id, name: 'Connected Plot' } }),
       prisma.plot.create({ data: { farmId: otherFarm.id, name: 'Other Plot' } }),
     ]);
+    farmId = farm.id;
+    otherFarmId = otherFarm.id;
     plotId = plot.id;
     otherPlotId = otherPlot.id;
     const [legacyNode01, legacyNode02] = await Promise.all([
@@ -135,7 +141,7 @@ describe('API source create and list', () => {
     await prisma.$disconnect();
   });
 
-  const create = (token: string, input: Record<string, string>) =>
+  const create = (token: string, input: Record<string, unknown>) =>
     app.inject({
       method: 'POST',
       url: '/api/v1/data-sources',
@@ -148,7 +154,8 @@ describe('API source create and list', () => {
       name: 'Admin Observation API',
       baseUrl: `${upstream.baseUrl}/api/v1`,
       xApiKey: 'admin-provider-secret',
-      plotId,
+      farm: { id: farmId },
+      plot: { id: plotId },
     });
 
     expect(response.statusCode).toBe(201);
@@ -223,12 +230,61 @@ describe('API source create and list', () => {
     expect(upstream.requests[3]?.headers['x-api-key']).toBe('admin-provider-secret');
   });
 
+  it('normalizes and creates a Farm and Plot atomically after soil validation', async () => {
+    const response = await create(adminToken, {
+      baseUrl: `${upstream.baseUrl}/api/v1`,
+      xApiKey: 'new-hierarchy-provider-secret',
+      farm: { name: '  Field   One  ' },
+      plot: { name: '  North   Plot  ' },
+    });
+
+    expect(response.statusCode).toBe(201);
+    expect(response.json<{ data: SourceItem }>().data).toMatchObject({
+      name: '127.0.0.1 — 6 soil stations',
+      stationCount: 6,
+    });
+    const farm = await prisma.farm.findUniqueOrThrow({ where: { name: 'Field One' } });
+    const plot = await prisma.plot.findUniqueOrThrow({
+      where: { farmId_name: { farmId: farm.id, name: 'North Plot' } },
+    });
+    expect(await prisma.station.count({ where: { plotId: plot.id } })).toBe(6);
+  });
+
+  it('converges concurrent normalized hierarchy creation on one Farm and Plot', async () => {
+    const payload = {
+      baseUrl: `${upstream.baseUrl}/api/v1`,
+      xApiKey: 'concurrent-provider-secret',
+      farm: { name: 'Concurrent Farm' },
+      plot: { name: 'Concurrent Plot' },
+    };
+    const [first, second] = await Promise.all([
+      create(adminToken, payload),
+      create(adminToken, {
+        ...payload,
+        farm: { name: ' concurrent   farm ' },
+        plot: { name: ' concurrent   plot ' },
+      }),
+    ]);
+
+    expect([first.statusCode, second.statusCode]).toEqual([201, 201]);
+    const farms = await prisma.farm.findMany({ where: { name: 'CONCURRENT FARM' } });
+    expect(farms).toHaveLength(1);
+    const concurrentFarm = farms[0];
+    if (!concurrentFarm) throw new Error('Concurrent Farm was not created');
+    expect(
+      await prisma.plot.count({
+        where: { farmId: concurrentFarm.id, name: 'CONCURRENT PLOT' },
+      }),
+    ).toBe(1);
+  });
+
   it('lets a Farmer create within assigned scope and hides it from other Farmers', async () => {
     const response = await create(farmerToken, {
       name: 'Farmer Observation API',
       baseUrl: `${upstream.baseUrl}/api/v1/`,
       xApiKey: 'farmer-provider-secret',
-      plotId,
+      farm: { id: farmId },
+      plot: { id: plotId },
     });
 
     expect(response.statusCode).toBe(201);
@@ -248,7 +304,8 @@ describe('API source create and list', () => {
       name: 'Invalid API',
       baseUrl: `${upstream.baseUrl}/api/v1`,
       xApiKey: 'wrong-key',
-      plotId,
+      farm: { id: farmId },
+      plot: { id: plotId },
     });
     expect(invalid.statusCode).toBe(502);
     expect(await prisma.dataSource.count()).toBe(before);
@@ -259,7 +316,8 @@ describe('API source create and list', () => {
           name: 'Client API',
           baseUrl: `${upstream.baseUrl}/api/v1`,
           xApiKey: 'client-key',
-          plotId,
+          farm: { id: farmId },
+          plot: { id: plotId },
         })
       ).statusCode,
     ).toBe(403);
@@ -269,7 +327,8 @@ describe('API source create and list', () => {
           name: 'Cross-scope API',
           baseUrl: `${upstream.baseUrl}/api/v1`,
           xApiKey: 'farmer-key',
-          plotId: otherPlotId,
+          farm: { id: otherFarmId },
+          plot: { id: otherPlotId },
         })
       ).statusCode,
     ).toBe(404);

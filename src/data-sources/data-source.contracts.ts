@@ -3,11 +3,18 @@ import { z } from 'zod';
 
 import { AppError } from '../common/errors/app-error.js';
 
+const resourceChoiceSchema = z.union([
+  z.strictObject({ id: z.uuid() }),
+  z.strictObject({ name: z.string().trim().min(1).max(160) }),
+]);
+export type ResourceChoice = z.output<typeof resourceChoiceSchema>;
+
 const createDataSourceSchema = z.strictObject({
-  name: z.string().trim().min(1).max(160),
+  name: z.string().trim().min(1).max(160).optional(),
   baseUrl: z.url().max(2048),
   xApiKey: z.string().trim().min(1).max(4096),
-  plotId: z.uuid(),
+  farm: resourceChoiceSchema,
+  plot: resourceChoiceSchema,
 });
 
 const listDataSourcesSchema = z.strictObject({
@@ -64,12 +71,43 @@ export const parseRevealDataSource = (value: unknown): RevealDataSourceInput =>
 export const createDataSourceOpenApiSchema: SchemaObject = {
   type: 'object',
   additionalProperties: false,
-  required: ['name', 'baseUrl', 'xApiKey', 'plotId'],
+  required: ['baseUrl', 'xApiKey', 'farm', 'plot'],
   properties: {
     name: { type: 'string', minLength: 1, maxLength: 160 },
     baseUrl: { type: 'string', format: 'uri', maxLength: 2048 },
     xApiKey: { type: 'string', minLength: 1, maxLength: 4096, writeOnly: true },
-    plotId: { type: 'string', format: 'uuid' },
+    farm: {
+      oneOf: [
+        {
+          type: 'object',
+          additionalProperties: false,
+          required: ['id'],
+          properties: { id: { type: 'string', format: 'uuid' } },
+        },
+        {
+          type: 'object',
+          additionalProperties: false,
+          required: ['name'],
+          properties: { name: { type: 'string', minLength: 1, maxLength: 160 } },
+        },
+      ],
+    },
+    plot: {
+      oneOf: [
+        {
+          type: 'object',
+          additionalProperties: false,
+          required: ['id'],
+          properties: { id: { type: 'string', format: 'uuid' } },
+        },
+        {
+          type: 'object',
+          additionalProperties: false,
+          required: ['name'],
+          properties: { name: { type: 'string', minLength: 1, maxLength: 160 } },
+        },
+      ],
+    },
   },
 };
 

@@ -28,14 +28,22 @@ export class DataSourceService {
     requestId: string,
   ): Promise<DataSourceDto> {
     this.requireSupportedRole(principal);
-    await this.repository.requirePlotAccess(principal, input.plotId);
+    const farm = this.normalizeChoice(input.farm);
+    const plot = this.normalizeChoice(input.plot);
+    await this.repository.requireHierarchyAccess(principal, farm, plot);
     const baseUrl = this.upstream.normalizeBaseUrl(input.baseUrl);
     const stationCodes = await this.upstream.discoverSoilStations(baseUrl, input.xApiKey);
     return this.repository.create({
       principal,
-      name: input.name,
+      name:
+        input.name ??
+        `${new URL(baseUrl).hostname} — ${stationCodes.length.toString()} soil station${stationCodes.length === 1 ? '' : 's'}`.slice(
+          0,
+          160,
+        ),
       baseUrl,
-      plotId: input.plotId,
+      farm,
+      plot,
       keyPreview: input.xApiKey.slice(-4),
       encrypted: this.secrets.encrypt(input.xApiKey),
       stationCodes,
@@ -122,5 +130,9 @@ export class DataSourceService {
     if (principal.status !== 'ACTIVE' || !['ADMIN', 'FARMER'].includes(principal.role)) {
       throw new AppError('FORBIDDEN', 403, 'Access is forbidden');
     }
+  }
+
+  private normalizeChoice(choice: { id: string } | { name: string }) {
+    return 'id' in choice ? choice : { name: choice.name.replace(/\s+/g, ' ').trim() };
   }
 }

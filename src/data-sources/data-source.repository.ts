@@ -3,12 +3,13 @@ import { Injectable } from '@nestjs/common';
 import type { CurrentPrincipalValue } from '../authorization/current-principal.js';
 import { AppError } from '../common/errors/app-error.js';
 import { PrismaService } from '../database/prisma.service.js';
-import type { Prisma } from '../generated/prisma/client.js';
+import { Prisma } from '../generated/prisma/client.js';
 import { SecurityAuditService } from '../security-audit/security-audit.service.js';
 import type {
   DataSourceDto,
   DataSourceGrantDto,
   ListDataSourcesQuery,
+  ResourceChoice,
 } from './data-source.contracts.js';
 import type { EncryptedSourceSecret } from './source-secret.service.js';
 
@@ -34,84 +35,190 @@ export class DataSourceRepository {
     private readonly audits: SecurityAuditService,
   ) {}
 
-  async requirePlotAccess(principal: CurrentPrincipalValue, plotId: string): Promise<void> {
-    const plot = await this.prisma.plot.findFirst({
+  async requireHierarchyAccess(
+    principal: CurrentPrincipalValue,
+    farmChoice: ResourceChoice,
+    plotChoice: ResourceChoice,
+  ): Promise<void> {
+    const farm = await this.prisma.farm.findFirst({
       where: {
-        id: plotId,
+        ...('id' in farmChoice ? { id: farmChoice.id } : { name: farmChoice.name }),
         ...(principal.role === 'FARMER'
-          ? { farm: { memberships: { some: { userId: principal.userId } } } }
+          ? { memberships: { some: { userId: principal.userId } } }
           : {}),
       },
       select: { id: true },
     });
-    if (!plot) throw new AppError('NOT_FOUND', 404, 'Resource not found');
+    if (!farm) {
+      const namedFarmDoesNotExist =
+        'name' in farmChoice &&
+        !(await this.prisma.farm.findUnique({
+          where: { name: farmChoice.name },
+          select: { id: true },
+        }));
+      if (namedFarmDoesNotExist && 'name' in plotChoice) return;
+      throw new AppError('NOT_FOUND', 404, 'Resource not found');
+    }
+    if ('id' in plotChoice) {
+      const plot = await this.prisma.plot.findFirst({
+        where: { id: plotChoice.id, farmId: farm.id },
+        select: { id: true },
+      });
+      if (!plot) throw new AppError('NOT_FOUND', 404, 'Resource not found');
+    }
   }
 
   async create(input: {
     principal: CurrentPrincipalValue;
     name: string;
     baseUrl: string;
-    plotId: string;
+    farm: ResourceChoice;
+    plot: ResourceChoice;
     keyPreview: string;
     encrypted: EncryptedSourceSecret;
     stationCodes: readonly string[];
     requestId: string;
   }): Promise<DataSourceDto> {
-    return this.prisma.$transaction(async (transaction) => {
-      const plot = await transaction.plot.findFirst({
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      try {
+        return await this.createTransaction(input);
+      } catch (error) {
+        const retryable =
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          ['P2002', 'P2034'].includes(error.code);
+        if (!retryable || attempt === 1) throw error;
+      }
+    }
+    throw new AppError('INTERNAL_ERROR', 500, 'Data source creation failed');
+  }
+
+  private createTransaction(input: {
+    principal: CurrentPrincipalValue;
+    name: string;
+    baseUrl: string;
+    farm: ResourceChoice;
+    plot: ResourceChoice;
+    keyPreview: string;
+    encrypted: EncryptedSourceSecret;
+    stationCodes: readonly string[];
+    requestId: string;
+  }): Promise<DataSourceDto> {
+    return this.prisma.$transaction(
+      async (transaction) => {
+        const farm = await this.resolveFarm(transaction, input.principal, input.farm);
+        const plot = await this.resolvePlot(transaction, farm.id, input.plot);
+        const createdSource = await transaction.dataSource.create({
+          data: {
+            ownerUserId: input.principal.userId,
+            name: input.name,
+            baseUrl: input.baseUrl,
+            keyCiphertext: input.encrypted.ciphertext,
+            keyNonce: input.encrypted.nonce,
+            keyAuthTag: input.encrypted.authTag,
+            keyPreview: input.keyPreview,
+            connectionStatus: 'CONNECTED',
+            lastCheckedAt: new Date(),
+          },
+          select: { id: true },
+        });
+        await transaction.station.updateMany({
+          where: {
+            plotId: plot.id,
+            upstreamCode: { in: [...input.stationCodes] },
+            dataSource: { kind: 'SYSTEM' },
+          },
+          data: { dataSourceId: createdSource.id },
+        });
+        await transaction.station.createMany({
+          data: input.stationCodes.map((code) => ({
+            plotId: plot.id,
+            dataSourceId: createdSource.id,
+            upstreamCode: code,
+            name: code,
+          })),
+          skipDuplicates: true,
+        });
+        const source = await transaction.dataSource.findUniqueOrThrow({
+          where: { id: createdSource.id },
+          select: sourceSelect,
+        });
+        await this.audits.record(transaction, {
+          actorUserId: input.principal.userId,
+          action: 'DATA_SOURCE_CREATED',
+          targetType: 'DataSource',
+          targetId: source.id,
+          requestId: input.requestId,
+          metadata: { stationCount: input.stationCodes.length },
+        });
+        return this.toDto(source, input.principal.userId);
+      },
+      { isolationLevel: 'Serializable' },
+    );
+  }
+
+  private async resolveFarm(
+    transaction: Prisma.TransactionClient,
+    principal: CurrentPrincipalValue,
+    choice: ResourceChoice,
+  ): Promise<{ id: string }> {
+    if ('id' in choice) {
+      const farm = await transaction.farm.findFirst({
         where: {
-          id: input.plotId,
-          ...(input.principal.role === 'FARMER'
-            ? { farm: { memberships: { some: { userId: input.principal.userId } } } }
+          id: choice.id,
+          ...(principal.role === 'FARMER'
+            ? { memberships: { some: { userId: principal.userId } } }
             : {}),
         },
         select: { id: true },
       });
-      if (!plot) throw new AppError('NOT_FOUND', 404, 'Resource not found');
-      const createdSource = await transaction.dataSource.create({
-        data: {
-          ownerUserId: input.principal.userId,
-          name: input.name,
-          baseUrl: input.baseUrl,
-          keyCiphertext: input.encrypted.ciphertext,
-          keyNonce: input.encrypted.nonce,
-          keyAuthTag: input.encrypted.authTag,
-          keyPreview: input.keyPreview,
-          connectionStatus: 'CONNECTED',
-          lastCheckedAt: new Date(),
-        },
+      if (!farm) throw new AppError('NOT_FOUND', 404, 'Resource not found');
+      return farm;
+    }
+
+    const existing = await transaction.farm.findUnique({
+      where: { name: choice.name },
+      select: {
+        id: true,
+        memberships: { where: { userId: principal.userId }, select: { userId: true } },
+      },
+    });
+    if (existing) {
+      if (principal.role === 'FARMER' && existing.memberships.length === 0) {
+        throw new AppError('NOT_FOUND', 404, 'Resource not found');
+      }
+      return { id: existing.id };
+    }
+
+    const farm = await transaction.farm.create({
+      data: { name: choice.name },
+      select: { id: true },
+    });
+    if (principal.role === 'FARMER') {
+      await transaction.farmMembership.create({
+        data: { userId: principal.userId, farmId: farm.id },
+      });
+    }
+    return farm;
+  }
+
+  private async resolvePlot(
+    transaction: Prisma.TransactionClient,
+    farmId: string,
+    choice: ResourceChoice,
+  ): Promise<{ id: string }> {
+    if ('id' in choice) {
+      const plot = await transaction.plot.findFirst({
+        where: { id: choice.id, farmId },
         select: { id: true },
       });
-      await transaction.station.updateMany({
-        where: {
-          plotId: plot.id,
-          upstreamCode: { in: [...input.stationCodes] },
-          dataSource: { kind: 'SYSTEM' },
-        },
-        data: { dataSourceId: createdSource.id },
-      });
-      await transaction.station.createMany({
-        data: input.stationCodes.map((code) => ({
-          plotId: plot.id,
-          dataSourceId: createdSource.id,
-          upstreamCode: code,
-          name: code,
-        })),
-        skipDuplicates: true,
-      });
-      const source = await transaction.dataSource.findUniqueOrThrow({
-        where: { id: createdSource.id },
-        select: sourceSelect,
-      });
-      await this.audits.record(transaction, {
-        actorUserId: input.principal.userId,
-        action: 'DATA_SOURCE_CREATED',
-        targetType: 'DataSource',
-        targetId: source.id,
-        requestId: input.requestId,
-        metadata: { stationCount: input.stationCodes.length },
-      });
-      return this.toDto(source, input.principal.userId);
+      if (!plot) throw new AppError('NOT_FOUND', 404, 'Resource not found');
+      return plot;
+    }
+    return transaction.plot.upsert({
+      where: { farmId_name: { farmId, name: choice.name } },
+      create: { farmId, name: choice.name },
+      update: {},
+      select: { id: true },
     });
   }
 
