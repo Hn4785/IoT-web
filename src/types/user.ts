@@ -49,6 +49,11 @@ export interface User {
   assignedFarmIds: string[]; // Các farm mà user được phép truy cập
   assignedPlotIds: string[]; // Các plot mà user được phép truy cập
   assignedStationIds: string[]; // Các station mà user được phép truy cập
+  sharedSources?: Array<{
+    id: string;
+    name: string;
+    stations: Array<{ id: string; name: string; code: string }>;
+  }>;
 
   permissions?: ResourcePermission[]; // Quyền truy cập chi tiết theo resource
 

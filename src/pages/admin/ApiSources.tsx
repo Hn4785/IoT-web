@@ -1,23 +1,24 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Copy, Eye, KeyRound, Plus, RefreshCw, Share2, TestTube2 } from "lucide-react";
+import { BarChart3, Copy, Eye, KeyRound, Plus, RefreshCw, Share2, TestTube2, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 import Button from "@/components/common/Button";
 import EmptyState from "@/components/common/EmptyState";
 import ErrorState from "@/components/common/ErrorState";
 import Loading from "@/components/common/Loading";
-import { Modal } from "@/components/common/Modal";
+import { ConfirmDialog, Modal } from "@/components/common/Modal";
 import PageHeader from "@/components/layout/PageHeader";
 import { useStationHierarchy } from "@/hooks/useStationHierarchy";
 import {
   dataSourceService,
   type DataSource,
   type DataSourceGrant,
+  type DataSourceStation,
+  type ResourceChoice,
 } from "@/services/dataSourceService";
 import { userService } from "@/services/userService";
 import type { User } from "@/types/user";
 import { normalizeApiError } from "@/utils/apiError";
-import { parseConnectionDetails } from "@/utils/connectionDetails";
 import { copyText } from "@/utils/credentialInput";
 import { formatVietnamDateTime } from "@/utils/formatDateTime";
 
@@ -37,12 +38,16 @@ export default function ApiSources() {
   const [name, setName] = useState("");
   const [baseUrl, setBaseUrl] = useState("");
   const [xApiKey, setXApiKey] = useState("");
-  const [pastedDetails, setPastedDetails] = useState("");
+  const [farmName, setFarmName] = useState("");
+  const [plotName, setPlotName] = useState("");
 
   const [accessSource, setAccessSource] = useState<DataSource | null>(null);
   const [grants, setGrants] = useState<DataSourceGrant[]>([]);
   const [farmers, setFarmers] = useState<User[]>([]);
+  const [sourceStations, setSourceStations] = useState<DataSourceStation[]>([]);
+  const [grantDrafts, setGrantDrafts] = useState<Record<string, string[]>>({});
   const [accessLoading, setAccessLoading] = useState(false);
+  const [removeSource, setRemoveSource] = useState<DataSource | null>(null);
 
   const [revealSource, setRevealSource] = useState<DataSource | null>(null);
   const [currentPassword, setCurrentPassword] = useState("");
@@ -74,16 +79,14 @@ export default function ApiSources() {
     if (revealTimer.current) clearTimeout(revealTimer.current);
   }, []);
 
-  const grantedIds = useMemo(
-    () => new Set(grants.map((grant) => grant.user.id)),
-    [grants],
-  );
+  const grantByUserId = useMemo(() => new Map(grants.map((grant) => [grant.user.id, grant])), [grants]);
 
   const clearAddForm = () => {
     setName("");
     setBaseUrl("");
     setXApiKey("");
-    setPastedDetails("");
+    setFarmName("");
+    setPlotName("");
   };
 
   const closeAdd = () => {
@@ -91,17 +94,10 @@ export default function ApiSources() {
     clearAddForm();
   };
 
-  const parsePaste = () => {
-    setError("");
-    try {
-      const parsed = parseConnectionDetails(pastedDetails);
-      setBaseUrl(parsed.baseUrl);
-      setXApiKey(parsed.xApiKey);
-      setNotice("Connection details filled. Review them before adding the source.");
-      setPastedDetails("");
-    } catch (reason) {
-      setError(normalizeApiError(reason).message);
-    }
+  const resolveChoice = <T extends { id: string; name: string }>(value: string, options: T[]): ResourceChoice => {
+    const normalized = value.trim();
+    const existing = options.find((option) => option.name.localeCompare(normalized, undefined, { sensitivity: "accent" }) === 0);
+    return existing ? { id: existing.id } : { name: normalized };
   };
 
   const addSource = async (event: React.FormEvent) => {
@@ -110,10 +106,11 @@ export default function ApiSources() {
     setError("");
     try {
       const created = await dataSourceService.create({
-        name: name.trim(),
+        ...(name.trim() ? { name: name.trim() } : {}),
         baseUrl: baseUrl.trim(),
         xApiKey: xApiKey.trim(),
-        plotId: hierarchy.selectedPlotId,
+        farm: resolveChoice(farmName, hierarchy.farms),
+        plot: resolveChoice(plotName, hierarchy.plots),
       });
       setSources((current) => [created, ...current]);
       setNotice(`${created.name} is connected.`);
@@ -148,11 +145,14 @@ export default function ApiSources() {
     setAccessLoading(true);
     setError("");
     try {
-      const [grantPage, userPage] = await Promise.all([
+      const [grantPage, stationPage, userPage] = await Promise.all([
         dataSourceService.listGrants(source.id),
+        dataSourceService.listStations(source.id),
         userService.getUsers({ limit: 100 }),
       ]);
       setGrants(grantPage.items);
+      setSourceStations(stationPage.items);
+      setGrantDrafts(Object.fromEntries(grantPage.items.map((grant) => [grant.user.id, [...grant.stationIds]])));
       setFarmers(userPage.items.filter((user) => user.role === "FARMER" && user.status === "ACTIVE"));
     } catch (reason) {
       setError(normalizeApiError(reason).message);
@@ -161,15 +161,41 @@ export default function ApiSources() {
     }
   };
 
-  const toggleGrant = async (userId: string, assigned: boolean) => {
+  const toggleStation = (userId: string, stationId: string) => {
+    setGrantDrafts((current) => {
+      const selected = new Set(current[userId] ?? []);
+      if (selected.has(stationId)) selected.delete(stationId);
+      else selected.add(stationId);
+      return { ...current, [userId]: [...selected] };
+    });
+  };
+
+  const saveGrant = async (userId: string) => {
     if (!accessSource) return;
     setBusyId(userId);
     setError("");
     try {
-      if (assigned) await dataSourceService.grant(accessSource.id, userId);
+      const stationIds = grantDrafts[userId] ?? [];
+      if (stationIds.length > 0) await dataSourceService.setGrantStations(accessSource.id, userId, stationIds);
       else await dataSourceService.revoke(accessSource.id, userId);
       setGrants((await dataSourceService.listGrants(accessSource.id)).items);
       await loadSources();
+    } catch (reason) {
+      setError(normalizeApiError(reason).message);
+    } finally {
+      setBusyId("");
+    }
+  };
+
+  const confirmRemoveSource = async () => {
+    if (!removeSource) return;
+    setBusyId(removeSource.id);
+    setError("");
+    try {
+      await dataSourceService.remove(removeSource.id);
+      setSources((current) => current.filter((source) => source.id !== removeSource.id));
+      setNotice(`${removeSource.name} was removed. Its historical audit data was preserved.`);
+      setRemoveSource(null);
     } catch (reason) {
       setError(normalizeApiError(reason).message);
     } finally {
@@ -243,10 +269,11 @@ export default function ApiSources() {
                   </span></td>
                   <td>{formatVietnamDateTime(source.updatedAt)}</td>
                   <td><div className={styles.actions}>
-                    <Button size="sm" variant="ghost" onClick={() => navigate("/admin/devices")}>View Data</Button>
+                    <Button size="sm" variant="ghost" icon={<BarChart3 size={14} />} onClick={() => navigate("/admin/devices")}>View Data</Button>
                     {source.canManageAccess && <Button size="sm" variant="ghost" icon={<Share2 size={14} />} onClick={() => void openAccess(source)}>Manage Access</Button>}
                     {source.canManageAccess && <Button size="sm" variant="ghost" icon={<TestTube2 size={14} />} loading={busyId === source.id} onClick={() => void testConnection(source)}>Test</Button>}
                     {source.canRevealKey && <Button size="sm" variant="ghost" icon={<Eye size={14} />} onClick={() => setRevealSource(source)}>Reveal Key</Button>}
+                    {source.canManageAccess && <Button size="sm" variant="ghost" icon={<Trash2 size={14} />} onClick={() => setRemoveSource(source)}>Remove Source</Button>}
                   </div></td>
                 </tr>
               ))}</tbody>
@@ -255,29 +282,21 @@ export default function ApiSources() {
         </section>
       )}
 
-      <Modal isOpen={addOpen} onClose={closeAdd} title="Add API Source" description="Use one source for the station API assigned to a plot." size="lg">
+      <Modal isOpen={addOpen} onClose={closeAdd} title="Add API Source" description="Connect a soil station API and organize it under a farm and plot." size="lg">
         <form className={styles.form} onSubmit={addSource}>
-          <div className={styles.pasteBox}>
-            <label>Paste connection details
-              <textarea value={pastedDetails} onChange={(event) => setPastedDetails(event.target.value)} placeholder={'Paste chat text, curl or JSON containing one API URL and one X-API-Key'} />
-            </label>
-            <Button variant="outline" disabled={!pastedDetails.trim()} onClick={parsePaste}>Fill Fields</Button>
-          </div>
-          <label>Source name<input required maxLength={160} value={name} onChange={(event) => setName(event.target.value)} placeholder="e.g. North field stations" /></label>
+          <label>Source name <span className={styles.optional}>(optional)</span><input maxLength={160} value={name} onChange={(event) => setName(event.target.value)} placeholder="Generated from the connection when left blank" /></label>
           <div className={styles.twoColumns}>
-            <label>Farm<select value={hierarchy.selectedFarmId} onChange={(event) => hierarchy.setSelectedFarmId(event.target.value)}>
-              {hierarchy.farms.length === 0 && <option value="">No farms available</option>}
-              {hierarchy.farms.map((farm) => <option key={farm.id} value={farm.id}>{farm.name}</option>)}
-            </select></label>
-            <label>Plot<select required value={hierarchy.selectedPlotId} onChange={(event) => hierarchy.setSelectedPlotId(event.target.value)} disabled={!hierarchy.selectedFarmId}>
-              {hierarchy.plots.length === 0 && <option value="">No plots available</option>}
-              {hierarchy.plots.map((plot) => <option key={plot.id} value={plot.id}>{plot.name}</option>)}
-            </select></label>
+            <label>Farm<input required list="api-source-farms" value={farmName} onChange={(event) => {
+              setFarmName(event.target.value);
+              const farm = hierarchy.farms.find((item) => item.name === event.target.value);
+              if (farm) hierarchy.setSelectedFarmId(farm.id);
+            }} placeholder="Select or enter a farm" /><datalist id="api-source-farms">{hierarchy.farms.map((farm) => <option key={farm.id} value={farm.name} />)}</datalist></label>
+            <label>Plot<input required list="api-source-plots" value={plotName} onChange={(event) => setPlotName(event.target.value)} placeholder="Select or enter a plot" /><datalist id="api-source-plots">{hierarchy.plots.map((plot) => <option key={plot.id} value={plot.name} />)}</datalist></label>
           </div>
           <label>API URL<input required type="url" value={baseUrl} onChange={(event) => setBaseUrl(event.target.value)} placeholder="https://provider.example/api/v1" /></label>
           <label>X-API-Key<input required type="password" autoComplete="off" value={xApiKey} onChange={(event) => setXApiKey(event.target.value)} placeholder="Enter the source key" /></label>
           <p className={styles.help}>The key is sent once to the backend and is never stored in this browser.</p>
-          <div className={styles.modalActions}><Button variant="outline" onClick={closeAdd}>Cancel</Button><Button type="submit" loading={busyId === "create"} disabled={!hierarchy.selectedPlotId}>Connect Source</Button></div>
+          <div className={styles.modalActions}><Button variant="outline" onClick={closeAdd}>Cancel</Button><Button type="submit" loading={busyId === "create"} disabled={!farmName.trim() || !plotName.trim()}>Connect Source</Button></div>
         </form>
       </Modal>
 
@@ -286,15 +305,32 @@ export default function ApiSources() {
           <div className={styles.accountList}>
             {farmers.length === 0 && <p>No active Farmer accounts found.</p>}
             {farmers.map((farmer) => {
-              const assigned = grantedIds.has(farmer.id);
-              return <div key={farmer.id} className={styles.accountRow}>
-                <div><strong>{farmer.displayName}</strong><span>{farmer.email}</span></div>
-                <Button size="sm" variant={assigned ? "danger" : "outline"} loading={busyId === farmer.id} onClick={() => void toggleGrant(farmer.id, !assigned)}>{assigned ? "Revoke" : "Share"}</Button>
+              const selected = new Set(grantDrafts[farmer.id] ?? []);
+              const existing = grantByUserId.get(farmer.id)?.stationIds ?? [];
+              const changed = selected.size !== existing.length || existing.some((id) => !selected.has(id));
+              return <div key={farmer.id} className={styles.accountCard}>
+                <div className={styles.accountHeading}><div><strong>{farmer.displayName}</strong><span>{farmer.email}</span></div><span>{selected.size} selected</span></div>
+                {sourceStations.length === 0 && <p className={styles.help}>No soil stations were found for this source.</p>}
+                <div className={styles.stationChecks}>{sourceStations.map((station) => <label key={station.id}>
+                  <input type="checkbox" checked={selected.has(station.id)} onChange={() => toggleStation(farmer.id, station.id)} />
+                  <span><strong>{station.name}</strong><small>{station.code}</small></span>
+                </label>)}</div>
+                <div className={styles.accountActions}><Button size="sm" variant={selected.size === 0 && existing.length > 0 ? "danger" : "outline"} disabled={!changed} loading={busyId === farmer.id} onClick={() => void saveGrant(farmer.id)}>{selected.size === 0 && existing.length > 0 ? "Revoke Access" : "Save Access"}</Button></div>
               </div>;
             })}
           </div>
         )}
       </Modal>
+
+      <ConfirmDialog
+        isOpen={Boolean(removeSource)}
+        onClose={() => setRemoveSource(null)}
+        onConfirm={() => void confirmRemoveSource()}
+        title="Remove API Source"
+        description={`Remove ${removeSource?.name ?? "this source"}? Access and alert rules will stop immediately. Historical audit data will be kept.`}
+        confirmText="Remove Source"
+        variant="danger"
+      />
 
       <Modal isOpen={Boolean(revealSource)} onClose={closeReveal} title="Reveal X-API-Key" description="Only the source owner can reveal this key. It closes automatically after 30 seconds." size="sm">
         {!revealedKey ? <form className={styles.form} onSubmit={revealKey}>

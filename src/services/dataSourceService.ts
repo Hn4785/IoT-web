@@ -20,14 +20,24 @@ export interface DataSource {
 
 export interface DataSourceGrant {
   user: { id: string; displayName: string; email: string };
+  stationIds: string[];
   createdAt: string;
 }
 
-export interface CreateDataSourceRequest {
+export interface DataSourceStation {
+  id: string;
   name: string;
+  code: string;
+}
+
+export type ResourceChoice = { id: string } | { name: string };
+
+export interface CreateDataSourceRequest {
+  name?: string;
   baseUrl: string;
   xApiKey: string;
-  plotId: string;
+  farm: ResourceChoice;
+  plot: ResourceChoice;
 }
 
 interface HttpClient {
@@ -60,6 +70,19 @@ export function createDataSourceService(client: HttpClient) {
       );
       return unwrapApiResponse(response.data);
     },
+    async listStations(sourceId: string): Promise<{ items: DataSourceStation[] }> {
+      const response = await client.get<ApiSuccessEnvelope<{ items: DataSourceStation[] }>>(
+        API_ENDPOINTS.dataSources.stations(sourceId),
+      );
+      return unwrapApiResponse(response.data);
+    },
+    async setGrantStations(sourceId: string, userId: string, stationIds: string[]): Promise<{ assigned: true; stationIds: string[] }> {
+      const response = await client.put<ApiSuccessEnvelope<{ assigned: true; stationIds: string[] }>>(
+        API_ENDPOINTS.dataSources.grantStations(sourceId, userId),
+        { stationIds },
+      );
+      return unwrapApiResponse(response.data);
+    },
     async grant(sourceId: string, userId: string): Promise<{ assigned: boolean }> {
       const response = await client.put<ApiSuccessEnvelope<{ assigned: boolean }>>(
         API_ENDPOINTS.dataSources.grant(sourceId, userId),
@@ -82,6 +105,12 @@ export function createDataSourceService(client: HttpClient) {
     async test(sourceId: string): Promise<{ connectionStatus: "CONNECTED"; stationCount: number; lastCheckedAt: string }> {
       const response = await client.post<ApiSuccessEnvelope<{ connectionStatus: "CONNECTED"; stationCount: number; lastCheckedAt: string }>>(
         API_ENDPOINTS.dataSources.test(sourceId),
+      );
+      return unwrapApiResponse(response.data);
+    },
+    async remove(sourceId: string): Promise<{ removed: true }> {
+      const response = await client.delete<ApiSuccessEnvelope<{ removed: true }>>(
+        API_ENDPOINTS.dataSources.byId(sourceId),
       );
       return unwrapApiResponse(response.data);
     },

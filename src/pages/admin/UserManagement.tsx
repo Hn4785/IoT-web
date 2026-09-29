@@ -6,6 +6,7 @@ import {
   KeyRound,
   Plus,
   Shield,
+  Trash2,
   UserCheck,
   UserX,
 } from "lucide-react";
@@ -28,7 +29,6 @@ import { copyText } from "@/utils/credentialInput";
 import { useAuth } from "@/hooks/useAuth";
 import { authorityService } from "@/services/authorityService";
 import { authService } from "@/services/authService";
-import UserScopeEditor from "./UserScopeEditor";
 import {
   canResetCredentials,
   canTransferSuperAdminTo,
@@ -94,6 +94,7 @@ export default function UserManagement() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [confirmUser, setConfirmUser] = useState<User | null>(null);
+  const [deleteUser, setDeleteUser] = useState<User | null>(null);
   const [selectedRole, setSelectedRole] = useState<UserRole>("FARMER");
   const [selectedStatus, setSelectedStatus] = useState<UserStatus>("ACTIVE");
   const [pendingRole, setPendingRole] = useState<UserRole | null>(null);
@@ -170,9 +171,7 @@ export default function UserManagement() {
     try {
       if (editingUser) {
         const updated = await userService.updateUser(editingUser.id, {
-          displayName: input.displayName,
           role: input.role,
-          status: input.status,
         });
         setItems((current) => current.map((user) => user.id === updated.id ? updated : user));
       } else {
@@ -260,6 +259,18 @@ export default function UserManagement() {
       setCredentialConfirmed(false);
       setCredentialCopied(false);
       setCredentialCopyFailed(false);
+    } catch (error) {
+      setOperationError(normalizeApiError(error).message);
+    }
+  };
+
+  const deleteAccount = async () => {
+    if (!deleteUser) return;
+    setOperationError("");
+    try {
+      await userService.deleteUser(deleteUser.id);
+      setItems((current) => current.map((item) => item.id === deleteUser.id ? { ...item, status: "DISABLED" } : item));
+      setDeleteUser(null);
     } catch (error) {
       setOperationError(normalizeApiError(error).message);
     }
@@ -511,6 +522,19 @@ export default function UserManagement() {
                       >
                         <Crown size={18} />
                       </Button>
+
+                      {currentUser?.isSuperAdmin && currentUser.id !== user.id && !user.isSuperAdmin && (
+                        <Button
+                          iconOnly
+                          variant="ghost"
+                          size="sm"
+                          aria-label={`Delete ${user.displayName}`}
+                          title="Delete account"
+                          onClick={() => setDeleteUser(user)}
+                        >
+                          <Trash2 size={18} />
+                        </Button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -541,7 +565,7 @@ export default function UserManagement() {
             ? "Edit User"
             : "Create User"
         }
-        description="Configure account information and resource authorization."
+        description={editingUser ? "Change the account role and review its current access." : "Create an account and choose its initial role."}
         size="lg"
         footer={
           <>
@@ -570,33 +594,15 @@ export default function UserManagement() {
           className={styles.form}
           onSubmit={saveUser}
         >
-          <label>
-            Display name
+          {!editingUser && <>
+            <label>Display name<input name="displayName" required /></label>
+            <label>Email<input name="email" type="email" required /></label>
+          </>}
+          {editingUser && <div className={styles.identityBox}>
+            <span>Account</span><strong>{editingUser.displayName}</strong><small>{editingUser.email}</small>
+          </div>}
 
-            <input
-              name="displayName"
-              defaultValue={
-                editingUser?.displayName
-              }
-              required
-            />
-          </label>
-
-          <label>
-            Email
-
-            <input
-              name="email"
-              type="email"
-              defaultValue={
-                editingUser?.email
-              }
-              disabled={Boolean(editingUser)}
-              required
-            />
-          </label>
-
-          <div className={styles.formGrid}>
+          <div className={editingUser ? undefined : styles.formGrid}>
             <label>
               Role
 
@@ -624,45 +630,24 @@ export default function UserManagement() {
                 )}
               </select>
             </label>
-
-            <label>
-              Status
-
-              <select
-                name="status"
-                value={selectedStatus}
-                disabled={Boolean(editingUser?.isSuperAdmin)}
-                onChange={(event) => setSelectedStatus(event.target.value as UserStatus)}
-              >
-                {Object.entries(
-                  statusLabels,
-                ).map(
-                  ([key, label]) => (
-                    <option
-                      key={key}
-                      value={key}
-                    >
-                      {label}
-                    </option>
-                  ),
-                )}
-              </select>
-            </label>
+            {!editingUser && <label>Status<input value="Active" disabled /></label>}
           </div>
 
           {editingUser && (
             <div className={styles.authBox} role="note">
-              <strong>Current resource access</strong>
-              <span>Farms: {editingUser.assignedFarmIds.join(", ") || "None"}</span>
-              <span>Stations: {editingUser.assignedStationIds.join(", ") || "None"}</span>
-              <small>Changes to Farm and Station access are saved separately below.</small>
+              <strong>Shared access</strong>
+              {(editingUser.sharedSources ?? []).length === 0 ? <span>No API sources are shared with this account.</span> : (editingUser.sharedSources ?? []).map((source) => (
+                <div className={styles.sharedSource} key={source.id}>
+                  <strong>{source.name}</strong>
+                  <span>{source.stations.length > 0 ? source.stations.map((station) => station.name || station.code).join(", ") : "No soil stations shared"}</span>
+                </div>
+              ))}
+              {editingUser.assignedFarmIds.length > 0 && <span>Assigned farms: {editingUser.assignedFarmIds.join(", ")}</span>}
+              {editingUser.assignedStationIds.length > 0 && <span>Direct station access: {editingUser.assignedStationIds.join(", ")}</span>}
+              <small>Source access is managed from API Sources.</small>
             </div>
           )}
         </form>
-        {editingUser && <UserScopeEditor key={editingUser.id} user={editingUser} onChange={(updated) => {
-          setEditingUser(updated);
-          setItems((current) => current.map((item) => item.id === updated.id ? updated : item));
-        }} />}
       </Drawer>
 
       <ConfirmDialog
@@ -690,6 +675,16 @@ export default function UserManagement() {
             ? "danger"
             : "primary"
         }
+      />
+
+      <ConfirmDialog
+        isOpen={Boolean(deleteUser)}
+        onClose={() => setDeleteUser(null)}
+        onConfirm={deleteAccount}
+        title="Delete account?"
+        description={`Delete ${deleteUser?.displayName ?? "this account"}? The account will be locked, its sessions and credentials revoked, and its audit history preserved.`}
+        confirmText="Delete Account"
+        variant="danger"
       />
 
       <ConfirmDialog

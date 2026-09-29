@@ -88,4 +88,11 @@ export const userService = {
     const provisioned = unwrapApiResponse(response.data);
     return { ...provisioned, user: normalizeBackendUser(provisioned.user) };
   },
+
+  async deleteUser(id: string): Promise<{ deletionRequested: true }> {
+    const response = await apiClient.delete<ApiSuccessEnvelope<{ deletionRequested: true }>>(
+      API_ENDPOINTS.users.byId(id),
+    );
+    return unwrapApiResponse(response.data);
+  },
 };

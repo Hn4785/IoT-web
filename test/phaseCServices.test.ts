@@ -52,6 +52,24 @@ test("alert and rule lists preserve cursor contracts", async () => {
   ]);
 });
 
+test("alert rule setup reads confirmed field metadata from the selected station", async () => {
+  const calls: unknown[][] = [];
+  const fields = [{ field: "moisture", unit: "%", metadataRevision: "soil-v1" }];
+  const client = {
+    async get<T>(...args: unknown[]): Promise<{ data: T }> {
+      calls.push(args);
+      return envelope({ fields }) as { data: T };
+    },
+    async post<T>(): Promise<{ data: T }> { return envelope({}) as { data: T }; },
+    async patch<T>(): Promise<{ data: T }> { return envelope({}) as { data: T }; },
+  };
+
+  const metadata = await createAlertService(client).getFieldMetadata("station-1");
+
+  assert.deepEqual(metadata.fields, fields);
+  assert.deepEqual(calls, [["/stations/station-1/field-metadata"]]);
+});
+
 test("notification service unwraps inbox and updates read state", async () => {
   const calls: unknown[][] = [];
   const client = {
@@ -78,6 +96,7 @@ test("phase C endpoints stay aligned with backend routes", () => {
   assert.equal(API_ENDPOINTS.alerts.acknowledgements("a"), "/alerts/a/acknowledgements");
   assert.equal(API_ENDPOINTS.alerts.resolutions("a"), "/alerts/a/resolutions");
   assert.equal(API_ENDPOINTS.alertRules.byStation("s"), "/stations/s/alert-rules");
+  assert.equal(API_ENDPOINTS.stations.fieldMetadata("s"), "/stations/s/field-metadata");
   assert.equal(API_ENDPOINTS.notifications.byId("n"), "/notifications/n");
   assert.equal(API_ENDPOINTS.deviceConfigurations.capability, "/device-configurations/capability");
 });

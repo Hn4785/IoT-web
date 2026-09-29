@@ -18,5 +18,15 @@
 .empty { color: var(--color-text-tertiary); text-align: center; padding: var(--spacing-6); }
 .error { background: var(--color-error-light); color: var(--color-error-dark); border: 1px solid var(--color-error); border-radius: var(--radius-md); padding: var(--spacing-3) var(--spacing-4); }
 .note { display: flex; gap: var(--spacing-2); align-items: center; color: var(--color-text-tertiary); font-size: var(--font-size-caption); margin: var(--spacing-4) 0 0; }
+.ruleActions { display: flex; justify-content: flex-end; margin-top: var(--spacing-4); }
+.ruleForm { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--spacing-3); margin-top: var(--spacing-4); padding: var(--spacing-4); border-radius: var(--radius-lg); background: var(--color-bg-subtle); }
+.ruleForm label { display: grid; gap: 6px; color: var(--color-text-secondary); font-size: var(--font-size-body-sm); font-weight: var(--font-weight-semibold); }
+.ruleForm input, .ruleForm select { min-width: 0; min-height: var(--height-input-md); padding: 0 var(--spacing-3); border: 1px solid var(--color-border-default); border-radius: var(--radius-md); background: var(--color-bg-surface); color: var(--color-text-primary); }
+.ruleForm .ruleSwitch { display: flex; align-items: flex-start; gap: var(--spacing-2); grid-column: 1 / -1; padding: var(--spacing-3); border-radius: var(--radius-md); background: var(--color-bg-surface); }
+.ruleSwitch input { width: auto; min-height: auto; margin-top: 3px; }
+.ruleSwitch span, .ruleSwitch small { display: block; }
+.ruleSwitch small { margin-top: 3px; color: var(--color-text-tertiary); font-weight: var(--font-weight-regular); }
+.ruleFormActions { grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: var(--spacing-2); }
 @media (max-width: 1100px) { .filters { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 640px) { .page { padding: var(--spacing-4); } .filters { grid-template-columns: 1fr; } .card { padding: var(--spacing-4); } }
+@media (max-width: 900px) { .ruleForm { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 640px) { .page { padding: var(--spacing-4); } .filters, .ruleForm { grid-template-columns: 1fr; } .card { padding: var(--spacing-4); } }

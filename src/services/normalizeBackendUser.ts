@@ -13,6 +13,11 @@ export interface BackendUser {
     farmIds: string[];
     stationIds: string[];
   };
+  sharedSources?: Array<{
+    id: string;
+    name: string;
+    stations: Array<{ id: string; name: string; code: string }>;
+  }>;
 }
 
 export function normalizeBackendUser(user: BackendUser): User {
@@ -22,5 +27,6 @@ export function normalizeBackendUser(user: BackendUser): User {
     assignedFarmIds: assignments?.farmIds ?? [],
     assignedPlotIds: [],
     assignedStationIds: assignments?.stationIds ?? [],
+    sharedSources: user.sharedSources ?? [],
   };
 }

@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
-import { BellRing, CheckCircle2, RefreshCw, ShieldAlert } from "lucide-react";
+import { BellRing, Plus, RefreshCw, ShieldAlert } from "lucide-react";
 
 import { useStationHierarchy } from "../../hooks/useStationHierarchy.ts";
 import { alertService } from "../../services/alertService.ts";
-import type { AlertDto, AlertRuleDto, AlertSeverity, AlertStatus } from "../../types/alertApi.ts";
+import type { AlertDto, AlertRuleDto, AlertSeverity, AlertStatus, SoilAlertField, SoilFieldMetadata } from "../../types/alertApi.ts";
 import { normalizeApiError } from "../../utils/apiError.ts";
 import { Button } from "../common/Button.tsx";
 import PageHeader from "../layout/PageHeader.tsx";
@@ -26,6 +26,14 @@ export default function AlertWorkspace({ title, description, canAct = true }: Al
   const hierarchy = useStationHierarchy();
   const [alerts, setAlerts] = useState<AlertDto[]>([]);
   const [rules, setRules] = useState<AlertRuleDto[]>([]);
+  const [metadata, setMetadata] = useState<SoilFieldMetadata[]>([]);
+  const [showRuleForm, setShowRuleForm] = useState(false);
+  const [ruleField, setRuleField] = useState<SoilAlertField | "">("");
+  const [ruleOperator, setRuleOperator] = useState<"ABOVE" | "BELOW" | "OUTSIDE_RANGE">("ABOVE");
+  const [ruleThreshold, setRuleThreshold] = useState("");
+  const [ruleUpperThreshold, setRuleUpperThreshold] = useState("");
+  const [ruleSeverity, setRuleSeverity] = useState<AlertSeverity>("WARNING");
+  const [ruleEnabled, setRuleEnabled] = useState(true);
   const [status, setStatus] = useState<"" | AlertStatus>("");
   const [severity, setSeverity] = useState<"" | AlertSeverity>("");
   const [loading, setLoading] = useState(true);
@@ -73,10 +81,23 @@ export default function AlertWorkspace({ title, description, canAct = true }: Al
   useEffect(() => {
     let active = true;
     if (!hierarchy.selectedStationId) {
+      // Reset station-bound data when the hierarchy selection is cleared.
+      // oxlint-disable-next-line react/set-state-in-effect
+      setRules([]);
+      setMetadata([]);
+      setShowRuleForm(false);
       return () => { active = false; };
     }
-    alertService.listRules(hierarchy.selectedStationId, { limit: 100 }).then(
-      (page) => { if (active) setRules(page.items); },
+    Promise.all([
+      alertService.listRules(hierarchy.selectedStationId, { limit: 100 }),
+      alertService.getFieldMetadata(hierarchy.selectedStationId),
+    ]).then(
+      ([page, fieldMetadata]) => {
+        if (!active) return;
+        setRules(page.items);
+        setMetadata(fieldMetadata.fields);
+        setRuleField(fieldMetadata.fields[0]?.field ?? "");
+      },
       (reason) => { if (active) setError(normalizeApiError(reason).message); },
     );
     return () => { active = false; };
@@ -106,6 +127,42 @@ export default function AlertWorkspace({ title, description, canAct = true }: Al
         expectedRevision: rule.revision,
       });
       setRules((current) => current.map((item) => item.id === updated.id ? updated : item));
+    } catch (reason) {
+      setError(normalizeApiError(reason).message);
+    } finally {
+      setActingId("");
+    }
+  }
+
+  async function createRule(event: React.FormEvent) {
+    event.preventDefault();
+    if (!hierarchy.selectedStationId || !ruleField) return;
+    const selectedMetadata = metadata.find((item) => item.field === ruleField);
+    if (!selectedMetadata) return;
+    const firstValue = Number(ruleThreshold);
+    const secondValue = Number(ruleUpperThreshold);
+    if (!Number.isFinite(firstValue) || (ruleOperator === "OUTSIDE_RANGE" && (!Number.isFinite(secondValue) || secondValue <= firstValue))) {
+      setError(ruleOperator === "OUTSIDE_RANGE" ? "Enter a valid lower and upper value." : "Enter a valid threshold value.");
+      return;
+    }
+    setActingId("create-rule");
+    setError("");
+    try {
+      const condition = ruleOperator === "OUTSIDE_RANGE"
+        ? { operator: ruleOperator, lowerThreshold: firstValue, upperThreshold: secondValue } as const
+        : { operator: ruleOperator, threshold: firstValue } as const;
+      const created = await alertService.createRule(hierarchy.selectedStationId, {
+        field: ruleField,
+        unit: selectedMetadata.unit,
+        expectedMetadataRevision: selectedMetadata.metadataRevision,
+        condition,
+        severity: ruleSeverity,
+        isEnabled: ruleEnabled,
+      });
+      setRules((current) => [created, ...current]);
+      setRuleThreshold("");
+      setRuleUpperThreshold("");
+      setShowRuleForm(false);
     } catch (reason) {
       setError(normalizeApiError(reason).message);
     } finally {
@@ -186,13 +243,29 @@ export default function AlertWorkspace({ title, description, canAct = true }: Al
           <p className={styles.empty}>No rules configured for this station.</p>
         ) : rules.map((rule) => (
           <div className={styles.rule} key={rule.id}>
-            <div><strong>{rule.field} · {rule.severity}</strong><small>{rule.condition.operator} · revision {rule.revision} · {rule.evaluationStatus}</small></div>
-            <Button size="sm" variant={rule.isEnabled ? "outline" : "primary"} loading={actingId === rule.id} onClick={() => void toggleRule(rule)}>
+            <div><strong>{rule.field} · {rule.severity}</strong><small>{rule.condition.operator} · revision {rule.revision} · {rule.isEnabled ? "Enabled — evaluates automatically" : "Disabled — notifications paused"}</small></div>
+            {canAct && <Button size="sm" variant={rule.isEnabled ? "outline" : "primary"} loading={actingId === rule.id} onClick={() => void toggleRule(rule)}>
               {rule.isEnabled ? "Disable" : "Enable"}
-            </Button>
+            </Button>}
           </div>
         ))}
-        <p className={styles.note}><CheckCircle2 size={15} /> Rule creation stays disabled until the backend exposes station metadata revision required by the contract.</p>
+        {hierarchy.selectedStationId && metadata.length === 0 && <p className={styles.note}>This station does not provide confirmed soil fields for alert rules.</p>}
+        {canAct && hierarchy.selectedStationId && metadata.length > 0 && !showRuleForm && (
+          <div className={styles.ruleActions}><Button size="sm" icon={<Plus size={15} />} onClick={() => setShowRuleForm(true)}>Add Rule</Button></div>
+        )}
+        {canAct && showRuleForm && <form className={styles.ruleForm} onSubmit={createRule}>
+          <label>Soil field<select value={ruleField} onChange={(event) => setRuleField(event.target.value as SoilAlertField)}>
+            {metadata.map((item) => <option key={item.field} value={item.field}>{item.field} ({item.unit})</option>)}
+          </select></label>
+          <label>Condition<select value={ruleOperator} onChange={(event) => setRuleOperator(event.target.value as typeof ruleOperator)}>
+            <option value="ABOVE">Above</option><option value="BELOW">Below</option><option value="OUTSIDE_RANGE">Outside range</option>
+          </select></label>
+          <label>{ruleOperator === "OUTSIDE_RANGE" ? "Lower value" : "Threshold"}<input required type="number" step="any" value={ruleThreshold} onChange={(event) => setRuleThreshold(event.target.value)} /></label>
+          {ruleOperator === "OUTSIDE_RANGE" && <label>Upper value<input required type="number" step="any" value={ruleUpperThreshold} onChange={(event) => setRuleUpperThreshold(event.target.value)} /></label>}
+          <label>Severity<select value={ruleSeverity} onChange={(event) => setRuleSeverity(event.target.value as AlertSeverity)}><option value="WARNING">Warning</option><option value="CRITICAL">Critical</option></select></label>
+          <label className={styles.ruleSwitch}><input type="checkbox" checked={ruleEnabled} onChange={(event) => setRuleEnabled(event.target.checked)} /><span><strong>Enable now</strong><small>Evaluate automatically and notify authorized accounts.</small></span></label>
+          <div className={styles.ruleFormActions}><Button type="button" variant="outline" onClick={() => setShowRuleForm(false)}>Cancel</Button><Button type="submit" loading={actingId === "create-rule"}>Create Rule</Button></div>
+        </form>}
       </section>
     </div>
   );

@@ -72,6 +72,12 @@ export interface AlertRuleQuery {
   cursor?: string;
 }
 
+export interface SoilFieldMetadata {
+  field: SoilAlertField;
+  unit: string;
+  metadataRevision: string;
+}
+
 export interface CreateAlertRuleInput {
   field: SoilAlertField;
   unit: string;

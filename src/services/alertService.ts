@@ -10,6 +10,7 @@ import type {
   AlertRuleQuery,
   CreateAlertRuleInput,
   CursorPage,
+  SoilFieldMetadata,
   UpdateAlertRuleInput,
 } from "../types/alertApi.ts";
 
@@ -50,6 +51,13 @@ export function createAlertService(client: HttpClient) {
       const response = await client.get<ApiSuccessEnvelope<CursorPage<AlertRuleDto>>>(
         API_ENDPOINTS.alertRules.byStation(stationId),
         { params },
+      );
+      return response.data.data;
+    },
+
+    async getFieldMetadata(stationId: string): Promise<{ fields: SoilFieldMetadata[] }> {
+      const response = await client.get<ApiSuccessEnvelope<{ fields: SoilFieldMetadata[] }>>(
+        API_ENDPOINTS.stations.fieldMetadata(stationId),
       );
       return response.data.data;
     },

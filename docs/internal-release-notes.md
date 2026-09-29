@@ -55,9 +55,9 @@ Với mỗi thay đổi:
 
 - Thêm trang Admin `API Sources` theo contract backend: hiển thị chủ sở hữu, số
   trạm, `Visible Accounts`, trạng thái kết nối và thời điểm cập nhật.
-- Admin có thể thêm nguồn bằng API URL và `X-API-Key`, hoặc dán một đoạn chat,
-  curl hay JSON chứa đúng một URL và một key để điền tự động. Nội dung dán và key
-  được xóa khỏi state khi đóng/tạo xong, không ghi vào storage hay tài liệu.
+- Admin có thể thêm nguồn trực tiếp bằng API URL và `X-API-Key`; Farm và Plot hỗ
+  trợ chọn dữ liệu có sẵn hoặc nhập tên mới. Bỏ khối dán chat/curl/JSON để form
+  ngắn, rõ và không giữ dữ liệu kết nối trong state phụ.
 - Chỉ chủ sở hữu nguồn mới thấy thao tác kiểm tra kết nối, chia sẻ/thu hồi Farmer
   và reveal key. Reveal yêu cầu mật khẩu hiện tại và tự đóng sau thời gian backend
   cho phép; Admin chỉ giám sát nguồn Farmer, không thể thu hồi key Farmer tự nhập.
@@ -83,6 +83,34 @@ Với mỗi thay đổi:
   surface, border, màu trạng thái và khoảng cách chung.
 - Thay `N/A` ở Gateway/Sensor bằng `Not supported` để thể hiện đúng việc backend
   chưa có contract thay vì một giá trị dữ liệu mơ hồ.
+
+### Checkpoint Admin soil source — 2026-09-29
+
+- Chỉ nhận station có dữ liệu đo đất; `CENTER` bị loại ở cả nguồn mới và dữ liệu
+  nguồn cũ, nên inventory, hierarchy và màn hình share đều còn đúng 6 NODE.
+- `Manage Access` giới hạn quyền theo từng station. Chủ nguồn chọn đúng NODE cho
+  từng Farmer; người được share chỉ đọc dữ liệu/rule/alert và không được reveal,
+  thu hồi hay xóa nguồn.
+- Thêm `View Data`, xóa nguồn có xác nhận và bảo toàn audit, cùng hiển thị số tài
+  khoản đang nhìn thấy nguồn. Form thêm nguồn không gắn cứng Farm/Plot demo.
+- Alert Center lấy field, unit và metadata revision thật theo station để tạo rule.
+  Rule `Enabled` được đánh giá tự động và phát thông báo cho chủ nguồn cùng tài
+  khoản đang được share station; `Disabled` giữ cấu hình nhưng không phát cảnh báo.
+- User Management chỉ sửa role trong drawer hiện có, hiển thị quyền nguồn/station
+  ở chế độ đọc và quản lý quyền tại API Sources. Super Admin có nút xóa tài khoản
+  riêng; backend khóa tài khoản và thu hồi session/credential nhưng giữ audit.
+- Dashboard chỉ còn Farms, Plots, Soil Stations và Users; bỏ Gateway, Sensor và
+  Operational Health vì không thuộc phạm vi giám sát đất hiện tại.
+
+### Bằng chứng checkpoint Admin
+
+- Frontend: 87/87 test đạt; production build, lint và `git diff --check` đạt.
+- Backend: 67/67 file, 405/405 test đạt; format, typecheck, lint, build và secret
+  scan đạt. Test hồi quy xác nhận nguồn cũ không thể liệt kê hoặc share `CENTER`.
+- Browser local xác nhận API Sources hiển thị 6 station và Manage Access chỉ còn
+  NODE01–NODE06. Không dùng hoặc ghi lại X-API-Key trong bằng chứng.
+- FE và BE chỉ commit local, không push. Settings vẫn để cuối Phase B; Farmer và
+  Client Developer chưa được đưa vào checkpoint này.
 
 ## v2.5.4 — 2026-09-26 (Client Developer integration)
 

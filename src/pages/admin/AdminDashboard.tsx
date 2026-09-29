@@ -101,10 +101,10 @@ export default function AdminDashboard() {
   );
 
   const kpis = [
-    { label: "Loaded Farms", value: data.farms.length, icon: Database },
-    { label: "Loaded Plots", value: data.plots.length, icon: Activity },
-    { label: "Loaded Stations", value: data.stations.length, icon: Server },
-    { label: "Loaded Users", value: data.userCount, icon: Users },
+    { label: "Farms", value: data.farms.length, icon: Database },
+    { label: "Plots", value: data.plots.length, icon: Activity },
+    { label: "Soil Stations", value: data.stations.length, icon: Server },
+    { label: "Users", value: data.userCount, icon: Users },
   ];
 
   return (
@@ -157,8 +157,8 @@ export default function AdminDashboard() {
         <article className={styles.panel}>
           <div className={styles.sectionHeading}>
             <div>
-              <h2>Registered Stations</h2>
-              <p>Stations in the selected farm scope.</p>
+              <h2>Registered Soil Stations</h2>
+              <p>Soil stations in the selected farm.</p>
             </div>
             <strong className={styles.metric}>{visibleStations.length}</strong>
           </div>
@@ -167,28 +167,16 @@ export default function AdminDashboard() {
         <article className={styles.panel}>
           <div className={styles.sectionHeading}>
             <div>
-              <h2>Stations by Farm</h2>
-              <p>Distribution from the current backend hierarchy.</p>
+              <h2>Soil Stations by Farm</h2>
+              <p>Distribution across the farms shown above.</p>
             </div>
           </div>
           <DonutChart
             data={stationDistribution}
             centerValue={data.stations.length}
-            centerLabel="Stations"
+            centerLabel="Soil stations"
           />
         </article>
-      </section>
-
-      <section className={styles.panel}>
-        <div className={styles.sectionHeading}>
-          <div>
-            <h2>Operational Health</h2>
-            <p>
-              Online, stale, sensor and gateway health will appear when the backend exposes
-              those status contracts. No values are estimated.
-            </p>
-          </div>
-        </div>
       </section>
     </div>
   );

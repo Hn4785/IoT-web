@@ -224,6 +224,35 @@
   font-size: var(--font-size-caption);
 }
 
+.identityBox {
+  display: grid;
+  gap: 4px;
+  padding: var(--spacing-4);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-subtle);
+}
+
+.identityBox span,
+.identityBox small,
+.sharedSource span {
+  color: var(--color-text-tertiary);
+}
+
+.sharedSource {
+  display: grid;
+  gap: 3px;
+  margin-top: var(--spacing-3);
+  padding: var(--spacing-3);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-subtle);
+}
+
+.sharedSource span {
+  margin: 0;
+  font-size: var(--font-size-caption);
+}
+
 .authBox > label {
   margin-top: var(--spacing-3);
 }
