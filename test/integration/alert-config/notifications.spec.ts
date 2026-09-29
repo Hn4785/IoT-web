@@ -4,6 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { AlertEvaluationService } from '../../../src/alert-config/alert-evaluation.service.js';
 import { createApp } from '../../../src/app/create-app.js';
+import { SourceSecretService } from '../../../src/data-sources/source-secret.service.js';
 import { NotificationDeliveryWorker } from '../../../src/notifications/notification-delivery.worker.js';
 import { issueAccessToken } from '../../helpers/access-token.js';
 import { createTestPrismaClient, prepareTestDatabase } from '../../helpers/database.js';
@@ -19,7 +20,7 @@ describeDb('Phase C in-app notifications', () => {
   let outsiderToken: string;
   let clientToken: string;
   let farmerId: string;
-  let farmId: string;
+  let sourceId: string;
   let ruleId: string;
   let evaluator: AlertEvaluationService;
   let deliveryWorker: NotificationDeliveryWorker;
@@ -66,12 +67,39 @@ describeDb('Phase C in-app notifications', () => {
       }),
     ]);
     farmerId = farmer.id;
+    const config = makeTestRuntimeConfig();
+    const encrypted = new SourceSecretService(config).encrypt('notification-secret');
+    const source = await prisma.dataSource.create({
+      data: {
+        ownerUserId: admin.id,
+        name: 'Notification source',
+        baseUrl: 'https://notifications.example.test/api/v1',
+        keyCiphertext: encrypted.ciphertext,
+        keyNonce: encrypted.nonce,
+        keyAuthTag: encrypted.authTag,
+        keyPreview: 'cret',
+        connectionStatus: 'CONNECTED',
+        lastCheckedAt: new Date(),
+      },
+    });
+    sourceId = source.id;
     const farm = await prisma.farm.create({ data: { name: 'Notification Farm' } });
-    farmId = farm.id;
     await prisma.farmMembership.create({ data: { userId: farmer.id, farmId: farm.id } });
     const plot = await prisma.plot.create({ data: { farmId: farm.id, name: 'Notification Plot' } });
     const station = await prisma.station.create({
-      data: { plotId: plot.id, upstreamCode: 'NOTIFY01', name: 'Notification Station' },
+      data: {
+        plotId: plot.id,
+        dataSourceId: source.id,
+        upstreamCode: 'NOTIFY01',
+        name: 'Notification Station',
+      },
+    });
+    await prisma.dataSourceGrant.create({
+      data: {
+        dataSourceId: source.id,
+        userId: farmer.id,
+        stations: { create: { stationId: station.id } },
+      },
     });
     const rule = await prisma.alertRule.create({
       data: {
@@ -86,7 +114,6 @@ describeDb('Phase C in-app notifications', () => {
       },
     });
     ruleId = rule.id;
-    const config = makeTestRuntimeConfig();
     const tokens = await Promise.all(
       [admin.id, farmer.id, outsider.id, client.id].map((userId) =>
         issueAccessToken({ prisma, config, userId }),
@@ -270,17 +297,43 @@ describeDb('Phase C in-app notifications', () => {
     ).toBe(2);
   });
 
-  it('denies Client Developer and hides notifications outside current farm membership', async () => {
+  it('denies Client Developer and preserves already delivered notifications after revoke', async () => {
     expect((await list(clientToken)).statusCode).toBe(403);
     expect((await list(outsiderToken)).json<{ data: { items: unknown[] } }>().data.items).toEqual(
       [],
     );
 
-    await prisma.farmMembership.delete({ where: { userId_farmId: { userId: farmerId, farmId } } });
+    const alert = await prisma.alert.findFirstOrThrow({ where: { ruleId } });
+    const sharedAlerts = await app.inject({
+      method: 'GET',
+      url: '/api/v1/alerts',
+      headers: { authorization: `Bearer ${farmerToken}` },
+    });
+    expect(sharedAlerts.statusCode).toBe(200);
+    expect(sharedAlerts.json<{ data: { items: Array<{ id: string }> } }>().data.items).toContainEqual(
+      expect.objectContaining({ id: alert.id }),
+    );
+    const forbiddenMutation = await app.inject({
+      method: 'POST',
+      url: `/api/v1/alerts/${alert.id}/acknowledgements`,
+      headers: { authorization: `Bearer ${farmerToken}`, 'idempotency-key': randomUUID() },
+      payload: {},
+    });
+    expect(forbiddenMutation.statusCode).toBe(403);
+
+    await prisma.dataSourceGrant.delete({
+      where: { dataSourceId_userId: { dataSourceId: sourceId, userId: farmerId } },
+    });
+    expect(
+      (await app.inject({
+        method: 'GET',
+        url: '/api/v1/alerts',
+        headers: { authorization: `Bearer ${farmerToken}` },
+      })).json<{ data: { items: unknown[] } }>().data.items,
+    ).toEqual([]);
     expect(
       (await list(farmerToken)).json<{ data: { items: unknown[]; unreadCount: number } }>().data,
-    ).toMatchObject({ items: [], unreadCount: 0 });
-    await prisma.farmMembership.create({ data: { userId: farmerId, farmId } });
+    ).toMatchObject({ unreadCount: 3 });
   });
 
   it('marks a notification read and unread idempotently', async () => {

@@ -70,13 +70,7 @@ export class AlertLifecycleService {
         rule: {
           ...(query.stationId ? { stationId: query.stationId } : {}),
           ...(query.severity ? { severity: query.severity } : {}),
-          ...(principal.role === 'FARMER'
-            ? {
-                station: {
-                  plot: { farm: { memberships: { some: { userId: principal.userId } } } },
-                },
-              }
-            : {}),
+          ...(principal.role === 'FARMER' ? { station: this.stationReadScope(principal) } : {}),
         },
       },
       orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
@@ -138,6 +132,7 @@ export class AlertLifecycleService {
     requestId: string,
   ): Promise<AlertDto> {
     this.assertRole(principal);
+    await this.requireAlertMutation(principal, alertId);
     const key = rawKey.trim();
     if (!key || key.length > 160) {
       throw new AppError('VALIDATION_ERROR', 400, 'Idempotency-Key header is required');
@@ -162,15 +157,7 @@ export class AlertLifecycleService {
         const authorized = await tx.alert.findFirst({
           where: {
             id: alertId,
-            ...(principal.role === 'FARMER'
-              ? {
-                  rule: {
-                    station: {
-                      plot: { farm: { memberships: { some: { userId: principal.userId } } } },
-                    },
-                  },
-                }
-              : {}),
+            rule: { station: this.stationMutationScope(principal) },
           },
           select: { ruleId: true },
         });
@@ -179,15 +166,7 @@ export class AlertLifecycleService {
         const current = await tx.alert.findFirst({
           where: {
             id: alertId,
-            ...(principal.role === 'FARMER'
-              ? {
-                  rule: {
-                    station: {
-                      plot: { farm: { memberships: { some: { userId: principal.userId } } } },
-                    },
-                  },
-                }
-              : {}),
+            rule: { station: this.stationMutationScope(principal) },
           },
           include: alertTransitionInclude,
         });
@@ -293,19 +272,51 @@ export class AlertLifecycleService {
       where: {
         id: alertId,
         ...(principal.role === 'FARMER'
-          ? {
-              rule: {
-                station: {
-                  plot: { farm: { memberships: { some: { userId: principal.userId } } } },
-                },
-              },
-            }
+          ? { rule: { station: this.stationReadScope(principal) } }
           : {}),
       },
       include: alertInclude,
     });
     if (!row) throw new AppError('NOT_FOUND', 404, 'Alert not found');
     return row;
+  }
+
+  private async requireAlertMutation(
+    principal: CurrentPrincipalValue,
+    alertId: string,
+  ): Promise<void> {
+    await this.findAuthorized(principal, alertId);
+    const mutable = await this.prisma.alert.findFirst({
+      where: { id: alertId, rule: { station: this.stationMutationScope(principal) } },
+      select: { id: true },
+    });
+    if (!mutable) {
+      throw new AppError('FORBIDDEN', 403, 'Only the source owner can change alerts');
+    }
+  }
+
+  private stationReadScope(principal: CurrentPrincipalValue): Prisma.StationWhereInput {
+    return {
+      OR: [
+        {
+          dataSource: { kind: 'SYSTEM' },
+          plot: { farm: { memberships: { some: { userId: principal.userId } } } },
+        },
+        { dataSource: { ownerUserId: principal.userId } },
+        { sourceGrants: { some: { userId: principal.userId } } },
+      ],
+    };
+  }
+
+  private stationMutationScope(principal: CurrentPrincipalValue): Prisma.StationWhereInput {
+    return principal.role === 'ADMIN'
+      ? {
+          OR: [
+            { dataSource: { ownerUserId: principal.userId } },
+            { dataSource: { kind: 'SYSTEM' } },
+          ],
+        }
+      : { dataSource: { ownerUserId: principal.userId } };
   }
 
   private assertRole(principal: CurrentPrincipalValue): void {

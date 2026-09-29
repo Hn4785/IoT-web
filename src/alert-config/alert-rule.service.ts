@@ -12,6 +12,7 @@ import {
   SOIL_METADATA_PROVIDER,
   type SoilMetadataProvider,
 } from '../station-data/soil-metadata.provider.js';
+import { StationRepository } from '../station-data/station.repository.js';
 import { AlertConfigError } from './alert-config.errors.js';
 import {
   type AlertRuleDto,
@@ -30,6 +31,7 @@ export class AlertRuleService {
     @Inject(SOIL_METADATA_PROVIDER)
     private readonly metadataProvider: SoilMetadataProvider,
     @Inject(RUNTIME_CONFIG) private readonly config: RuntimeConfig,
+    private readonly stations: StationRepository,
   ) {}
 
   async listRules(
@@ -90,7 +92,7 @@ export class AlertRuleService {
     input: CreateAlertRuleInput,
   ): Promise<AlertRuleDto> {
     this.assertAuthorizedRole(principal);
-    const station = await this.requireStationAccess(principal, stationId);
+    const station = await this.requireStationMutation(principal, stationId);
 
     const trimmedKey = idempotencyKey.trim();
     if (!trimmedKey || trimmedKey.length > 160) {
@@ -214,6 +216,7 @@ export class AlertRuleService {
   ): Promise<AlertRuleDto> {
     this.assertAuthorizedRole(principal);
     const rule = await this.findAuthorizedRule(principal, ruleId);
+    await this.requireStationMutation(principal, rule.stationId);
 
     if (rule.revision !== input.expectedRevision) {
       throw new AlertConfigError('VERSION_CONFLICT', 409, 'Rule revision conflict');
@@ -251,13 +254,7 @@ export class AlertRuleService {
         const current = await tx.alertRule.findFirst({
           where: {
             id: rule.id,
-            ...(principal.role === 'FARMER'
-              ? {
-                  station: {
-                    plot: { farm: { memberships: { some: { userId: principal.userId } } } },
-                  },
-                }
-              : {}),
+            station: this.stationMutationScope(principal),
           },
           include: { station: { select: { plot: { select: { farmId: true } } } } },
         });
@@ -343,29 +340,42 @@ export class AlertRuleService {
     principal: CurrentPrincipalValue,
     stationId: string,
   ): Promise<{ id: string; upstreamCode: string }> {
+    const station = await this.stations.getAuthorizedStation(principal, stationId);
+    if (!station) {
+      throw new AppError('NOT_FOUND', 404, 'Station not found');
+    }
+    return { id: station.id, upstreamCode: station.upstreamCode };
+  }
+
+  private async requireStationMutation(
+    principal: CurrentPrincipalValue,
+    stationId: string,
+  ): Promise<{ id: string; upstreamCode: string }> {
+    await this.requireStationAccess(principal, stationId);
     const station = await this.prisma.station.findFirst({
-      where: {
-        id: stationId,
-        ...(principal.role === 'FARMER'
-          ? { plot: { farm: { memberships: { some: { userId: principal.userId } } } } }
-          : {}),
-      },
+      where: { id: stationId, ...this.stationMutationScope(principal) },
       select: { id: true, upstreamCode: true },
     });
     if (!station) {
-      throw new AppError('NOT_FOUND', 404, 'Station not found');
+      throw new AppError('FORBIDDEN', 403, 'Only the source owner can change alert rules');
     }
     return station;
   }
 
+  private stationMutationScope(principal: CurrentPrincipalValue): Prisma.StationWhereInput {
+    return principal.role === 'ADMIN'
+      ? {
+          OR: [
+            { dataSource: { ownerUserId: principal.userId } },
+            { dataSource: { kind: 'SYSTEM' } },
+          ],
+        }
+      : { dataSource: { ownerUserId: principal.userId } };
+  }
+
   private async findAuthorizedRule(principal: CurrentPrincipalValue, ruleId: string) {
-    const rule = await this.prisma.alertRule.findFirst({
-      where: {
-        id: ruleId,
-        ...(principal.role === 'FARMER'
-          ? { station: { plot: { farm: { memberships: { some: { userId: principal.userId } } } } } }
-          : {}),
-      },
+    const rule = await this.prisma.alertRule.findUnique({
+      where: { id: ruleId },
       include: {
         station: { select: { id: true, upstreamCode: true } },
       },
@@ -373,6 +383,7 @@ export class AlertRuleService {
     if (!rule) {
       throw new AppError('NOT_FOUND', 404, 'Alert rule not found');
     }
+    await this.requireStationAccess(principal, rule.stationId);
     return rule;
   }
 

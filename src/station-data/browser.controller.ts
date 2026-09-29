@@ -1,4 +1,4 @@
-import { Controller, Get, Header, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Header, Inject, Param, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOkResponse, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
 
 import { AccessTokenGuard } from '../authorization/access-token.guard.js';
@@ -23,6 +23,10 @@ import {
 } from './station-data.contracts.js';
 import { StationDataService } from './station-data.service.js';
 import { StationRepository } from './station.repository.js';
+import {
+  SOIL_METADATA_PROVIDER,
+  type SoilMetadataProvider,
+} from './soil-metadata.provider.js';
 
 const pageSchema = (item: object) => ({
   type: 'object' as const,
@@ -43,6 +47,8 @@ export class BrowserStationController {
     private readonly hierarchy: HierarchyService,
     private readonly stationRepository: StationRepository,
     private readonly stationDataService: StationDataService,
+    @Inject(SOIL_METADATA_PROVIDER)
+    private readonly metadataProvider: SoilMetadataProvider,
   ) {}
 
   @Get('farms')
@@ -117,6 +123,70 @@ export class BrowserStationController {
     return {
       success: true,
       data: await this.hierarchy.getStation(principal, parseUuid(stationId)),
+    };
+  }
+
+  @Get('stations/:stationId/field-metadata')
+  @Header('Cache-Control', 'no-store')
+  @ApiParam({ name: 'stationId', schema: { type: 'string', format: 'uuid' } })
+  @ApiOkResponse({
+    schema: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['success', 'data'],
+      properties: {
+        success: { type: 'boolean', enum: [true] },
+        data: {
+          type: 'object',
+          additionalProperties: false,
+          required: ['fields'],
+          properties: {
+            fields: {
+              type: 'array',
+              items: {
+                type: 'object',
+                additionalProperties: false,
+                required: ['field', 'unit', 'metadataRevision'],
+                properties: {
+                  field: { type: 'string', enum: [...SOIL_FIELDS] },
+                  unit: { type: 'string' },
+                  metadataRevision: { type: 'string' },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+  async getFieldMetadata(
+    @CurrentPrincipal() principal: CurrentPrincipalValue,
+    @Param('stationId') stationId: string,
+  ) {
+    const validStationId = parseUuid(stationId);
+    if (principal.status !== 'ACTIVE' || !['ADMIN', 'FARMER'].includes(principal.role)) {
+      throw new AppError('FORBIDDEN', 403, 'Access is forbidden');
+    }
+    const station = await this.stationRepository.getAuthorizedStation(principal, validStationId);
+    if (!station) throw new AppError('NOT_FOUND', 404, 'Resource not found');
+    const metadata = await Promise.all(
+      SOIL_FIELDS.map(async (field) => {
+        let result = await this.metadataProvider.getFieldMetadata(station.upstreamCode, field);
+        if (!result.isConfirmed) {
+          result = await this.metadataProvider.getFieldMetadata(station.id, field);
+        }
+        return result;
+      }),
+    );
+    return {
+      success: true,
+      data: {
+        fields: metadata.flatMap((field) =>
+          field.isConfirmed
+            ? [{ field: field.field, unit: field.unit, metadataRevision: field.revision }]
+            : [],
+        ),
+      },
     };
   }
 

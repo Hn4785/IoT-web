@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { createApp } from '../../../src/app/create-app.js';
+import { SourceSecretService } from '../../../src/data-sources/source-secret.service.js';
 import { queueLifecycleNotifications } from '../../../src/notifications/notification-delivery.js';
 import { NotificationDeliveryWorker } from '../../../src/notifications/notification-delivery.worker.js';
 import { createTestPrismaClient, prepareTestDatabase } from '../../helpers/database.js';
@@ -26,10 +27,39 @@ describeDb('durable notification delivery', () => {
   });
 
   it('delivers more than one recipient batch exactly once and excludes inactive roles', async () => {
+    const config = makeTestRuntimeConfig();
+    const owner = await prisma.user.create({
+      data: {
+        email: 'delivery-owner@example.test',
+        displayName: 'Delivery Owner',
+        passwordHash: 'test',
+        role: 'ADMIN',
+        status: 'ACTIVE',
+      },
+    });
+    const encrypted = new SourceSecretService(config).encrypt('delivery-secret');
+    const source = await prisma.dataSource.create({
+      data: {
+        ownerUserId: owner.id,
+        name: 'Delivery source',
+        baseUrl: 'https://delivery.example.test/api/v1',
+        keyCiphertext: encrypted.ciphertext,
+        keyNonce: encrypted.nonce,
+        keyAuthTag: encrypted.authTag,
+        keyPreview: 'cret',
+        connectionStatus: 'CONNECTED',
+        lastCheckedAt: new Date(),
+      },
+    });
     const farm = await prisma.farm.create({ data: { name: 'Delivery Farm' } });
     const plot = await prisma.plot.create({ data: { farmId: farm.id, name: 'Delivery Plot' } });
     const station = await prisma.station.create({
-      data: { plotId: plot.id, name: 'Delivery Station', upstreamCode: 'DELIVERY01' },
+      data: {
+        plotId: plot.id,
+        dataSourceId: source.id,
+        name: 'Delivery Station',
+        upstreamCode: 'DELIVERY01',
+      },
     });
     const rule = await prisma.alertRule.create({
       data: {
@@ -55,13 +85,27 @@ describeDb('durable notification delivery', () => {
       },
     });
     const users = Array.from({ length: 205 }, (_, index) => ({
-      email: `delivery-admin-${index.toString()}@example.test`,
-      displayName: `Admin ${index.toString()}`,
+      email: `delivery-farmer-${index.toString()}@example.test`,
+      displayName: `Farmer ${index.toString()}`,
       passwordHash: 'test',
-      role: 'ADMIN' as const,
+      role: 'FARMER' as const,
       status: 'ACTIVE' as const,
     }));
     await prisma.user.createMany({ data: users });
+    const grantees = await prisma.user.findMany({
+      where: { email: { startsWith: 'delivery-farmer-' } },
+      select: { id: true },
+    });
+    await prisma.dataSourceGrant.createMany({
+      data: grantees.map(({ id }) => ({ dataSourceId: source.id, userId: id })),
+    });
+    await prisma.dataSourceGrantStation.createMany({
+      data: grantees.map(({ id }) => ({
+        dataSourceId: source.id,
+        userId: id,
+        stationId: station.id,
+      })),
+    });
     await prisma.user.createMany({
       data: [
         {
@@ -89,22 +133,49 @@ describeDb('durable notification delivery', () => {
     });
     expect(await prisma.inAppNotification.count()).toBe(0);
     expect(await worker.runOnce()).toBe(3);
-    expect(await prisma.inAppNotification.count({ where: { lifecycleEventId: event.id } })).toBe(
-      205,
-    );
+    expect(await prisma.inAppNotification.count({ where: { lifecycleEventId: event.id } })).toBe(206);
     const job = await prisma.notificationDeliveryJob.findUniqueOrThrow({
       where: { lifecycleEventId: event.id },
     });
     expect(job.deliveredAt).toBeInstanceOf(Date);
     expect(await worker.runOnce()).toBe(0);
-    expect(await prisma.inAppNotification.count()).toBe(205);
+    expect(await prisma.inAppNotification.count()).toBe(206);
   });
 
-  it('freezes recipient eligibility before later delivery batches', async () => {
+  it('uses station grants at snapshot time and keeps historical delivery after revoke', async () => {
+    const config = makeTestRuntimeConfig();
+    const owner = await prisma.user.create({
+      data: {
+        email: 'snapshot-owner@example.test',
+        displayName: 'Snapshot Owner',
+        passwordHash: 'test',
+        role: 'ADMIN',
+        status: 'ACTIVE',
+      },
+    });
+    const encrypted = new SourceSecretService(config).encrypt('snapshot-secret');
+    const source = await prisma.dataSource.create({
+      data: {
+        ownerUserId: owner.id,
+        name: 'Snapshot source',
+        baseUrl: 'https://snapshot.example.test/api/v1',
+        keyCiphertext: encrypted.ciphertext,
+        keyNonce: encrypted.nonce,
+        keyAuthTag: encrypted.authTag,
+        keyPreview: 'cret',
+        connectionStatus: 'CONNECTED',
+        lastCheckedAt: new Date(),
+      },
+    });
     const farm = await prisma.farm.create({ data: { name: 'Snapshot Farm' } });
     const plot = await prisma.plot.create({ data: { farmId: farm.id, name: 'Snapshot Plot' } });
     const station = await prisma.station.create({
-      data: { plotId: plot.id, name: 'Snapshot Station', upstreamCode: 'SNAPSHOT01' },
+      data: {
+        plotId: plot.id,
+        dataSourceId: source.id,
+        name: 'Snapshot Station',
+        upstreamCode: 'SNAPSHOT01',
+      },
     });
     const rule = await prisma.alertRule.create({
       data: {
@@ -129,15 +200,6 @@ describeDb('durable notification delivery', () => {
         latestObservedAt: new Date(),
       },
     });
-    await prisma.user.createMany({
-      data: Array.from({ length: 1000 }, (_, index) => ({
-        email: `snapshot-admin-${index.toString()}@example.test`,
-        displayName: `Snapshot Admin ${index.toString()}`,
-        passwordHash: 'test',
-        role: 'ADMIN' as const,
-        status: 'ACTIVE' as const,
-      })),
-    });
     const initiallyEligibleId = 'ffffffff-ffff-4fff-8fff-fffffffffffe';
     const newlyEligibleId = 'ffffffff-ffff-4fff-8fff-ffffffffffff';
     await prisma.user.createMany({
@@ -150,8 +212,11 @@ describeDb('durable notification delivery', () => {
         status: 'ACTIVE' as const,
       })),
     });
-    await prisma.farmMembership.create({
-      data: { farmId: farm.id, userId: initiallyEligibleId },
+    await prisma.dataSourceGrant.create({
+      data: { dataSourceId: source.id, userId: initiallyEligibleId },
+    });
+    await prisma.dataSourceGrantStation.create({
+      data: { dataSourceId: source.id, userId: initiallyEligibleId, stationId: station.id },
     });
     const event = await prisma.$transaction(async (tx) => {
       const created = await tx.alertLifecycleEvent.create({
@@ -161,21 +226,36 @@ describeDb('durable notification delivery', () => {
       return created;
     });
 
-    expect(await worker.runOnce()).toBe(10);
-    await prisma.farmMembership.delete({
-      where: { userId_farmId: { userId: initiallyEligibleId, farmId: farm.id } },
+    await prisma.dataSourceGrant.delete({
+      where: {
+        dataSourceId_userId: { dataSourceId: source.id, userId: initiallyEligibleId },
+      },
     });
-    await prisma.farmMembership.create({ data: { farmId: farm.id, userId: newlyEligibleId } });
+    await prisma.dataSourceGrant.create({
+      data: { dataSourceId: source.id, userId: newlyEligibleId },
+    });
+    await prisma.dataSourceGrantStation.create({
+      data: { dataSourceId: source.id, userId: newlyEligibleId, stationId: station.id },
+    });
     expect(await worker.runOnce()).toBeGreaterThan(0);
     expect(
       await prisma.inAppNotification.count({
         where: { lifecycleEventId: event.id, recipientUserId: initiallyEligibleId },
       }),
-    ).toBe(1);
+    ).toBe(0);
     expect(
       await prisma.inAppNotification.count({
         where: { lifecycleEventId: event.id, recipientUserId: newlyEligibleId },
       }),
-    ).toBe(0);
+    ).toBe(1);
+
+    await prisma.dataSourceGrant.delete({
+      where: { dataSourceId_userId: { dataSourceId: source.id, userId: newlyEligibleId } },
+    });
+    expect(
+      await prisma.inAppNotification.count({
+        where: { lifecycleEventId: event.id, recipientUserId: newlyEligibleId },
+      }),
+    ).toBe(1);
   });
 });

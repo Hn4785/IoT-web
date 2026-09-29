@@ -4,6 +4,7 @@ import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { createApp } from '../../../src/app/create-app.js';
+import { SourceSecretService } from '../../../src/data-sources/source-secret.service.js';
 import {
   SOIL_METADATA_PROVIDER,
   type SoilMetadataProvider,
@@ -29,6 +30,10 @@ describeDb('alert-config rules integration (PostgreSQL)', () => {
   beforeAll(async () => {
     prisma = createTestPrismaClient();
     await prepareTestDatabase();
+    const config = makeTestRuntimeConfig({
+      alertDemoMetadataEnabled: true,
+      alertDemoStationCodes: ['NODE01'],
+    });
 
     const [admin, farmer, client] = await Promise.all([
       prisma.user.create({
@@ -75,10 +80,32 @@ describeDb('alert-config rules integration (PostgreSQL)', () => {
     stationB = await prisma.station.create({
       data: { plotId: plotB.id, upstreamCode: 'NODE02', name: 'Station B' },
     });
-
-    const config = makeTestRuntimeConfig({
-      alertDemoMetadataEnabled: true,
-      alertDemoStationCodes: ['NODE01'],
+    const encrypted = new SourceSecretService(config).encrypt('rules-provider-secret');
+    const source = await prisma.dataSource.create({
+      data: {
+        ownerUserId: admin.id,
+        name: 'Rules soil source',
+        baseUrl: 'https://soil.example.test/api/v1',
+        keyCiphertext: encrypted.ciphertext,
+        keyNonce: encrypted.nonce,
+        keyAuthTag: encrypted.authTag,
+        keyPreview: 'cret',
+        connectionStatus: 'CONNECTED',
+        lastCheckedAt: new Date(),
+      },
+    });
+    await prisma.station.updateMany({
+      where: { id: { in: [stationA.id, stationB.id] } },
+      data: { dataSourceId: source.id },
+    });
+    await prisma.dataSourceGrant.create({
+      data: {
+        dataSourceId: source.id,
+        userId: farmer.id,
+        stations: {
+          create: { stationId: stationA.id },
+        },
+      },
     });
 
     adminToken = await issueAccessToken({ prisma, config, userId: admin.id });
@@ -193,7 +220,7 @@ describeDb('alert-config rules integration (PostgreSQL)', () => {
     expect(replay.json().data.id).toBe(first.json().data.id);
   });
 
-  it('allows Farmer to manage rules in own farm scope but returns 404 for cross-scope station', async () => {
+  it('lets a station grantee read rules but not mutate them or read another source station', async () => {
     const farmerRes = await app.inject({
       method: 'GET',
       url: `/api/v1/stations/${stationA.id}/alert-rules`,
@@ -202,6 +229,25 @@ describeDb('alert-config rules integration (PostgreSQL)', () => {
     expect(farmerRes.statusCode).toBe(200);
     expect(farmerRes.json().success).toBe(true);
 
+    const createRes = await app.inject({
+      method: 'POST',
+      url: `/api/v1/stations/${stationA.id}/alert-rules`,
+      headers: {
+        authorization: `Bearer ${farmerToken}`,
+        'idempotency-key': `idem-grantee-${randomUUID()}`,
+      },
+      payload: {
+        field: 'phosphorus',
+        unit: 'mg/kg',
+        expectedMetadataRevision: 'demo:v1:phosphorus',
+        condition: { operator: 'BELOW', threshold: 10 },
+        severity: 'WARNING',
+        isEnabled: true,
+      },
+    });
+    expect(createRes.statusCode).toBe(403);
+    expect(createRes.json().error.code).toBe('FORBIDDEN');
+
     const crossScopeRes = await app.inject({
       method: 'GET',
       url: `/api/v1/stations/${stationB.id}/alert-rules`,
@@ -209,6 +255,35 @@ describeDb('alert-config rules integration (PostgreSQL)', () => {
     });
     expect(crossScopeRes.statusCode).toBe(404);
     expect(crossScopeRes.json().error.code).toBe('NOT_FOUND');
+  });
+
+  it('returns only confirmed field metadata within the caller station scope', async () => {
+    const shared = await app.inject({
+      method: 'GET',
+      url: `/api/v1/stations/${stationA.id}/field-metadata`,
+      headers: { authorization: `Bearer ${farmerToken}` },
+    });
+    expect(shared.statusCode).toBe(200);
+    expect(shared.json().data.fields).toContainEqual({
+      field: 'moisture',
+      unit: '%',
+      metadataRevision: 'demo:v1:moisture',
+    });
+
+    const unshared = await app.inject({
+      method: 'GET',
+      url: `/api/v1/stations/${stationB.id}/field-metadata`,
+      headers: { authorization: `Bearer ${farmerToken}` },
+    });
+    expect(unshared.statusCode).toBe(404);
+
+    const unconfirmed = await app.inject({
+      method: 'GET',
+      url: `/api/v1/stations/${stationB.id}/field-metadata`,
+      headers: { authorization: `Bearer ${adminToken}` },
+    });
+    expect(unconfirmed.statusCode).toBe(200);
+    expect(unconfirmed.json().data.fields).toEqual([]);
   });
 
   it('returns 403 FORBIDDEN for Client Developer role', async () => {

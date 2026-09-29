@@ -79,16 +79,27 @@ export class NotificationDeliveryWorker implements OnApplicationBootstrap, OnMod
         await tx.$executeRaw`
           INSERT INTO "NotificationDeliveryRecipient" ("lifecycleEventId", "recipientUserId")
           SELECT ${id}::uuid, eligible."id" FROM (
-            SELECT users."id" FROM "User" AS users
-            WHERE users."status" = 'ACTIVE'
-              AND (
-                users."role" = 'ADMIN'
-                OR (users."role" = 'FARMER' AND EXISTS (
-                  SELECT 1 FROM "FarmMembership" AS membership
-                  WHERE membership."userId" = users."id"
-                    AND membership."farmId" = ${job.farmId}::uuid
-                ))
-              )
+            SELECT owner_user."id"
+            FROM "AlertLifecycleEvent" AS lifecycle
+            JOIN "Alert" AS alert_row ON alert_row."id" = lifecycle."alertId"
+            JOIN "AlertRule" AS rule_row ON rule_row."id" = alert_row."ruleId"
+            JOIN "Station" AS station_row ON station_row."id" = rule_row."stationId"
+            JOIN "DataSource" AS source_row ON source_row."id" = station_row."dataSourceId"
+            JOIN "User" AS owner_user ON owner_user."id" = source_row."ownerUserId"
+            WHERE lifecycle."id" = ${id}::uuid
+              AND owner_user."status" = 'ACTIVE'
+              AND owner_user."role" IN ('ADMIN', 'FARMER')
+            UNION
+            SELECT grantee."id"
+            FROM "AlertLifecycleEvent" AS lifecycle
+            JOIN "Alert" AS alert_row ON alert_row."id" = lifecycle."alertId"
+            JOIN "AlertRule" AS rule_row ON rule_row."id" = alert_row."ruleId"
+            JOIN "DataSourceGrantStation" AS station_grant
+              ON station_grant."stationId" = rule_row."stationId"
+            JOIN "User" AS grantee ON grantee."id" = station_grant."userId"
+            WHERE lifecycle."id" = ${id}::uuid
+              AND grantee."status" = 'ACTIVE'
+              AND grantee."role" = 'FARMER'
             UNION
             SELECT notification."recipientUserId" AS "id"
             FROM "InAppNotification" AS notification

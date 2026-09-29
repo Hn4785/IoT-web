@@ -62,6 +62,7 @@ describe('OpenAPI contract', () => {
       '/api/v1/farms/{farmId}/plots',
       '/api/v1/plots/{plotId}/stations',
       '/api/v1/stations/{stationId}',
+      '/api/v1/stations/{stationId}/field-metadata',
       '/api/v1/stations/{stationId}/data/latest',
       '/api/v1/stations/{stationId}/data/history',
       '/api/v1/client/stations',
