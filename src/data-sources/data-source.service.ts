@@ -30,7 +30,7 @@ export class DataSourceService {
     this.requireSupportedRole(principal);
     await this.repository.requirePlotAccess(principal, input.plotId);
     const baseUrl = this.upstream.normalizeBaseUrl(input.baseUrl);
-    const stationCodes = await this.upstream.listStations(baseUrl, input.xApiKey);
+    const stationCodes = await this.upstream.discoverSoilStations(baseUrl, input.xApiKey);
     return this.repository.create({
       principal,
       name: input.name,
@@ -97,7 +97,7 @@ export class DataSourceService {
     const source = await this.repository.getOwnedConnection(principal, sourceId);
     const xApiKey = this.secrets.decrypt(source.encrypted);
     try {
-      const stations = await this.upstream.listStations(source.baseUrl, xApiKey);
+      const stations = await this.upstream.discoverSoilStations(source.baseUrl, xApiKey);
       const lastCheckedAt = await this.repository.recordConnectionTest({
         principal,
         sourceId,

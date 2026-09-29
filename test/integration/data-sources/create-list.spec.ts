@@ -8,6 +8,28 @@ import { makeTestRuntimeConfig } from '../../helpers/runtime-config.js';
 import { startUpstreamServer, type UpstreamServer } from '../../helpers/upstream-server.js';
 
 const prisma = createTestPrismaClient();
+const soilCodes = ['NODE01', 'NODE02', 'NODE03', 'NODE04', 'NODE05', 'NODE06'] as const;
+const stationListResponse = {
+  status: 200,
+  body: { success: true, data: ['CENTER', ...soilCodes] },
+} as const;
+const soilLatestResponse = {
+  status: 200,
+  body: {
+    success: true,
+    data: soilCodes.map((station, index) => ({
+      station,
+      latest: {
+        soil: {
+          ts: 1_788_009_600_000 + index,
+          time: '2026-09-01T00:00:00.000Z',
+          _fieldTs: { moisture: 1_788_009_600_000 + index },
+          moisture: 40 + index,
+        },
+      },
+    })),
+  },
+} as const;
 
 type SourceItem = {
   id: string;
@@ -36,21 +58,12 @@ describe('API source create and list', () => {
   beforeAll(async () => {
     await prepareTestDatabase();
     upstream = await startUpstreamServer([
-      {
-        status: 200,
-        body: {
-          success: true,
-          data: ['NODE01', 'NODE02', 'NODE03', 'NODE04', 'NODE05', 'NODE06'],
-        },
-      },
-      {
-        status: 200,
-        body: {
-          success: true,
-          data: ['NODE01', 'NODE02', 'NODE03', 'NODE04', 'NODE05', 'NODE06'],
-        },
-      },
-      { status: 200, body: { success: true, data: ['NODE02'] } },
+      stationListResponse,
+      soilLatestResponse,
+      stationListResponse,
+      soilLatestResponse,
+      stationListResponse,
+      soilLatestResponse,
       { status: 401, body: { success: false, message: 'invalid key' } },
     ]);
     const config = makeTestRuntimeConfig({ dataSourceAllowedOrigins: [upstream.baseUrl] });
@@ -153,6 +166,9 @@ describe('API source create and list', () => {
     expect(upstream.requests[0]?.method).toBe('GET');
     expect(upstream.requests[0]?.path).toBe('/api/v1/stations');
     expect(upstream.requests[0]?.headers['x-api-key']).toBe('admin-provider-secret');
+    expect(upstream.requests[1]?.path).toBe(
+      '/api/v1/data/latest?station=CENTER%2CNODE01%2CNODE02%2CNODE03%2CNODE04%2CNODE05%2CNODE06&type=soil',
+    );
     const stored = await prisma.dataSource.findUniqueOrThrow({ where: { id: item.id } });
     expect(stored.keyCiphertext).not.toContain('admin-provider-secret');
     const managedStations = await prisma.station.findMany({
@@ -204,7 +220,7 @@ describe('API source create and list', () => {
       success: true,
       data: { connectionStatus: 'CONNECTED', stationCount: 6 },
     });
-    expect(upstream.requests[1]?.headers['x-api-key']).toBe('admin-provider-secret');
+    expect(upstream.requests[3]?.headers['x-api-key']).toBe('admin-provider-secret');
   });
 
   it('lets a Farmer create within assigned scope and hides it from other Farmers', async () => {
