@@ -140,11 +140,27 @@ describe('authorized browser station hierarchy', () => {
   });
 
   it('uses opaque keyset pagination and rejects a cursor from another route', async () => {
-    await prisma.farm.createMany({
-      data: Array.from({ length: 105 }, (_, index) => ({
-        name: `Pagination Farm ${String(index).padStart(3, '0')}`,
-      })),
-    });
+    await prisma.$transaction(
+      Array.from({ length: 105 }, (_, index) => {
+        const suffix = String(index).padStart(3, '0');
+        return prisma.farm.create({
+          data: {
+            name: `Pagination Farm ${suffix}`,
+            plots: {
+              create: {
+                name: `Pagination Plot ${suffix}`,
+                stations: {
+                  create: {
+                    upstreamCode: `PAGE-${suffix}`,
+                    name: `Pagination Station ${suffix}`,
+                  },
+                },
+              },
+            },
+          },
+        });
+      }),
+    );
 
     const first = await get('/api/v1/farms', adminToken);
     expect(first.statusCode).toBe(200);

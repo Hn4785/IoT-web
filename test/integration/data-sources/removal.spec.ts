@@ -16,6 +16,8 @@ describeDb('recoverable API source removal', () => {
   let otherAdminToken: string;
   let granteeToken: string;
   let sourceId: string;
+  let farmId: string;
+  let plotId: string;
   let stationId: string;
   let alertId: string;
 
@@ -68,7 +70,9 @@ describeDb('recoverable API source removal', () => {
     });
     sourceId = source.id;
     const farm = await prisma.farm.create({ data: { name: 'Removal Farm' } });
+    farmId = farm.id;
     const plot = await prisma.plot.create({ data: { farmId: farm.id, name: 'Removal Plot' } });
+    plotId = plot.id;
     const station = await prisma.station.create({
       data: {
         plotId: plot.id,
@@ -191,5 +195,31 @@ describeDb('recoverable API source removal', () => {
       where: { action: 'DATA_SOURCE_REMOVED', targetId: sourceId },
     });
     expect(JSON.stringify(audit.metadata)).not.toContain('remove-provider-secret');
+  });
+
+  it('hides the source-only Farm and Plot from active Admin and Farmer hierarchy', async () => {
+    const adminFarms = await app.inject({
+      method: 'GET',
+      url: '/api/v1/farms',
+      headers: { authorization: `Bearer ${ownerToken}` },
+    });
+    expect(adminFarms.statusCode).toBe(200);
+    expect(adminFarms.json<{ data: { items: { id: string }[] } }>().data.items).not.toContainEqual(
+      expect.objectContaining({ id: farmId }),
+    );
+
+    const ownerPlots = await app.inject({
+      method: 'GET',
+      url: `/api/v1/farms/${farmId}/plots`,
+      headers: { authorization: `Bearer ${ownerToken}` },
+    });
+    expect(ownerPlots.statusCode).toBe(404);
+
+    const granteeStations = await app.inject({
+      method: 'GET',
+      url: `/api/v1/plots/${plotId}/stations`,
+      headers: { authorization: `Bearer ${granteeToken}` },
+    });
+    expect(granteeStations.statusCode).toBe(404);
   });
 });

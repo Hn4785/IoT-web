@@ -37,7 +37,7 @@ export class StationRepository {
     const cursor = query.cursor ? decodeCursor(query.cursor, 'farm') : undefined;
     const scope: Prisma.FarmWhereInput =
       principal.role === 'ADMIN'
-        ? {}
+        ? { plots: { some: { stations: { some: { dataSource: { removedAt: null } } } } } }
         : principal.role === 'FARMER'
           ? { memberships: { some: { userId: principal.userId } } }
           : { id: NO_ACCESS_ID };
@@ -259,7 +259,7 @@ export class StationRepository {
 
   private farmScope(principal: CurrentPrincipalValue): Prisma.FarmWhereInput {
     return principal.role === 'ADMIN'
-      ? {}
+      ? { plots: { some: { stations: { some: { dataSource: { removedAt: null } } } } } }
       : principal.role === 'FARMER'
         ? {
             OR: [
@@ -268,7 +268,11 @@ export class StationRepository {
                   { memberships: { some: { userId: principal.userId } } },
                   {
                     plots: {
-                      some: { stations: { some: { dataSource: { kind: 'SYSTEM' } } } },
+                      some: {
+                        stations: {
+                          some: { dataSource: { kind: 'SYSTEM', removedAt: null } },
+                        },
+                      },
                     },
                   },
                 ],
@@ -277,7 +281,9 @@ export class StationRepository {
                 plots: {
                   some: {
                     stations: {
-                      some: { dataSource: { ownerUserId: principal.userId } },
+                      some: {
+                        dataSource: { ownerUserId: principal.userId, removedAt: null },
+                      },
                     },
                   },
                 },
@@ -286,7 +292,10 @@ export class StationRepository {
                 plots: {
                   some: {
                     stations: {
-                      some: { sourceGrants: { some: { userId: principal.userId } } },
+                      some: {
+                        dataSource: { removedAt: null },
+                        sourceGrants: { some: { userId: principal.userId } },
+                      },
                     },
                   },
                 },
@@ -298,21 +307,32 @@ export class StationRepository {
 
   private plotScope(principal: CurrentPrincipalValue): Prisma.PlotWhereInput {
     return principal.role === 'ADMIN'
-      ? {}
+      ? { stations: { some: { dataSource: { removedAt: null } } } }
       : principal.role === 'FARMER'
         ? {
             OR: [
               {
                 AND: [
                   { farm: { memberships: { some: { userId: principal.userId } } } },
-                  { stations: { some: { dataSource: { kind: 'SYSTEM' } } } },
+                  {
+                    stations: {
+                      some: { dataSource: { kind: 'SYSTEM', removedAt: null } },
+                    },
+                  },
                 ],
               },
               {
-                stations: { some: { dataSource: { ownerUserId: principal.userId } } },
+                stations: {
+                  some: { dataSource: { ownerUserId: principal.userId, removedAt: null } },
+                },
               },
               {
-                stations: { some: { sourceGrants: { some: { userId: principal.userId } } } },
+                stations: {
+                  some: {
+                    dataSource: { removedAt: null },
+                    sourceGrants: { some: { userId: principal.userId } },
+                  },
+                },
               },
             ],
           }
