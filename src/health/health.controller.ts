@@ -9,8 +9,8 @@ export class HealthDataResponse {
   @ApiProperty({ example: 'iot-api', enum: ['iot-api'] })
   readonly service!: 'iot-api';
 
-  @ApiProperty({ example: '2.5.5', enum: ['2.5.5'] })
-  readonly version!: '2.5.5';
+  @ApiProperty({ example: '2.5.6', enum: ['2.5.6'] })
+  readonly version!: '2.5.6';
 
   @ApiProperty({ example: 'healthy', enum: ['healthy'] })
   readonly status!: 'healthy';
@@ -46,7 +46,7 @@ export class HealthController {
       success: true,
       data: {
         service: 'iot-api',
-        version: '2.5.5',
+        version: '2.5.6',
         status: 'healthy',
         environment: this.config.nodeEnv,
         time: new Date().toISOString(),

@@ -76,6 +76,7 @@ export class StationDataService {
         type: ['soil'],
         fields: [...query.fields],
       });
+      await this.sourceClients?.markConnected(station.dataSourceId, now);
       return mapLatestSoil({
         station,
         upstream,
@@ -121,6 +122,7 @@ export class StationDataService {
         order: query.order,
         limit: Math.min(5000, query.limit * 2 + 1),
       });
+      await this.sourceClients?.markConnected(station.dataSourceId, now);
       return mapHistoryPage({
         stationId: station.id,
         stationCode: station.upstreamCode,

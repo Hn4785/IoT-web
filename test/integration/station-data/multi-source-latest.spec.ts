@@ -35,6 +35,7 @@ describe('multi-source latest routing', () => {
   let firstUpstream: UpstreamServer;
   let secondUpstream: UpstreamServer;
   let token: string;
+  let firstSourceId: string;
   let firstStationId: string;
   let secondStationId: string;
 
@@ -73,7 +74,7 @@ describe('multi-source latest routing', () => {
           keyNonce: firstSecret.nonce,
           keyAuthTag: firstSecret.authTag,
           keyPreview: '-key',
-          connectionStatus: 'CONNECTED',
+          connectionStatus: 'FAILED',
           lastCheckedAt: new Date(),
         },
       }),
@@ -91,6 +92,7 @@ describe('multi-source latest routing', () => {
         },
       }),
     ]);
+    firstSourceId = firstSource.id;
     const [firstStation, secondStation] = await Promise.all([
       prisma.station.create({
         data: {
@@ -140,5 +142,8 @@ describe('multi-source latest routing', () => {
     ).toBe(72);
     expect(firstUpstream.requests[0]?.headers['x-api-key']).toBe('first-source-key');
     expect(secondUpstream.requests[0]?.headers['x-api-key']).toBe('second-source-key');
+    await expect(
+      prisma.dataSource.findUniqueOrThrow({ where: { id: firstSourceId } }),
+    ).resolves.toMatchObject({ connectionStatus: 'CONNECTED' });
   });
 });

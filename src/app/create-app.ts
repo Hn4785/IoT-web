@@ -72,7 +72,7 @@ export async function createApp(config: RuntimeConfig): Promise<NestFastifyAppli
     const openApiConfig = new DocumentBuilder()
       .setTitle('IoT Soil Monitoring API')
       .setDescription('Role 3 backend contract for the Role 2 web application')
-      .setVersion('2.5.5')
+      .setVersion('2.5.6')
       .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT' }, 'bearer')
       .addCookieAuth(
         'refreshToken',
