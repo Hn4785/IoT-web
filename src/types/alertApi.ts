@@ -78,6 +78,11 @@ export interface SoilFieldMetadata {
   metadataRevision: string;
 }
 
+export interface StationFieldMetadataResponse {
+  fields: SoilFieldMetadata[];
+  canManageRules: boolean;
+}
+
 export interface CreateAlertRuleInput {
   field: SoilAlertField;
   unit: string;

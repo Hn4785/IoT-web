@@ -40,8 +40,7 @@ const NAV_CONFIG: Record<UserRole, NavItem[]> = {
     { label: 'History Report', path: '/farm-owner/history-reports', icon: History },
     { label: 'API Sources', path: '/farm-owner/api-sources', icon: DatabaseZap },
     { label: 'Notifications', path: '/farm-owner/notifications', icon: Settings },
-    { label: 'Alerts', path: '/farm-owner/alerts', icon: Activity},
-    { label: 'Alert Center', path: '/farm-owner/alert-center', icon: Activity },
+    { label: 'Alert Center', path: '/farm-owner/alert-center', icon: BellRing },
   ],
   CLIENT_DEVELOPER: [
     { label: 'Dashboard', path: '/developer/dashboard', icon: LayoutDashboard },

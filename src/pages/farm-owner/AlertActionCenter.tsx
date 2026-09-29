@@ -1,5 +1,5 @@
 import AlertWorkspace from "../../components/alerts/AlertWorkspace.tsx";
 
 export default function AlertActionCenter() {
-  return <AlertWorkspace title="Alert Action Center" description="Acknowledge and resolve alerts for your authorized stations." />;
+  return <AlertWorkspace title="Alert Center" description="Monitor and operate alert lifecycles across your authorized stations." />;
 }

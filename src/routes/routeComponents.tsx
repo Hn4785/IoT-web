@@ -16,7 +16,6 @@ export const ConfigurationProposals = lazy(() => import("@/pages/admin/Configura
 export const FarmDashboard = lazy(() => import("@/pages/farm-owner/FarmDashboard"));
 export const RealtimeSoilMonitoring = lazy(() => import("@/pages/farm-owner/RealtimeSoilMonitoring"));
 export const HistoricalAnalysis = lazy(() => import("@/pages/farm-owner/HistoricalAnalysis"));
-export const AgriculturalAlerts = lazy(() => import("@/pages/farm-owner/AgriculturalAlerts"));
 export const HistoryReport = lazy(() => import("@/pages/farm-owner/HistoryReport"));
 export const NotificationSettings = lazy(() => import("@/pages/farm-owner/NotificationSettings"));
 export const AlertActionCenter = lazy(() => import("@/pages/farm-owner/AlertActionCenter"));

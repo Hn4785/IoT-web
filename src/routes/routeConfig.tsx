@@ -1,9 +1,10 @@
 import type { ReactNode } from "react";
+import { Navigate } from "react-router-dom";
 import type { UserRole } from "@/types/user";
 export { getDefaultRouteByRole } from "@/auth/defaultRoute";
 
 import {
-  AdminAlertCenter, AdminDashboard, AgriculturalAlerts, AlertActionCenter, ApiSources,
+  AdminAlertCenter, AdminDashboard, AlertActionCenter, ApiSources,
   ApiDocs, ApiExplorer, ApiKeys, ApiMetrics, ApiPermissions, AuditLogs,
   ChangePassword, ConfigurationProposals, DeveloperDashboard, DeviceHealth,
   DeviceManagement, FarmDashboard, FarmerApiSources, ForgotPassword, HistoricalAnalysis,
@@ -134,7 +135,7 @@ export const protectedRoutes: AppRoute[] = [
   {
     path: "/farm-owner/alerts",
     roles: ["FARMER"],
-    element: <AgriculturalAlerts />,
+    element: <Navigate to="/farm-owner/alert-center" replace />,
   },
 
   // =========================

@@ -27,6 +27,7 @@ export default function AlertWorkspace({ title, description, canAct = true }: Al
   const [alerts, setAlerts] = useState<AlertDto[]>([]);
   const [rules, setRules] = useState<AlertRuleDto[]>([]);
   const [metadata, setMetadata] = useState<SoilFieldMetadata[]>([]);
+  const [canManageRules, setCanManageRules] = useState(false);
   const [showRuleForm, setShowRuleForm] = useState(false);
   const [ruleField, setRuleField] = useState<SoilAlertField | "">("");
   const [ruleOperator, setRuleOperator] = useState<"ABOVE" | "BELOW" | "OUTSIDE_RANGE">("ABOVE");
@@ -85,6 +86,7 @@ export default function AlertWorkspace({ title, description, canAct = true }: Al
       // oxlint-disable-next-line react/set-state-in-effect
       setRules([]);
       setMetadata([]);
+      setCanManageRules(false);
       setShowRuleForm(false);
       return () => { active = false; };
     }
@@ -96,6 +98,7 @@ export default function AlertWorkspace({ title, description, canAct = true }: Al
         if (!active) return;
         setRules(page.items);
         setMetadata(fieldMetadata.fields);
+        setCanManageRules(Boolean(fieldMetadata.canManageRules));
         setRuleField(fieldMetadata.fields[0]?.field ?? "");
       },
       (reason) => { if (active) setError(normalizeApiError(reason).message); },
@@ -243,17 +246,22 @@ export default function AlertWorkspace({ title, description, canAct = true }: Al
           <p className={styles.empty}>No rules configured for this station.</p>
         ) : rules.map((rule) => (
           <div className={styles.rule} key={rule.id}>
-            <div><strong>{rule.field} · {rule.severity}</strong><small>{rule.condition.operator} · revision {rule.revision} · {rule.isEnabled ? "Enabled — evaluates automatically" : "Disabled — notifications paused"}</small></div>
-            {canAct && <Button size="sm" variant={rule.isEnabled ? "outline" : "primary"} loading={actingId === rule.id} onClick={() => void toggleRule(rule)}>
+            <div><strong>{rule.field} · {rule.severity}</strong><small>{rule.condition.operator} · revision {rule.revision} · {rule.isEnabled ? "Automatic — evaluates new samples and notifies authorized accounts" : "Paused — notifications paused"}</small></div>
+            {canManageRules && canAct && <Button size="sm" variant={rule.isEnabled ? "outline" : "primary"} loading={actingId === rule.id} onClick={() => void toggleRule(rule)}>
               {rule.isEnabled ? "Disable" : "Enable"}
             </Button>}
           </div>
         ))}
-        {hierarchy.selectedStationId && metadata.length === 0 && <p className={styles.note}>This station does not provide confirmed soil fields for alert rules.</p>}
-        {canAct && hierarchy.selectedStationId && metadata.length > 0 && !showRuleForm && (
+        {hierarchy.selectedStationId && !canManageRules && (
+          <p className={styles.note}>Alert rules are managed by the data source owner. Authorized accounts can view rules and alert lifecycle data in read-only mode.</p>
+        )}
+        {hierarchy.selectedStationId && metadata.length === 0 && (
+          <p className={styles.note}>Rule setup is unavailable because confirmed measurement units are not available; monitoring remains available.</p>
+        )}
+        {canManageRules && canAct && hierarchy.selectedStationId && metadata.length > 0 && !showRuleForm && (
           <div className={styles.ruleActions}><Button size="sm" icon={<Plus size={15} />} onClick={() => setShowRuleForm(true)}>Add Rule</Button></div>
         )}
-        {canAct && showRuleForm && <form className={styles.ruleForm} onSubmit={createRule}>
+        {canManageRules && canAct && showRuleForm && <form className={styles.ruleForm} onSubmit={createRule}>
           <label>Soil field<select value={ruleField} onChange={(event) => setRuleField(event.target.value as SoilAlertField)}>
             {metadata.map((item) => <option key={item.field} value={item.field}>{item.field} ({item.unit})</option>)}
           </select></label>
@@ -263,7 +271,7 @@ export default function AlertWorkspace({ title, description, canAct = true }: Al
           <label>{ruleOperator === "OUTSIDE_RANGE" ? "Lower value" : "Threshold"}<input required type="number" step="any" value={ruleThreshold} onChange={(event) => setRuleThreshold(event.target.value)} /></label>
           {ruleOperator === "OUTSIDE_RANGE" && <label>Upper value<input required type="number" step="any" value={ruleUpperThreshold} onChange={(event) => setRuleUpperThreshold(event.target.value)} /></label>}
           <label>Severity<select value={ruleSeverity} onChange={(event) => setRuleSeverity(event.target.value as AlertSeverity)}><option value="WARNING">Warning</option><option value="CRITICAL">Critical</option></select></label>
-          <label className={styles.ruleSwitch}><input type="checkbox" checked={ruleEnabled} onChange={(event) => setRuleEnabled(event.target.checked)} /><span><strong>Enable now</strong><small>Evaluate automatically and notify authorized accounts.</small></span></label>
+          <label className={styles.ruleSwitch}><input type="checkbox" checked={ruleEnabled} onChange={(event) => setRuleEnabled(event.target.checked)} /><span><strong>{ruleEnabled ? "Automatic" : "Paused"}</strong><small>Enable now to evaluate new samples and notify authorized accounts. Automatic rules evaluate new samples and notify authorized accounts without controlling remote devices.</small></span></label>
           <div className={styles.ruleFormActions}><Button type="button" variant="outline" onClick={() => setShowRuleForm(false)}>Cancel</Button><Button type="submit" loading={actingId === "create-rule"}>Create Rule</Button></div>
         </form>}
       </section>
