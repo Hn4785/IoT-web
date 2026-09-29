@@ -98,7 +98,11 @@ latest/history, alerts and notifications intersects the current station grant.
 
 - The owner always sees every active soil station in the source.
 - A grantee sees only explicitly shared stations and only the containing
-  hierarchy needed to reach them.
+  hierarchy needed to reach them. `GET /api/v1/farms` returns a Farm to a
+  Farmer who owns an active managed source station or has at least one active
+  station-scoped source grant inside that Farm; Farms whose only stations are
+  removed or outside the Farmer's scope are omitted, while existing
+  system-source FarmMembership behavior remains intact.
 - Revoking one station closes access to that station immediately without
   changing other station grants.
 - Revoking the account removes all grants for that source.
@@ -121,7 +125,15 @@ Station -> Measurement -> Above | Below | Outside range -> Threshold(s)
 
 The frontend never asks a user to type `unit` or `metadataRevision`. Backend
 station metadata supplies both values and rejects creation when confirmed
-metadata is unavailable or changes concurrently. The evaluator continues to
+metadata is unavailable or changes concurrently. The approved managed soil API
+contract serves as the canonical metadata source for alert rules. Canonical
+units are: temperature `°C`, moisture `%`, ec `µS/cm`, ph `pH`,
+nitrogen/phosphorus/potassium `mg/kg`, light `lx`, with deterministic revisions
+using the format `soil-contract:v1:<field>`. Normal runtime exposes confirmed
+metadata for all supported soil fields using these canonical units and
+deterministic revisions, while demo allowlisting remains isolated. This enables
+the existing owner-only rule form and notification pipeline; it must not add
+device writes or automatic default rules. The evaluator continues to
 require two distinct breach samples and two recovery samples.
 
 The station metadata response also supplies `canManageRules`. It is `true`

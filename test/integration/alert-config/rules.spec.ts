@@ -446,4 +446,58 @@ describeDb('alert-config rules integration (PostgreSQL)', () => {
     const responses = await Promise.all([patch('CRITICAL'), patch('WARNING')]);
     expect(responses.map((response) => response.statusCode).sort()).toEqual([200, 409]);
   });
+
+  it('exposes canonical soil metadata in normal runtime and allows owner rule creation', async () => {
+    const normalApp = await createApp(
+      makeTestRuntimeConfig({
+        alertDemoMetadataEnabled: false,
+      }),
+    );
+
+    try {
+      const metaRes = await normalApp.inject({
+        method: 'GET',
+        url: `/api/v1/stations/${stationA.id}/field-metadata`,
+        headers: { authorization: `Bearer ${adminToken}` },
+      });
+      expect(metaRes.statusCode).toBe(200);
+      const metaBody = metaRes.json();
+      expect(metaBody.data.canManageRules).toBe(true);
+      expect(metaBody.data.fields).toHaveLength(8);
+      expect(metaBody.data.fields).toEqual(
+        expect.arrayContaining([
+          { field: 'temperature', unit: '°C', metadataRevision: 'soil-contract:v1:temperature' },
+          { field: 'moisture', unit: '%', metadataRevision: 'soil-contract:v1:moisture' },
+          { field: 'ec', unit: 'µS/cm', metadataRevision: 'soil-contract:v1:ec' },
+          { field: 'ph', unit: 'pH', metadataRevision: 'soil-contract:v1:ph' },
+          { field: 'nitrogen', unit: 'mg/kg', metadataRevision: 'soil-contract:v1:nitrogen' },
+          { field: 'phosphorus', unit: 'mg/kg', metadataRevision: 'soil-contract:v1:phosphorus' },
+          { field: 'potassium', unit: 'mg/kg', metadataRevision: 'soil-contract:v1:potassium' },
+          { field: 'light', unit: 'lx', metadataRevision: 'soil-contract:v1:light' },
+        ]),
+      );
+
+      const createRes = await normalApp.inject({
+        method: 'POST',
+        url: `/api/v1/stations/${stationA.id}/alert-rules`,
+        headers: {
+          authorization: `Bearer ${adminToken}`,
+          'idempotency-key': `idem-canonical-${randomUUID()}`,
+        },
+        payload: {
+          field: 'light',
+          unit: 'lx',
+          expectedMetadataRevision: 'soil-contract:v1:light',
+          condition: { operator: 'BELOW', threshold: 100 },
+          severity: 'WARNING',
+          isEnabled: true,
+        },
+      });
+      expect(createRes.statusCode).toBe(201);
+      expect(createRes.json().success).toBe(true);
+      expect(createRes.json().data.field).toBe('light');
+    } finally {
+      await normalApp.close();
+    }
+  });
 });

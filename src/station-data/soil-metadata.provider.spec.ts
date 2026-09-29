@@ -1,5 +1,7 @@
 import { parseLatestSoilQuery, SOIL_FIELDS } from './station-data.contracts.js';
 import {
+  CANONICAL_SOIL_UNITS,
+  CanonicalSoilMetadataProvider,
   DemoSoilMetadataProvider,
   UnconfirmedSoilMetadataProvider,
 } from './soil-metadata.provider.js';
@@ -70,5 +72,20 @@ describe('SD-3 Task 6A', () => {
         isConfirmed: false,
       });
     });
+  });
+
+  describe('CanonicalSoilMetadataProvider', () => {
+    test.each(SOIL_FIELDS)(
+      'confirms %s with canonical unit and deterministic contract revision',
+      async (field) => {
+        const provider = new CanonicalSoilMetadataProvider();
+        await expect(provider.getFieldMetadata('any-station', field)).resolves.toEqual({
+          field,
+          isConfirmed: true,
+          unit: CANONICAL_SOIL_UNITS[field],
+          revision: `soil-contract:v1:${field}`,
+        });
+      },
+    );
   });
 });

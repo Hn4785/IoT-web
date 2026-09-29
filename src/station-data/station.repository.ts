@@ -35,12 +35,7 @@ export class StationRepository {
     query: HierarchyQuery,
   ): Promise<CursorPage<FarmDto>> {
     const cursor = query.cursor ? decodeCursor(query.cursor, 'farm') : undefined;
-    const scope: Prisma.FarmWhereInput =
-      principal.role === 'ADMIN'
-        ? { plots: { some: { stations: { some: { dataSource: { removedAt: null } } } } } }
-        : principal.role === 'FARMER'
-          ? { memberships: { some: { userId: principal.userId } } }
-          : { id: NO_ACCESS_ID };
+    const scope: Prisma.FarmWhereInput = this.farmScope(principal);
     const rows = await this.prisma.farm.findMany({
       where: { AND: [scope, ...(cursor ? [keyset(cursor.name, cursor.id)] : [])] },
       select: { id: true, name: true },

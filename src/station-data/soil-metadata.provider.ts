@@ -16,7 +16,7 @@ export class UnconfirmedSoilMetadataProvider implements SoilMetadataProvider {
   }
 }
 
-const DEMO_UNITS: Readonly<Record<SoilField, string>> = {
+export const CANONICAL_SOIL_UNITS: Readonly<Record<SoilField, string>> = {
   temperature: '°C',
   moisture: '%',
   ec: 'µS/cm',
@@ -26,6 +26,24 @@ const DEMO_UNITS: Readonly<Record<SoilField, string>> = {
   potassium: 'mg/kg',
   light: 'lx',
 };
+
+export class CanonicalSoilMetadataProvider implements SoilMetadataProvider {
+  getFieldMetadata(_stationId: string, field: SoilField): Promise<SoilMetadata> {
+    const unit = CANONICAL_SOIL_UNITS[field];
+    if (!unit) {
+      return Promise.resolve({ field, isConfirmed: false });
+    }
+
+    return Promise.resolve({
+      field,
+      isConfirmed: true,
+      unit,
+      revision: `soil-contract:v1:${field}`,
+    });
+  }
+}
+
+const DEMO_UNITS = CANONICAL_SOIL_UNITS;
 
 export class DemoSoilMetadataProvider implements SoilMetadataProvider {
   private readonly allowedCodes: ReadonlySet<string>;

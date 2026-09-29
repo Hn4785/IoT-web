@@ -18,9 +18,9 @@ import { ClientRateLimitGuard, ClientRateLimitStore } from './client-rate-limit.
 import { ClientController } from './client.controller.js';
 import { HierarchyService } from './hierarchy.service.js';
 import {
+  CanonicalSoilMetadataProvider,
   DemoSoilMetadataProvider,
   SOIL_METADATA_PROVIDER,
-  UnconfirmedSoilMetadataProvider,
 } from './soil-metadata.provider.js';
 import type { NormalizedHistoryPage, NormalizedLatestSoil } from './station-data.contracts.js';
 import { StationDataService } from './station-data.service.js';
@@ -74,7 +74,7 @@ import { StationSourceClientResolver } from './station-source-client.resolver.js
           );
           return new DemoSoilMetadataProvider(config.alertDemoStationCodes);
         }
-        return new UnconfirmedSoilMetadataProvider();
+        return new CanonicalSoilMetadataProvider();
       },
     },
   ],
