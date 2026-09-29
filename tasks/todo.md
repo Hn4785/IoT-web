@@ -86,16 +86,17 @@ Evidence: [`2026-09-02-phase-a.md`](../docs/checkpoints/2026-09-02-phase-a.md).
       back up the Pi database and remove the corresponding `Farm Demo` /
       `Plot Demo` hierarchy there. Do not perform this Pi cleanup during local
       Farmer implementation.
-- [ ] B-source-FE-farmer: Reuse the approved direct-entry and owned/shared-source
+- [x] B-source-FE-farmer: Reuse the approved direct-entry and owned/shared-source
       behavior for Farmer without widening Client Developer access.
-- [ ] B-source-remove-orphan-hierarchy: Fix during Farmer work. Removing the
-      last active API source currently leaves its empty Farm/Plot visible in
-      Stations & Devices. Retire or hide the now-empty Plot and its Farm from
+- [x] B-source-remove-orphan-hierarchy: Removing the
+      last active API source no longer leaves its empty Farm/Plot visible in
+      Stations & Devices. The active hierarchy hides the now-empty Plot and Farm
       the active hierarchy only when no other active source/station uses them;
       preserve retained station, alert, notification and audit history instead
       of hard-deleting historical records. Cover both source-created and reused
-      Farm/Plot cases with backend tests and refresh the frontend hierarchy after
-      removal.
+      Farm/Plot cases with backend tests. Completed locally with active-source
+      hierarchy filtering; the frontend reloads the hierarchy on navigation or
+      refresh after removal.
 - [x] B-admin-soil-source-checkpoint: Implement the approved soil-only admission,
       station-scoped sharing, owner-managed station rules and shared-recipient
       notifications, recoverable source removal, simplified role-only User
@@ -203,8 +204,7 @@ and must not duplicate the full contract.
 
 ## Immediate next action
 
-1. Complete Farmer API Sources locally from the now-empty hierarchy and finish
-   the shared Alert Center metadata/rule flow. Reuse the same alert behavior for
+1. Finish the shared Alert Center metadata/rule flow. Reuse the same alert behavior for
    Admin, keep Client Developer outside source sharing and Settings last. Back
    up and clean the Pi demo hierarchy only when this Farmer release is deployed.
 2. Run the remaining browser role matrix one page at a time in the fixed order
