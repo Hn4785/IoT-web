@@ -69,6 +69,13 @@ Với mỗi thay đổi:
 - Kết quả full gate và triển khai Pi được bổ sung sau khi image ARM64 vượt kiểm
   tra và container production trả health thành công.
 
+### Tồn đọng Phase B dùng chung
+
+- Alert Center chưa được coi là hoàn tất cho người dùng vì station live hiện
+  chưa cung cấp confirmed soil field metadata để tạo rule. Hạng mục này sẽ được
+  hoàn thiện một lần trong bước Farmer và áp dụng chung cho cả Farmer lẫn Admin;
+  chỉ cấu hình cảnh báo/thông báo, không can thiệp thiết bị từ xa.
+
 ## v2.5.5-local — 2026-09-28 (Admin API Sources)
 
 ### Đã sửa và cập nhật
