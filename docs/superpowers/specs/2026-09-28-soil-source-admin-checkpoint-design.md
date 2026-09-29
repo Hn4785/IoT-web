@@ -124,6 +124,11 @@ station metadata supplies both values and rejects creation when confirmed
 metadata is unavailable or changes concurrently. The evaluator continues to
 require two distinct breach samples and two recovery samples.
 
+The station metadata response also supplies `canManageRules`. It is `true`
+only for the source owner (and for Admin on the immutable system source), so
+Admin oversight and shared Farmer views never render rule mutation controls
+that the backend would reject.
+
 The source owner and active accounts currently granted the rule's station are
 notification recipients. Losing the station grant immediately removes the
 account from future notification fanout; historical notifications already

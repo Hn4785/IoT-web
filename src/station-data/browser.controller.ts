@@ -136,8 +136,9 @@ export class BrowserStationController {
         data: {
           type: 'object',
           additionalProperties: false,
-          required: ['fields'],
+          required: ['fields', 'canManageRules'],
           properties: {
+            canManageRules: { type: 'boolean' },
             fields: {
               type: 'array',
               items: {
@@ -178,6 +179,7 @@ export class BrowserStationController {
     return {
       success: true,
       data: {
+        canManageRules: await this.stationRepository.canManageAlertRules(principal, validStationId),
         fields: metadata.flatMap((field) =>
           field.isConfirmed
             ? [{ field: field.field, unit: field.unit, metadataRevision: field.revision }]

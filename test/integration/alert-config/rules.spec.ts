@@ -264,6 +264,7 @@ describeDb('alert-config rules integration (PostgreSQL)', () => {
       headers: { authorization: `Bearer ${farmerToken}` },
     });
     expect(shared.statusCode).toBe(200);
+    expect(shared.json().data.canManageRules).toBe(false);
     expect(shared.json().data.fields).toContainEqual({
       field: 'moisture',
       unit: '%',
@@ -283,6 +284,7 @@ describeDb('alert-config rules integration (PostgreSQL)', () => {
       headers: { authorization: `Bearer ${adminToken}` },
     });
     expect(unconfirmed.statusCode).toBe(200);
+    expect(unconfirmed.json().data.canManageRules).toBe(true);
     expect(unconfirmed.json().data.fields).toEqual([]);
   });
 

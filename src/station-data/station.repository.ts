@@ -165,6 +165,32 @@ export class StationRepository {
     };
   }
 
+  async canManageAlertRules(principal: CurrentPrincipalValue, stationId: string): Promise<boolean> {
+    const mutationScope: Prisma.StationWhereInput =
+      principal.role === 'ADMIN'
+        ? {
+            dataSource: { removedAt: null },
+            OR: [
+              { dataSource: { ownerUserId: principal.userId } },
+              { dataSource: { kind: 'SYSTEM' } },
+            ],
+          }
+        : principal.role === 'FARMER'
+          ? { dataSource: { ownerUserId: principal.userId, removedAt: null } }
+          : { id: NO_ACCESS_ID };
+    const station = await this.prisma.station.findFirst({
+      where: {
+        AND: [
+          { id: stationId, upstreamCode: { not: 'CENTER' } },
+          this.stationScope(principal),
+          mutationScope,
+        ],
+      },
+      select: { id: true },
+    });
+    return station !== null;
+  }
+
   async listClientStations(
     principal: ApiKeyPrincipal,
     query: HierarchyQuery,
