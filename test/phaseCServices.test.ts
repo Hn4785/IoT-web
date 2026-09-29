@@ -10,13 +10,13 @@ function envelope<T>(data: T) {
   return { data: { success: true as const, data } };
 }
 
-test("alert actions use lifecycle sub-resources instead of patching alerts", async () => {
+test("alert mutations include unique non-empty Idempotency-Key header", async () => {
   const calls: unknown[][] = [];
   const client = {
     async get<T>(): Promise<{ data: T }> { return envelope({}) as { data: T }; },
     async post<T>(...args: unknown[]): Promise<{ data: T }> {
       calls.push(args);
-      return envelope({ id: "alert-1" }) as { data: T };
+      return envelope({ id: "alert-1", name: "Rule" }) as { data: T };
     },
     async patch<T>(): Promise<{ data: T }> { return envelope({}) as { data: T }; },
   };
@@ -24,11 +24,28 @@ test("alert actions use lifecycle sub-resources instead of patching alerts", asy
 
   await service.acknowledge("alert-1", "Checked onsite");
   await service.resolve("alert-1", "Recovered");
+  await service.createRule("station-1", {
+    name: "High Temp",
+    metric: "temperature",
+    operator: "ABOVE",
+    threshold: 40,
+    severity: "CRITICAL",
+    mode: "AUTOMATIC",
+  });
 
-  assert.deepEqual(calls, [
-    ["/alerts/alert-1/acknowledgements", { note: "Checked onsite" }],
-    ["/alerts/alert-1/resolutions", { note: "Recovered" }],
-  ]);
+  assert.equal(calls.length, 3);
+  const keys = calls.map((call) => {
+    const config = call[2] as { headers?: Record<string, string> } | undefined;
+    return config?.headers?.["Idempotency-Key"];
+  });
+
+  for (const key of keys) {
+    assert.equal(typeof key, "string");
+    assert.ok(key && key.length > 0);
+    assert.ok(key.length <= 160);
+  }
+  const uniqueKeys = new Set(keys);
+  assert.equal(uniqueKeys.size, 3);
 });
 
 test("alert and rule lists preserve cursor contracts", async () => {

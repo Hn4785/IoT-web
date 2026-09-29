@@ -35,6 +35,7 @@ export function createAlertService(client: HttpClient) {
       const response = await client.post<ApiSuccessEnvelope<AlertDto>>(
         API_ENDPOINTS.alerts.acknowledgements(id),
         note ? { note } : {},
+        { headers: { "Idempotency-Key": crypto.randomUUID() } },
       );
       return response.data.data;
     },
@@ -43,6 +44,7 @@ export function createAlertService(client: HttpClient) {
       const response = await client.post<ApiSuccessEnvelope<AlertDto>>(
         API_ENDPOINTS.alerts.resolutions(id),
         note ? { note } : {},
+        { headers: { "Idempotency-Key": crypto.randomUUID() } },
       );
       return response.data.data;
     },
@@ -69,6 +71,7 @@ export function createAlertService(client: HttpClient) {
       const response = await client.post<ApiSuccessEnvelope<AlertRuleDto>>(
         API_ENDPOINTS.alertRules.byStation(stationId),
         input,
+        { headers: { "Idempotency-Key": crypto.randomUUID() } },
       );
       return response.data.data;
     },
