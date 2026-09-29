@@ -49,6 +49,26 @@ Với mỗi thay đổi:
 - Không cần chạy lại test/build vì không có mã nguồn hoặc cấu hình runtime thay
   đổi; đã kiểm tra diff và tính nhất quán giữa tài liệu frontend/backend.
 
+## v2.5.6 — 2026-09-29 (API Source status recovery)
+
+### Đã sửa và cập nhật
+
+- Một nguồn managed từng bị đánh dấu `FAILED` nay tự chuyển lại `CONNECTED` sau
+  khi backend đọc latest hoặc history thành công từ đúng upstream. Dữ liệu trả
+  từ cache không tự thay đổi trạng thái, nên badge chỉ phục hồi khi có bằng chứng
+  kết nối thật.
+- API Sources đổi nhãn lỗi thành `Last check failed` và hiển thị thời điểm
+  `Last Checked`, tránh diễn đạt một lần probe lỗi như trạng thái ngừng hoạt động
+  vĩnh viễn.
+- Đồng bộ nhãn health, OpenAPI, frontend và image phát hành thành `2.5.6`.
+
+### Bằng chứng kiểm tra
+
+- Test tích hợp tái hiện nguồn `FAILED`, đọc telemetry thật thành công và xác
+  nhận database tự phục hồi thành `CONNECTED`.
+- Kết quả full gate và triển khai Pi được bổ sung sau khi image ARM64 vượt kiểm
+  tra và container production trả health thành công.
+
 ## v2.5.5-local — 2026-09-28 (Admin API Sources)
 
 ### Đã sửa và cập nhật

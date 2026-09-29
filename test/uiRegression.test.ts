@@ -47,7 +47,7 @@ test("login identifies the deployed v2.5 release", () => {
     "utf8",
   );
 
-  assert.match(source, /Monitoring Node System v2\.5\.5/);
+  assert.match(source, /Monitoring Node System v2\.5\.6/);
   assert.doesNotMatch(source, /Monitoring Node System v2\.4/);
 });
 

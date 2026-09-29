@@ -23,6 +23,8 @@ test("Admin API Sources exposes truthful inventory, owner-only controls and no N
   assert.match(page, /canManageAccess/);
   assert.match(page, /canRevealKey/);
   assert.match(page, /No API sources/);
+  assert.match(page, /Last check failed/);
+  assert.doesNotMatch(page, />Connection failed</);
   assert.doesNotMatch(page, /N\/A/);
 });
 

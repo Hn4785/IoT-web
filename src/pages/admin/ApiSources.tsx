@@ -256,7 +256,7 @@ export default function ApiSources() {
             <table>
               <thead><tr>
                 <th>Source Name</th><th>Owner</th><th>Stations</th><th>Visible Accounts</th>
-                <th>Connection Status</th><th>Last Updated</th><th>Actions</th>
+                <th>Connection Status</th><th>Last Checked</th><th>Actions</th>
               </tr></thead>
               <tbody>{sources.map((source) => (
                 <tr key={source.id}>
@@ -265,9 +265,9 @@ export default function ApiSources() {
                   <td>{source.stationCount}</td>
                   <td>{source.visibleAccountCount}</td>
                   <td><span className={`${styles.status} ${source.connectionStatus === "CONNECTED" ? styles.connected : styles.failed}`}>
-                    {source.connectionStatus === "CONNECTED" ? "Connected" : "Connection failed"}
+                    {source.connectionStatus === "CONNECTED" ? "Connected" : "Last check failed"}
                   </span></td>
-                  <td>{formatVietnamDateTime(source.updatedAt)}</td>
+                  <td>{formatVietnamDateTime(source.lastCheckedAt)}</td>
                   <td><div className={styles.actions}>
                     <Button size="sm" variant="ghost" icon={<BarChart3 size={14} />} onClick={() => navigate("/admin/devices")}>View Data</Button>
                     {source.canManageAccess && <Button size="sm" variant="ghost" icon={<Share2 size={14} />} onClick={() => void openAccess(source)}>Manage Access</Button>}
