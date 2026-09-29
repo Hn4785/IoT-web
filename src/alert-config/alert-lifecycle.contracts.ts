@@ -52,7 +52,13 @@ export type AlertDto = Readonly<{
   acknowledgedBy: string | null;
   resolvedAt: string | null;
   resolvedBy: string | null;
-  resolutionReason: 'RECOVERED' | 'MANUAL' | 'RULE_DISABLED' | 'METADATA_CHANGED' | null;
+  resolutionReason:
+    | 'RECOVERED'
+    | 'MANUAL'
+    | 'RULE_DISABLED'
+    | 'METADATA_CHANGED'
+    | 'SOURCE_REMOVED'
+    | null;
   revision: number;
 }>;
 
@@ -116,7 +122,7 @@ export const alertOpenApiSchema: SchemaObject = {
     resolvedBy: nullableUuid,
     resolutionReason: {
       type: 'string',
-      enum: ['RECOVERED', 'MANUAL', 'RULE_DISABLED', 'METADATA_CHANGED'],
+      enum: ['RECOVERED', 'MANUAL', 'RULE_DISABLED', 'METADATA_CHANGED', 'SOURCE_REMOVED'],
       nullable: true,
     },
     revision: { type: 'integer', minimum: 1 },
@@ -156,7 +162,13 @@ export function toAlertDto(record: {
   acknowledgedBy: string | null;
   resolvedAt: Date | null;
   resolvedBy: string | null;
-  resolutionReason: 'RECOVERED' | 'MANUAL' | 'RULE_DISABLED' | 'METADATA_CHANGED' | null;
+  resolutionReason:
+    | 'RECOVERED'
+    | 'MANUAL'
+    | 'RULE_DISABLED'
+    | 'METADATA_CHANGED'
+    | 'SOURCE_REMOVED'
+    | null;
   revision: number;
   rule: {
     field: string;

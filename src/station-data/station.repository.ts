@@ -318,9 +318,10 @@ export class StationRepository {
 
   private stationScope(principal: CurrentPrincipalValue): Prisma.StationWhereInput {
     return principal.role === 'ADMIN'
-      ? {}
+      ? { dataSource: { removedAt: null } }
       : principal.role === 'FARMER'
         ? {
+            dataSource: { removedAt: null },
             OR: [
               {
                 dataSource: { kind: 'SYSTEM' },

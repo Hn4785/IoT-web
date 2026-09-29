@@ -62,6 +62,7 @@ enum AlertResolutionReason {
   MANUAL
   RULE_DISABLED
   METADATA_CHANGED
+  SOURCE_REMOVED
 }
 
 enum AlertLifecycleEventType {
@@ -214,6 +215,7 @@ model DataSource {
   lastCheckedAt    DateTime                   @db.Timestamptz(3)
   createdAt        DateTime                   @default(now()) @db.Timestamptz(3)
   updatedAt        DateTime                   @updatedAt @db.Timestamptz(3)
+  removedAt        DateTime?                  @db.Timestamptz(3)
 
   owner    User?             @relation("DataSourceOwner", fields: [ownerUserId], references: [id], onDelete: Restrict)
   stations Station[]
@@ -221,6 +223,7 @@ model DataSource {
 
   @@index([ownerUserId, createdAt, id])
   @@index([connectionStatus, updatedAt])
+  @@index([removedAt, createdAt, id])
 }
 
 model DataSourceGrant {

@@ -5,6 +5,7 @@ import { AppError } from '../common/errors/app-error.js';
 import { PrismaService } from '../database/prisma.service.js';
 import { Prisma } from '../generated/prisma/client.js';
 import { SecurityAuditService } from '../security-audit/security-audit.service.js';
+import { queueLifecycleNotifications } from '../notifications/notification-delivery.js';
 import type {
   DataSourceDto,
   DataSourceGrantDto,
@@ -251,6 +252,7 @@ export class DataSourceRepository {
     const rows = await this.prisma.dataSource.findMany({
       where: {
         kind: 'MANAGED',
+        removedAt: null,
         AND: [
           access,
           ...(cursor
@@ -281,6 +283,7 @@ export class DataSourceRepository {
       where: {
         id: sourceId,
         kind: 'MANAGED',
+        removedAt: null,
         ...(principal.role === 'ADMIN'
           ? {}
           : {
@@ -318,7 +321,7 @@ export class DataSourceRepository {
     return this.prisma.$transaction(async (transaction) => {
       const [source, target] = await Promise.all([
         transaction.dataSource.findFirst({
-          where: { id: input.sourceId, kind: 'MANAGED' },
+          where: { id: input.sourceId, kind: 'MANAGED', removedAt: null },
           select: { ownerUserId: true },
         }),
         transaction.user.findUnique({
@@ -360,7 +363,7 @@ export class DataSourceRepository {
     return this.prisma.$transaction(async (transaction) => {
       const [source, target, stations] = await Promise.all([
         transaction.dataSource.findFirst({
-          where: { id: input.sourceId, kind: 'MANAGED' },
+          where: { id: input.sourceId, kind: 'MANAGED', removedAt: null },
           select: { ownerUserId: true },
         }),
         transaction.user.findUnique({
@@ -421,7 +424,7 @@ export class DataSourceRepository {
     return this.prisma.$transaction(async (transaction) => {
       const [source, target, station] = await Promise.all([
         transaction.dataSource.findFirst({
-          where: { id: input.sourceId, kind: 'MANAGED' },
+          where: { id: input.sourceId, kind: 'MANAGED', removedAt: null },
           select: { ownerUserId: true },
         }),
         transaction.user.findUnique({
@@ -472,7 +475,7 @@ export class DataSourceRepository {
     query: ListDataSourcesQuery,
   ): Promise<{ items: DataSourceGrantDto[]; nextCursor: string | null }> {
     const source = await this.prisma.dataSource.findFirst({
-      where: { id: sourceId, kind: 'MANAGED' },
+      where: { id: sourceId, kind: 'MANAGED', removedAt: null },
       select: { ownerUserId: true },
     });
     if (!source) throw new AppError('NOT_FOUND', 404, 'Resource not found');
@@ -537,7 +540,7 @@ export class DataSourceRepository {
 
   async getOwnedSecret(principal: CurrentPrincipalValue, sourceId: string) {
     const source = await this.prisma.dataSource.findFirst({
-      where: { id: sourceId, kind: 'MANAGED' },
+      where: { id: sourceId, kind: 'MANAGED', removedAt: null },
       select: {
         ownerUserId: true,
         keyCiphertext: true,
@@ -565,7 +568,7 @@ export class DataSourceRepository {
 
   async getOwnedConnection(principal: CurrentPrincipalValue, sourceId: string) {
     const source = await this.prisma.dataSource.findFirst({
-      where: { id: sourceId, kind: 'MANAGED' },
+      where: { id: sourceId, kind: 'MANAGED', removedAt: null },
       select: {
         ownerUserId: true,
         baseUrl: true,
@@ -600,7 +603,7 @@ export class DataSourceRepository {
   }): Promise<string> {
     return this.prisma.$transaction(async (transaction) => {
       const source = await transaction.dataSource.findFirst({
-        where: { id: input.sourceId, kind: 'MANAGED' },
+        where: { id: input.sourceId, kind: 'MANAGED', removedAt: null },
         select: { ownerUserId: true },
       });
       if (!source) throw new AppError('NOT_FOUND', 404, 'Resource not found');
@@ -630,7 +633,7 @@ export class DataSourceRepository {
   async recordReveal(principal: CurrentPrincipalValue, sourceId: string, requestId: string) {
     await this.prisma.$transaction(async (transaction) => {
       const source = await transaction.dataSource.findFirst({
-        where: { id: sourceId, kind: 'MANAGED' },
+        where: { id: sourceId, kind: 'MANAGED', removedAt: null },
         select: { ownerUserId: true },
       });
       if (!source) throw new AppError('NOT_FOUND', 404, 'Resource not found');
@@ -645,6 +648,94 @@ export class DataSourceRepository {
         requestId,
       });
     });
+  }
+
+  async remove(
+    principal: CurrentPrincipalValue,
+    sourceId: string,
+    requestId: string,
+  ): Promise<{ removed: true }> {
+    return this.prisma.$transaction(
+      async (transaction) => {
+        const source = await transaction.dataSource.findFirst({
+          where: { id: sourceId, kind: 'MANAGED' },
+          select: { ownerUserId: true, removedAt: true },
+        });
+        if (!source) throw new AppError('NOT_FOUND', 404, 'Resource not found');
+        if (source.ownerUserId !== principal.userId) {
+          throw new AppError('FORBIDDEN', 403, 'Only the source owner can remove it');
+        }
+        if (source.removedAt) return { removed: true };
+
+        const unresolved = await transaction.alert.findMany({
+          where: {
+            unresolvedRuleId: { not: null },
+            rule: { station: { dataSourceId: sourceId } },
+          },
+          select: {
+            id: true,
+            revision: true,
+            rule: { select: { station: { select: { plot: { select: { farmId: true } } } } } },
+          },
+        });
+        await transaction.alertRule.updateMany({
+          where: { station: { dataSourceId: sourceId } },
+          data: { isEnabled: false, evaluationStatus: 'DISABLED', activeKey: null },
+        });
+        for (const alert of unresolved) {
+          const revision = alert.revision + 1;
+          const updated = await transaction.alert.updateMany({
+            where: { id: alert.id, revision: alert.revision, unresolvedRuleId: { not: null } },
+            data: {
+              status: 'RESOLVED',
+              unresolvedRuleId: null,
+              resolvedAt: new Date(),
+              resolvedBy: principal.userId,
+              resolutionReason: 'SOURCE_REMOVED',
+              revision,
+            },
+          });
+          if (updated.count === 1) {
+            const event = await transaction.alertLifecycleEvent.create({
+              data: {
+                alertId: alert.id,
+                type: 'RESOLVED',
+                revision,
+                actorId: principal.userId,
+                requestId,
+              },
+            });
+            await queueLifecycleNotifications(
+              transaction,
+              event.id,
+              alert.rule.station.plot.farmId,
+            );
+          }
+        }
+        await transaction.dataSourceGrant.deleteMany({ where: { dataSourceId: sourceId } });
+        await transaction.dataSource.update({
+          where: { id: sourceId },
+          data: {
+            removedAt: new Date(),
+            keyCiphertext: null,
+            keyNonce: null,
+            keyAuthTag: null,
+            keyPreview: null,
+            connectionStatus: 'FAILED',
+          },
+        });
+        await this.audits.record(transaction, {
+          actorUserId: principal.userId,
+          action: 'DATA_SOURCE_REMOVED',
+          targetType: 'DataSource',
+          targetId: sourceId,
+          requestId,
+          metadata: { resolvedAlertCount: unresolved.length },
+        });
+        return { removed: true };
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
   }
 
   private toDto(source: SourceRecord, principalId: string): DataSourceDto {

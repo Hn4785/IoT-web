@@ -161,6 +161,15 @@ export class DataSourceService {
     }
   }
 
+  remove(
+    principal: CurrentPrincipalValue,
+    sourceId: string,
+    requestId: string,
+  ): Promise<{ removed: true }> {
+    this.requireSupportedRole(principal);
+    return this.repository.remove(principal, sourceId, requestId);
+  }
+
   private requireSupportedRole(principal: CurrentPrincipalValue): void {
     if (principal.status !== 'ACTIVE' || !['ADMIN', 'FARMER'].includes(principal.role)) {
       throw new AppError('FORBIDDEN', 403, 'Access is forbidden');

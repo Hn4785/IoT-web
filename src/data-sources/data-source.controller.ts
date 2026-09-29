@@ -214,4 +214,17 @@ export class DataSourceController {
       data: await this.sources.testConnection(principal, parseDataSourceId(sourceId), request.id),
     };
   }
+
+  @Delete(':sourceId')
+  @Header('Cache-Control', 'no-store')
+  async remove(
+    @CurrentPrincipal() principal: CurrentPrincipalValue,
+    @Param('sourceId') sourceId: string,
+    @Req() request: FastifyRequest,
+  ) {
+    return {
+      success: true,
+      data: await this.sources.remove(principal, parseDataSourceId(sourceId), request.id),
+    };
+  }
 }

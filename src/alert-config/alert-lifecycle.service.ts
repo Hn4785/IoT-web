@@ -297,6 +297,7 @@ export class AlertLifecycleService {
 
   private stationReadScope(principal: CurrentPrincipalValue): Prisma.StationWhereInput {
     return {
+      dataSource: { removedAt: null },
       OR: [
         {
           dataSource: { kind: 'SYSTEM' },
@@ -311,12 +312,13 @@ export class AlertLifecycleService {
   private stationMutationScope(principal: CurrentPrincipalValue): Prisma.StationWhereInput {
     return principal.role === 'ADMIN'
       ? {
+          dataSource: { removedAt: null },
           OR: [
             { dataSource: { ownerUserId: principal.userId } },
             { dataSource: { kind: 'SYSTEM' } },
           ],
         }
-      : { dataSource: { ownerUserId: principal.userId } };
+      : { dataSource: { ownerUserId: principal.userId, removedAt: null } };
   }
 
   private assertRole(principal: CurrentPrincipalValue): void {

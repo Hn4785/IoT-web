@@ -365,12 +365,13 @@ export class AlertRuleService {
   private stationMutationScope(principal: CurrentPrincipalValue): Prisma.StationWhereInput {
     return principal.role === 'ADMIN'
       ? {
+          dataSource: { removedAt: null },
           OR: [
             { dataSource: { ownerUserId: principal.userId } },
             { dataSource: { kind: 'SYSTEM' } },
           ],
         }
-      : { dataSource: { ownerUserId: principal.userId } };
+      : { dataSource: { ownerUserId: principal.userId, removedAt: null } };
   }
 
   private async findAuthorizedRule(principal: CurrentPrincipalValue, ruleId: string) {
