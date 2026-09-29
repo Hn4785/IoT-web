@@ -244,6 +244,7 @@ export default function RealtimeSoilMonitoring() {
           label="Farm"
           value={hierarchy.selectedFarmId}
           onChange={(event) => hierarchy.setSelectedFarmId(event.target.value)}
+          placeholder="Select a farm"
           options={hierarchy.farms.map((item) => ({
             value: item.id,
             label: item.name,
@@ -254,6 +255,8 @@ export default function RealtimeSoilMonitoring() {
           label="Plot"
           value={hierarchy.selectedPlotId}
           onChange={(event) => hierarchy.setSelectedPlotId(event.target.value)}
+          placeholder="Select a plot"
+          disabled={!hierarchy.selectedFarmId}
           options={hierarchy.plots.map((item) => ({
             value: item.id,
             label: item.name,
@@ -264,6 +267,8 @@ export default function RealtimeSoilMonitoring() {
           label="Station"
           value={hierarchy.selectedStationId}
           onChange={(event) => hierarchy.setSelectedStationId(event.target.value)}
+          placeholder="Select a station"
+          disabled={!hierarchy.selectedPlotId}
           options={hierarchy.stations.map((item) => ({
             value: item.id,
             label: `${item.code} — ${item.name}`,
@@ -365,18 +370,23 @@ function FilterSelect({
   value,
   onChange,
   options,
+  placeholder,
+  disabled,
 }: {
   label: string;
   value: string;
   onChange: (event: React.ChangeEvent<HTMLSelectElement>) => void;
   options: { value: string; label: string }[];
+  placeholder?: string;
+  disabled?: boolean;
 }) {
   return (
     <label className={styles.filterItem}>
       <span>{label}:</span>
 
       <div className={styles.selectWrapper}>
-        <select value={value} onChange={onChange}>
+        <select value={value} onChange={onChange} disabled={disabled}>
+          {placeholder && <option value="">{placeholder}</option>}
           {options.map((option) => (
             <option
               key={option.value}

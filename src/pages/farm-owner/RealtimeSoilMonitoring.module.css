@@ -1,7 +1,8 @@
 .page {
-  padding: 20px;
-  max-width: 1600px;
-  margin: 0 auto;
+  padding: var(--spacing-6);
+  width: min(100%, 1440px);
+  margin-inline: auto;
+  box-sizing: border-box;
 }
 
 .liveBar {
@@ -9,25 +10,25 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 12px;
-  margin-bottom: 10px;
+  padding: 0 var(--spacing-3);
+  margin-bottom: var(--spacing-3);
   background: var(--color-bg-surface);
   border: 1px solid var(--color-border-default);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
 }
 
 .liveStatus,
 .connectionStatus {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--spacing-1-5);
   color: var(--color-text-secondary);
-  font-size: 11px;
+  font-size: var(--font-size-caption);
 }
 
 .liveStatus strong {
   color: var(--color-primary-dark);
-  font-size: 11px;
+  font-size: var(--font-size-caption);
 }
 
 .liveDot {
@@ -45,52 +46,52 @@
 .filterBar {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--spacing-3);
   flex-wrap: wrap;
-  padding: 8px;
-  margin-bottom: 12px;
+  padding: var(--spacing-3);
+  margin-bottom: var(--spacing-3);
   background: var(--color-bg-surface);
   border: 1px solid var(--color-border-default);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
 }
 
 .filterItem {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: var(--spacing-1-5);
   min-width: 0;
 }
 
 .filterItem > span {
-  color: var(--color-text-tertiary);
-  font-size: 10px;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-body-sm);
   white-space: nowrap;
 }
 
 .selectWrapper,
 .staticSelect {
   position: relative;
-  min-width: 115px;
+  min-width: 140px;
 }
 
 .selectWrapper select,
 .staticSelect {
   width: 100%;
-  height: 30px;
+  height: var(--height-input-md);
   appearance: none;
-  padding: 0 25px 0 9px;
+  padding: 0 var(--spacing-6) 0 var(--spacing-3);
   border: 1px solid var(--color-border-default);
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   background: var(--color-bg-surface);
   color: var(--color-text-primary);
-  font-size: 10px;
+  font-size: var(--font-size-body-sm);
   cursor: pointer;
 }
 
 .selectWrapper svg,
 .staticSelect svg {
   position: absolute;
-  right: 7px;
+  right: var(--spacing-2);
   top: 50%;
   transform: translateY(-50%);
   pointer-events: none;
@@ -110,17 +111,17 @@
 
 .metricGrid {
   display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 7px;
-  margin-bottom: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: var(--spacing-3);
+  margin-bottom: var(--spacing-3);
 }
 
 .metricCard {
   min-width: 0;
-  padding: 9px 10px;
+  padding: var(--spacing-3) var(--spacing-4);
   background: var(--color-bg-surface);
   border: 1px solid var(--color-border-default);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   box-shadow: var(--shadow-sm);
 }
 
@@ -130,35 +131,35 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   color: var(--color-text-secondary);
-  font-size: 9px;
+  font-size: var(--font-size-body-sm);
 }
 
 .metricValue {
   display: flex;
   align-items: baseline;
-  gap: 4px;
-  margin-top: 4px;
+  gap: var(--spacing-1);
+  margin-top: var(--spacing-1);
   color: var(--color-text-primary);
-  font-size: 18px;
+  font-size: 22px;
   font-weight: 700;
 }
 
 .metricValue small {
   color: var(--color-text-tertiary);
-  font-size: 8px;
+  font-size: var(--font-size-caption);
   font-weight: 500;
 }
 
 .qualityBadge {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
-  margin-top: 4px;
-  padding: 2px 5px;
-  border-radius: 4px;
+  gap: var(--spacing-1);
+  margin-top: var(--spacing-1);
+  padding: 2px var(--spacing-1-5);
+  border-radius: var(--radius-xs);
   color: var(--color-primary-dark);
   background: var(--color-primary-light);
-  font-size: 8px;
+  font-size: var(--font-size-caption);
   font-weight: 600;
 }
 
@@ -169,23 +170,23 @@
 
 .metricUpdated {
   display: block;
-  margin-top: 4px;
+  margin-top: var(--spacing-1);
   color: var(--color-text-placeholder);
-  font-size: 8px;
+  font-size: var(--font-size-caption);
 }
 
 .chartGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+  gap: var(--spacing-3);
 }
 
 .chartCard {
   min-width: 0;
-  padding: 12px;
+  padding: var(--spacing-4);
   background: var(--color-bg-surface);
   border: 1px solid var(--color-border-default);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   box-shadow: var(--shadow-sm);
 }
 
@@ -193,27 +194,27 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 5px;
+  gap: var(--spacing-3);
+  margin-bottom: var(--spacing-2);
 }
 
 .chartHeader h2 {
   margin: 0;
   color: var(--color-text-primary);
-  font-size: 10px;
+  font-size: var(--font-size-body-sm);
   font-weight: 650;
 }
 
 .chartHeader > span {
   color: var(--color-text-placeholder);
-  font-size: 8px;
+  font-size: var(--font-size-caption);
   white-space: nowrap;
 }
 
 .chartTitleWithIcon {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: var(--spacing-1-5);
 }
 
 .chartTitleWithIcon svg {
@@ -227,20 +228,20 @@
 .legend {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--spacing-3);
   color: var(--color-text-tertiary);
-  font-size: 8px;
+  font-size: var(--font-size-caption);
 }
 
 .legend span {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--spacing-1);
 }
 
 .legend i {
-  width: 5px;
-  height: 5px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
 }
 
@@ -301,12 +302,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  margin-top: 15px;
-  padding: 20px;
+  gap: var(--spacing-1-5);
+  margin-top: var(--spacing-4);
+  padding: var(--spacing-5);
   color: var(--color-text-tertiary);
   border: 1px dashed var(--color-border-default);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
 }
 
 @media (max-width: 1200px) {
@@ -323,5 +324,11 @@
 
   .npkCard {
     grid-column: auto;
+  }
+}
+
+@media (max-width: 640px) {
+  .page {
+    padding: var(--spacing-4);
   }
 }

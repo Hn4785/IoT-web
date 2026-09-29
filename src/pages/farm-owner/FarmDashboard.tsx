@@ -15,31 +15,59 @@ function formatDate(value: string) {
   return new Intl.DateTimeFormat("vi-VN", { dateStyle: "short", timeStyle: "short" }).format(new Date(value));
 }
 
+interface FarmDashboardState {
+  stationId: string;
+  reloadKey: number;
+  latest: LatestSoilDataDto | null;
+  alerts: AlertDto[];
+  error: string;
+}
+
 export default function FarmDashboard() {
   const hierarchy = useStationHierarchy();
-  const [latest, setLatest] = useState<LatestSoilDataDto | null>(null);
-  const [alerts, setAlerts] = useState<AlertDto[]>([]);
-  const [error, setError] = useState("");
+  const [dataState, setDataState] = useState<FarmDashboardState | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let active = true;
-    if (!hierarchy.selectedStationId) {
+    const stationId = hierarchy.selectedStationId;
+    if (!stationId) {
       return () => { active = false; };
     }
     Promise.all([
-      stationBrowserService.getLatest(hierarchy.selectedStationId),
-      alertService.listAlerts({ stationId: hierarchy.selectedStationId, limit: 20 }),
+      stationBrowserService.getLatest(stationId),
+      alertService.listAlerts({ stationId, limit: 20 }),
     ]).then(
       ([soil, alertPage]) => {
         if (!active) return;
-        setLatest(soil);
-        setAlerts(alertPage.items.filter((item) => item.status !== "RESOLVED"));
+        setDataState({
+          stationId,
+          reloadKey,
+          latest: soil,
+          alerts: alertPage.items.filter((item) => item.status !== "RESOLVED"),
+          error: "",
+        });
       },
-      (reason) => { if (active) setError(normalizeApiError(reason).message); },
+      (reason) => {
+        if (!active) return;
+        setDataState({
+          stationId,
+          reloadKey,
+          latest: null,
+          alerts: [],
+          error: normalizeApiError(reason).message,
+        });
+      },
     );
     return () => { active = false; };
   }, [hierarchy.selectedStationId, reloadKey]);
+
+  const currentData = (dataState?.stationId === hierarchy.selectedStationId && dataState?.reloadKey === reloadKey)
+    ? dataState
+    : null;
+  const latest = currentData?.latest ?? null;
+  const alerts = currentData?.alerts ?? [];
+  const error = currentData?.error ?? "";
 
   return (
     <div className={styles.page}>
@@ -47,9 +75,9 @@ export default function FarmDashboard() {
         <Button variant="outline" icon={<RefreshCw size={16} />} onClick={() => setReloadKey((value) => value + 1)}>Refresh</Button>
       } />
       <section className={styles.filters}>
-        <label>Farm<select value={hierarchy.selectedFarmId} onChange={(event) => hierarchy.setSelectedFarmId(event.target.value)}>{hierarchy.farms.map((farm) => <option key={farm.id} value={farm.id}>{farm.name}</option>)}</select></label>
-        <label>Plot<select value={hierarchy.selectedPlotId} onChange={(event) => hierarchy.setSelectedPlotId(event.target.value)}>{hierarchy.plots.map((plot) => <option key={plot.id} value={plot.id}>{plot.name}</option>)}</select></label>
-        <label>Station<select value={hierarchy.selectedStationId} onChange={(event) => hierarchy.setSelectedStationId(event.target.value)}>{hierarchy.stations.map((station) => <option key={station.id} value={station.id}>{station.code} — {station.name}</option>)}</select></label>
+        <label>Farm<select value={hierarchy.selectedFarmId} onChange={(event) => hierarchy.setSelectedFarmId(event.target.value)}><option value="">Select a farm</option>{hierarchy.farms.map((farm) => <option key={farm.id} value={farm.id}>{farm.name}</option>)}</select></label>
+        <label>Plot<select value={hierarchy.selectedPlotId} onChange={(event) => hierarchy.setSelectedPlotId(event.target.value)} disabled={!hierarchy.selectedFarmId}><option value="">Select a plot</option>{hierarchy.plots.map((plot) => <option key={plot.id} value={plot.id}>{plot.name}</option>)}</select></label>
+        <label>Station<select value={hierarchy.selectedStationId} onChange={(event) => hierarchy.setSelectedStationId(event.target.value)} disabled={!hierarchy.selectedPlotId}><option value="">Select a station</option>{hierarchy.stations.map((station) => <option key={station.id} value={station.id}>{station.code} — {station.name}</option>)}</select></label>
       </section>
       {(error || hierarchy.error) && <p className={styles.error} role="alert">{error || hierarchy.error}</p>}
       <section className={styles.summary}>
