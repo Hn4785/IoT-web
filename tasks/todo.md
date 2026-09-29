@@ -77,6 +77,13 @@ Evidence: [`2026-09-02-phase-a.md`](../docs/checkpoints/2026-09-02-phase-a.md).
       direct connection fields, truthful states and no `N/A`; v2.5.6 is healthy
       on Pi with all 11 migrations applied. Client Developer stays outside source
       sharing and Settings stays last.
+- [ ] B-farmer-prep-demo-cleanup: Before Farmer implementation, remove
+      `Farm Demo` and `Plot Demo` from the Pi active hierarchy because the owner
+      now enters real organizational names. First verify both contain no active
+      source or station. Delete physical rows only when no retained station,
+      alert, notification or audit relation references them; otherwise retire
+      or hide the demo hierarchy while preserving history. Take a database backup
+      and record before/after evidence.
 - [ ] B-source-FE-farmer: Reuse the approved direct-entry and owned/shared-source
       behavior for Farmer without widening Client Developer access.
 - [ ] B-source-remove-orphan-hierarchy: Fix during Farmer work. Removing the
@@ -194,9 +201,10 @@ and must not duplicate the full contract.
 
 ## Immediate next action
 
-1. Complete the Farmer API Sources frontend and the shared Alert Center metadata
-   and rule flow; reuse the same behavior for Admin, keep Client Developer outside
-   source sharing and Settings last.
+1. Back up the Pi database, safely remove or retire the empty `Farm Demo` /
+   `Plot Demo` hierarchy, then complete Farmer API Sources and the shared Alert
+   Center metadata/rule flow. Reuse the same alert behavior for Admin, keep
+   Client Developer outside source sharing and Settings last.
 2. Run the remaining browser role matrix one page at a time in the fixed order
    **Admin/Super Admin → Farmer → Client Developer**.
 3. Complete the remaining browser role matrix and registry checks without
