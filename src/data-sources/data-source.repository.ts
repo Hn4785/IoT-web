@@ -14,6 +14,8 @@ import type {
 } from './data-source.contracts.js';
 import type { EncryptedSourceSecret } from './source-secret.service.js';
 
+const soilStationWhere = { upstreamCode: { not: 'CENTER' } } as const;
+
 const sourceSelect = {
   id: true,
   name: true,
@@ -27,10 +29,10 @@ const sourceSelect = {
   grants: {
     select: {
       userId: true,
-      _count: { select: { stations: true } },
+      _count: { select: { stations: { where: { station: soilStationWhere } } } },
     },
   },
-  _count: { select: { stations: true, grants: true } },
+  _count: { select: { stations: { where: soilStationWhere }, grants: true } },
 } satisfies Prisma.DataSourceSelect;
 
 type SourceRecord = Prisma.DataSourceGetPayload<{ select: typeof sourceSelect }>;
@@ -371,7 +373,11 @@ export class DataSourceRepository {
           select: { id: true, role: true, status: true },
         }),
         transaction.station.findMany({
-          where: { id: { in: [...input.stationIds] }, dataSourceId: input.sourceId },
+          where: {
+            id: { in: [...input.stationIds] },
+            dataSourceId: input.sourceId,
+            ...soilStationWhere,
+          },
           select: { id: true },
           orderBy: { id: 'asc' },
         }),
@@ -505,7 +511,11 @@ export class DataSourceRepository {
         userId: true,
         createdAt: true,
         user: { select: { id: true, displayName: true, email: true } },
-        stations: { select: { stationId: true }, orderBy: { stationId: 'asc' } },
+        stations: {
+          where: { station: soilStationWhere },
+          select: { stationId: true },
+          orderBy: { stationId: 'asc' },
+        },
       },
       orderBy: [{ createdAt: 'desc' }, { userId: 'desc' }],
       take: query.limit + 1,
@@ -531,7 +541,7 @@ export class DataSourceRepository {
       throw new AppError('FORBIDDEN', 403, 'Only the source owner can manage access');
     }
     const items = await this.prisma.station.findMany({
-      where: { dataSourceId: sourceId },
+      where: { dataSourceId: sourceId, ...soilStationWhere },
       select: { id: true, name: true, upstreamCode: true },
       orderBy: [{ upstreamCode: 'asc' }, { id: 'asc' }],
     });

@@ -53,12 +53,7 @@ export type AlertDto = Readonly<{
   resolvedAt: string | null;
   resolvedBy: string | null;
   resolutionReason:
-    | 'RECOVERED'
-    | 'MANUAL'
-    | 'RULE_DISABLED'
-    | 'METADATA_CHANGED'
-    | 'SOURCE_REMOVED'
-    | null;
+    'RECOVERED' | 'MANUAL' | 'RULE_DISABLED' | 'METADATA_CHANGED' | 'SOURCE_REMOVED' | null;
   revision: number;
 }>;
 
@@ -163,12 +158,7 @@ export function toAlertDto(record: {
   resolvedAt: Date | null;
   resolvedBy: string | null;
   resolutionReason:
-    | 'RECOVERED'
-    | 'MANUAL'
-    | 'RULE_DISABLED'
-    | 'METADATA_CHANGED'
-    | 'SOURCE_REMOVED'
-    | null;
+    'RECOVERED' | 'MANUAL' | 'RULE_DISABLED' | 'METADATA_CHANGED' | 'SOURCE_REMOVED' | null;
   revision: number;
   rule: {
     field: string;

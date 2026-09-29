@@ -310,9 +310,9 @@ describeDb('Phase C in-app notifications', () => {
       headers: { authorization: `Bearer ${farmerToken}` },
     });
     expect(sharedAlerts.statusCode).toBe(200);
-    expect(sharedAlerts.json<{ data: { items: Array<{ id: string }> } }>().data.items).toContainEqual(
-      expect.objectContaining({ id: alert.id }),
-    );
+    expect(
+      sharedAlerts.json<{ data: { items: Array<{ id: string }> } }>().data.items,
+    ).toContainEqual(expect.objectContaining({ id: alert.id }));
     const forbiddenMutation = await app.inject({
       method: 'POST',
       url: `/api/v1/alerts/${alert.id}/acknowledgements`,
@@ -325,11 +325,13 @@ describeDb('Phase C in-app notifications', () => {
       where: { dataSourceId_userId: { dataSourceId: sourceId, userId: farmerId } },
     });
     expect(
-      (await app.inject({
-        method: 'GET',
-        url: '/api/v1/alerts',
-        headers: { authorization: `Bearer ${farmerToken}` },
-      })).json<{ data: { items: unknown[] } }>().data.items,
+      (
+        await app.inject({
+          method: 'GET',
+          url: '/api/v1/alerts',
+          headers: { authorization: `Bearer ${farmerToken}` },
+        })
+      ).json<{ data: { items: unknown[] } }>().data.items,
     ).toEqual([]);
     expect(
       (await list(farmerToken)).json<{ data: { items: unknown[]; unreadCount: number } }>().data,

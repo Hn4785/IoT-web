@@ -133,7 +133,9 @@ describeDb('durable notification delivery', () => {
     });
     expect(await prisma.inAppNotification.count()).toBe(0);
     expect(await worker.runOnce()).toBe(3);
-    expect(await prisma.inAppNotification.count({ where: { lifecycleEventId: event.id } })).toBe(206);
+    expect(await prisma.inAppNotification.count({ where: { lifecycleEventId: event.id } })).toBe(
+      206,
+    );
     const job = await prisma.notificationDeliveryJob.findUniqueOrThrow({
       where: { lifecycleEventId: event.id },
     });

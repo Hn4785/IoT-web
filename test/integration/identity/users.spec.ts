@@ -551,11 +551,13 @@ describe('administrator user provisioning', () => {
     expect(await prisma.session.count({ where: { userId: target.id, revokedAt: null } })).toBe(0);
     expect(await prisma.dataSourceGrant.count({ where: { userId: target.id } })).toBe(0);
     expect(
-      (await app.inject({
-        method: 'GET',
-        url: '/api/v1/auth/me',
-        headers: bearer(targetToken),
-      })).statusCode,
+      (
+        await app.inject({
+          method: 'GET',
+          url: '/api/v1/auth/me',
+          headers: bearer(targetToken),
+        })
+      ).statusCode,
     ).toBe(401);
 
     const retry = await app.inject({

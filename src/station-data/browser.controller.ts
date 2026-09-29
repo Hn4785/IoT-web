@@ -23,10 +23,7 @@ import {
 } from './station-data.contracts.js';
 import { StationDataService } from './station-data.service.js';
 import { StationRepository } from './station.repository.js';
-import {
-  SOIL_METADATA_PROVIDER,
-  type SoilMetadataProvider,
-} from './soil-metadata.provider.js';
+import { SOIL_METADATA_PROVIDER, type SoilMetadataProvider } from './soil-metadata.provider.js';
 
 const pageSchema = (item: object) => ({
   type: 'object' as const,

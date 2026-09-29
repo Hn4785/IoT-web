@@ -111,6 +111,7 @@ export class StationRepository {
       where: {
         AND: [
           { plotId },
+          { upstreamCode: { not: 'CENTER' } },
           ...(cursor ? [keyset(cursor.name, cursor.id)] : []),
           this.stationScope(principal),
         ],
@@ -242,7 +243,9 @@ export class StationRepository {
 
   private findAuthorizedStation(principal: CurrentPrincipalValue, stationId: string) {
     return this.prisma.station.findFirst({
-      where: { AND: [{ id: stationId }, this.stationScope(principal)] },
+      where: {
+        AND: [{ id: stationId }, { upstreamCode: { not: 'CENTER' } }, this.stationScope(principal)],
+      },
       select: {
         id: true,
         dataSourceId: true,

@@ -1,6 +1,6 @@
 # Backend delivery checklist
 
-Updated: 2026-09-28
+Updated: 2026-09-29
 
 This is the single short status index for the project. Detailed acceptance
 criteria remain in the
@@ -76,7 +76,7 @@ Evidence: [`2026-09-02-phase-a.md`](../docs/checkpoints/2026-09-02-phase-a.md).
 - [ ] B-source-FE: Admin API Sources is implemented locally with English copy,
       pasted-text parsing, truthful states and no `N/A`. Farmer remains next;
       Client Developer stays outside source sharing and Settings stays last.
-- [ ] B-admin-soil-source-checkpoint: Implement the approved soil-only admission,
+- [x] B-admin-soil-source-checkpoint: Implement the approved soil-only admission,
       station-scoped sharing, owner-managed station rules and shared-recipient
       notifications, recoverable source removal, simplified role-only User
       editor, read-only shared-access display, protected account deletion,
@@ -178,16 +178,14 @@ and must not duplicate the full contract.
 
 ## Immediate next action
 
-1. Complete `B-admin-soil-source-checkpoint` in its documented order and stop at
-   the Admin browser checkpoint. Do not start Farmer cleanup in the same slice.
-2. Complete the Farmer API Sources frontend using the resulting station-scoped
+1. Complete the Farmer API Sources frontend using the resulting station-scoped
    contract, keep Client Developer outside source sharing and Settings last.
-3. Run the remaining browser role matrix one page at a time in the fixed order
+2. Run the remaining browser role matrix one page at a time in the fixed order
    **Admin/Super Admin → Farmer → Client Developer**.
-4. Complete the remaining browser role matrix and registry checks without
+3. Complete the remaining browser role matrix and registry checks without
    storing provider credentials; B-device data provenance is already
    `live-verified`.
-5. Verify retained IoT Config/Config Proposals screens do not offer remote writes:
+4. Verify retained IoT Config/Config Proposals screens do not offer remote writes:
    threshold changes belong to Alert Center and physical intervention stays onsite.
-6. Keep deployment-owner decisions separate; B-device `live-verified` must not
+5. Keep deployment-owner decisions separate; B-device `live-verified` must not
    be used to close the browser matrix or D-production.

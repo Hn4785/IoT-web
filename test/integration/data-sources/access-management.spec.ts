@@ -22,6 +22,7 @@ describe('API source access management', () => {
   let farmerSourceId: string;
   let adminStationId: string;
   let secondAdminStationId: string;
+  let centerStationId: string;
   const ownerPassword = 'owner-password-123';
   const providerSecret = 'provider-secret-value';
 
@@ -107,7 +108,7 @@ describe('API source access management', () => {
     const plot = await prisma.plot.create({
       data: { farmId: farm.id, name: 'Shared Source Plot' },
     });
-    const [station, secondStation] = await Promise.all([
+    const [station, secondStation, centerStation] = await Promise.all([
       prisma.station.create({
         data: {
           plotId: plot.id,
@@ -124,9 +125,18 @@ describe('API source access management', () => {
           name: 'Second Shared Station',
         },
       }),
+      prisma.station.create({
+        data: {
+          plotId: plot.id,
+          dataSourceId: adminSource.id,
+          upstreamCode: 'CENTER',
+          name: 'Provider Center',
+        },
+      }),
     ]);
     adminStationId = station.id;
     secondAdminStationId = secondStation.id;
+    centerStationId = centerStation.id;
     [ownerToken, otherAdminToken, farmerToken] = await Promise.all([
       issueAccessToken({ prisma, config, userId: owner.id }),
       issueAccessToken({ prisma, config, userId: otherAdmin.id }),
@@ -146,6 +156,7 @@ describe('API source access management', () => {
       expect.objectContaining({ id: adminStationId, code: 'SHARED01' }),
       expect.objectContaining({ id: secondAdminStationId, code: 'SHARED02' }),
     ]);
+    expect(ownerResponse.body).not.toContain('CENTER');
 
     const oversight = await app.inject({
       method: 'GET',
@@ -176,6 +187,13 @@ describe('API source access management', () => {
   it('lets only the owner grant and revoke selected Farmer stations', async () => {
     const grantUrl = `/api/v1/data-sources/${adminSourceId}/grants/${farmerId}`;
     const scopedGrantUrl = `${grantUrl}/stations`;
+    const centerGrant = await request({
+      method: 'PUT',
+      url: scopedGrantUrl,
+      token: ownerToken,
+      payload: { stationIds: [centerStationId] },
+    });
+    expect(centerGrant.statusCode).toBe(404);
     const granted = await request({
       method: 'PUT',
       url: scopedGrantUrl,
