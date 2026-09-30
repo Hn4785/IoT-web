@@ -46,7 +46,7 @@ commands remain in the
 
 Evidence: [`2026-09-02-phase-a.md`](../docs/checkpoints/2026-09-02-phase-a.md).
 
-## B. Authorized station data — backend core complete
+## B. Authorized station data — complete locally (owner accepted 2026-09-30)
 
 - [x] SD-1: Approve station DTO, filter, pagination and cache design.
 - [x] SD-2: Add authorized Farm → Plot → Station hierarchy/list APIs.
@@ -58,8 +58,10 @@ Evidence: [`2026-09-02-phase-a.md`](../docs/checkpoints/2026-09-02-phase-a.md).
 - [x] B-integration-code: Replace frontend station/soil mocks with typed
       hierarchy, latest and history adapters; expose truthful loading, empty and
       upstream-error states.
-- [ ] B-integration-browser: Run the Admin/Super Admin → Farmer → Client
-      Developer browser role matrix against the current backend.
+- [x] B-integration-browser: The product owner completed the local Admin/Super
+      Admin → Farmer → Client Developer acceptance pass against the running
+      backend on 2026-09-30. The broader automated responsive/recovery matrix
+      remains a release-quality gate under FE-6/QA-1, not a Phase B blocker.
 - [x] B-device-source: Provider confirmed on 2026-09-28 that all CENTER/NODE
       data delivered through the issued `X-API-Key` is real sensor data and the
       final input for acceptance. Do not store the key in evidence.
@@ -75,14 +77,15 @@ Evidence: [`2026-09-02-phase-a.md`](../docs/checkpoints/2026-09-02-phase-a.md).
       changing public measurement DTOs or Client Developer platform keys.
 - [x] B-source-FE-admin: Admin API Sources is implemented with English copy,
       direct connection fields, truthful states and no `N/A`; v2.5.6 is healthy
-      on Pi with all 11 migrations applied. Client Developer stays outside source
-      sharing and Settings stays last.
+      on Pi with all 11 migrations applied. `Manage Access` is the single browser
+      surface for station grants to Farmer and Client Developer accounts; account
+      administration only edits role and shows shared access read-only.
 - [x] B-farmer-prep-local-demo-cleanup: Backed up the local database, then
       removed `Farm Demo`, `Plot Demo`, their seven test stations and the managed
       test source so Farmer work starts from an empty local hierarchy. Users,
       sessions and security-audit records were left intact; post-cleanup counts
       for demo Farm/Plot, managed sources and stations are all zero.
-- [ ] B-farmer-deploy-pi-demo-cleanup: When the Farmer release is pushed to Pi,
+- [ ] Deployment follow-up — Pi demo cleanup: When the Farmer release is pushed to Pi,
       back up the Pi database and remove the corresponding `Farm Demo` /
       `Plot Demo` hierarchy there. Do not perform this Pi cleanup during local
       Farmer implementation.
@@ -110,12 +113,12 @@ Evidence: [`2026-09-02-phase-a.md`](../docs/checkpoints/2026-09-02-phase-a.md).
       management, Automatic/Paused modes and read-only shared-recipient access.
       Automatic rules evaluate new samples and create in-app notifications for
       the source owner and authorized station viewers; they never control remote
-      devices. Browser role acceptance remains tracked by
-      B-integration-browser and C-integration-browser.
+      devices. Product-owner browser acceptance for B/C was completed locally on
+      2026-09-30; the wider automated recovery matrix remains under FE-6/QA-1.
 
 Evidence: [`2026-09-10-phase-b-core.md`](../docs/checkpoints/2026-09-10-phase-b-core.md).
 
-## C. Alerts and in-app notifications — backend core complete
+## C. Alerts and in-app notifications — complete locally (owner accepted 2026-09-30)
 
 - [x] AC-1: Approve rule, lifecycle, notification and no-device-write design.
 - [x] AC-2: Add scoped alert-rule contracts, validation and mutation APIs.
@@ -129,8 +132,9 @@ Evidence: [`2026-09-10-phase-b-core.md`](../docs/checkpoints/2026-09-10-phase-b-
       inbox and fail-closed device-capability screens to current backend contracts.
 - [x] C-delivery-hardening: Move notification fanout to a durable bounded worker,
       freeze display values at transition time, and preserve pending jobs in retention.
-- [ ] C-integration-browser: Run Admin/Farmer authorization, lifecycle and
-      stale-session browser cases.
+- [x] C-integration-browser: The product owner completed the local Admin/Farmer
+      authorization, lifecycle and stale-session acceptance pass on 2026-09-30.
+      Broader automated failure/recovery coverage remains tracked under QA-1.
 - [x] C-device-boundary: Record the provider decision that the web configures
       alert thresholds only. Calibration and other intervention happen directly
       onsite; no device-write contract, payload or publish API will be added in

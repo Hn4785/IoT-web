@@ -1,9 +1,15 @@
-# Phase B-core backend checkpoint
+# Phase B — authorized station data checkpoint
 
-Date: 2026-09-10  
+Initial core evidence: 2026-09-10
+
+Local completion accepted: 2026-09-30
+
 Branch: `codex/integration-core`  
 Implementation commits: `5802f1e..eeadfb4`  
-Status: accepted as the sample-verified backend Phase B checkpoint; B-integration and B-device remain open.
+Status: **complete locally**. The product owner accepted the integrated
+Admin/Super Admin → Farmer → Client Developer flows on 2026-09-30. Deployment
+follow-ups and the wider automated recovery matrix remain release gates, not
+Phase B implementation blockers.
 
 ## Evidence
 
@@ -23,7 +29,28 @@ current intersection of account station grants and key station scopes. Tests
 cover safe cross-scope denials, latest/history mapping, sparse fields, caching,
 history bounds/cursors and per-key rate-limit/reset behavior.
 
-## Known boundaries
+## Completion follow-up
+
+- The provider confirmed on 2026-09-28 that the connected CENTER/NODE feed is
+  real sensor data; B-device is `live-verified` without storing its credential
+  in evidence.
+- Typed hierarchy, latest/history, dashboards, reports and Client API Explorer
+  are connected without sample-data fallback.
+- API Sources owns the only browser station-grant editor for both Farmer and
+  Client Developer accounts. User Management edits roles and shows shared
+  access read-only.
+- Admin and Farmer use the shared Alert Center for rule configuration,
+  lifecycle and in-app notifications. Rules do not write to physical devices.
+- Client navigation contains Dashboard, API Access and API Tools. Change
+  Password and Log out remain in the global account menu for all three roles.
+- Frontend evidence recorded on 2026-09-30: 152/152 tests, lint and production
+  build passed. Focused backend source-access tests passed 19/19 with lint and
+  build; after Docker recovery PostgreSQL was healthy and `/health` plus
+  `/readiness` returned HTTP 200.
+- This is local acceptance evidence. It does not claim that the accepted build
+  has been deployed to Pi.
+
+## Retained boundaries
 
 - `pnpm audit --prod` reports one moderate `mysql2` advisory pulled through
   Prisma tooling. Runtime is PostgreSQL-only and no MySQL protocol path is used;
@@ -31,7 +58,9 @@ history bounds/cursors and per-key rate-limit/reset behavior.
   reachable high/critical production finding.
 - Node 24.17.0 LTS is installed under `E:\Dev\nvm`; the full test, typecheck,
   lint, format and build gate passed on this declared runtime.
-- Frontend replacement of station/soil mocks is not verified and remains tracked
-  separately as Checkpoint B-integration.
-- B-device remains open until CENTER metadata and at least one real station are
-  verified against the live upstream API.
+- The full backend suite was not re-claimed in the final local pass because its
+  parallel database setup timed out while Docker was wedged. Earlier core
+  evidence above remains valid; the latest source-access slice uses focused
+  regression evidence.
+- FE-6 and QA-1 continue to track the broader automated responsive,
+  accessibility, failure and recovery matrix for release hardening.

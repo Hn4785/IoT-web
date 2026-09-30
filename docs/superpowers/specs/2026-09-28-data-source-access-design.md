@@ -2,7 +2,7 @@
 
 Date: 2026-09-28
 
-Status: Approved by product owner for implementation
+Status: Implemented locally and accepted by product owner on 2026-09-30
 
 Follow-up: the approved next Admin checkpoint in
 [`2026-09-28-soil-source-admin-checkpoint-design.md`](./2026-09-28-soil-source-admin-checkpoint-design.md)

@@ -41,8 +41,10 @@ ngày, phân trang bằng `nextCursor`. Client gửi `X-API-Key` và đọc các
 
 `unit`, `sensorId` và `depthCm` có thể là `null` vì thiết bị thật chưa được
 xác minh. Backend chỉ proxy/cache dữ liệu đo, không lưu measurement vào database.
-`CENTER` và một station thật vẫn phải qua Checkpoint B-device trước khi coi
-Phase B là live-verified.
+Nguồn CENTER/NODE đã được bên cung cấp xác nhận là dữ liệu cảm biến thật ngày
+2026-09-28; Phase B được đánh dấu `live-verified` và hoàn tất local ngày
+2026-09-30. Việc triển khai thay đổi local mới nhất lên Pi và ma trận recovery
+tự động vẫn là release gate riêng.
 
 ## Chạy local
 

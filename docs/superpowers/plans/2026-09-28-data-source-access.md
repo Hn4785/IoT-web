@@ -1,5 +1,11 @@
 # Data Source Access Implementation Plan
 
+Status: **completed locally and accepted by the product owner on 2026-09-30**.
+This file preserves the original execution sequence; unchecked boxes below are
+historical plan steps, not open product work. Current completion evidence lives
+in [`2026-09-10-phase-b-core.md`](../../checkpoints/2026-09-10-phase-b-core.md)
+and the remaining release gates live in [`tasks/todo.md`](../../../tasks/todo.md).
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Add securely owned and shared upstream API sources, then connect the existing Admin and Farmer monitoring UI without exposing credentials.
