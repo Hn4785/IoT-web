@@ -49,11 +49,15 @@ test("Admin dashboard omits unsupported hardware inventory", () => {
   assert.doesNotMatch(dashboard, /Operational Health/);
 });
 
+test("Client Developer account editing renders UserScopeEditor for direct station grants", () => {
+  assert.match(users, /editingUser\.role === "CLIENT_DEVELOPER"[\s\S]{0,200}<UserScopeEditor/);
+  assert.match(users, /setEditingUser\(updated\)/);
+});
+
 test("Admin account editing is role-focused and source access is read only", () => {
   assert.match(users, /Shared access/);
   assert.match(users, /Source access is managed from API Sources/);
   assert.match(users, /Delete Account/);
-  assert.doesNotMatch(users, /UserScopeEditor/);
 });
 
 test("alert rules are created from confirmed station metadata", () => {
