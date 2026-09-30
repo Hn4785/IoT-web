@@ -85,10 +85,12 @@ Evidence: [`2026-09-02-phase-a.md`](../docs/checkpoints/2026-09-02-phase-a.md).
       test source so Farmer work starts from an empty local hierarchy. Users,
       sessions and security-audit records were left intact; post-cleanup counts
       for demo Farm/Plot, managed sources and stations are all zero.
-- [ ] Deployment follow-up — Pi demo cleanup: When the Farmer release is pushed to Pi,
-      back up the Pi database and remove the corresponding `Farm Demo` /
-      `Plot Demo` hierarchy there. Do not perform this Pi cleanup during local
-      Farmer implementation.
+- [x] Deployment follow-up — Pi demo cleanup: Before the 2026-09-30 rollout,
+      created a database/Compose backup, then removed the `Farm Demo` hierarchy
+      in one transaction: two demo plots, twelve duplicate station rows, one
+      membership, one client grant and three API-key scopes. Both removed source
+      records and audit evidence were retained. Post-cleanup Farm/Plot counts are
+      zero.
 - [x] B-source-FE-farmer: Reuse the approved direct-entry and owned/shared-source
       behavior for Farmer without widening Client Developer access.
 - [x] B-source-remove-orphan-hierarchy: Removing the
@@ -210,14 +212,12 @@ and must not duplicate the full contract.
 
 ## Immediate next action
 
-1. Run the remaining browser role matrix one page at a time in the fixed order
-   **Admin/Super Admin → Farmer → Client Developer**.
-2. Complete the remaining browser role matrix and registry checks without
-   storing provider credentials; B-device data provenance is already
-   `live-verified`.
-3. Verify retained IoT Config/Config Proposals screens do not offer remote writes:
-   threshold changes belong to Alert Center and physical intervention stays onsite.
-4. Back up and clean the Pi demo hierarchy only when this Farmer release is
-   deployed; local implementation must not mutate Pi state early.
-5. Keep deployment-owner decisions separate; B-device `live-verified` must not
-   be used to close the browser matrix or D-production.
+1. Keep FE-6/QA-1 as release-hardening work for automated responsive,
+   accessibility, failure and recovery coverage; owner acceptance for B/C is
+   already complete.
+2. Complete FE-5 only against the approved scoped audit contract; do not expose
+   the process-local metrics registry as a public UI API.
+3. Keep IoT Config/Config Proposals fail-closed: thresholds belong to Alert
+   Center and physical intervention stays onsite.
+4. Keep D-production ownership decisions separate from the healthy Pi staging
+   deployment.

@@ -47,8 +47,11 @@ history bounds/cursors and per-key rate-limit/reset behavior.
   build passed. Focused backend source-access tests passed 19/19 with lint and
   build; after Docker recovery PostgreSQL was healthy and `/health` plus
   `/readiness` returned HTTP 200.
-- This is local acceptance evidence. It does not claim that the accepted build
-  has been deployed to Pi.
+- The accepted build was deployed to Pi staging on 2026-09-30 as
+  `agrisense-api:d152337` and `agrisense-web:be73c29`. All 11 migrations already
+  matched, LAN/public health and readiness returned HTTP 200, and the protected
+  audit endpoint returned 401 without credentials. The previous `v2.5.6`
+  images and the pre-rollout database/Compose backup remain the rollback path.
 
 ## Retained boundaries
 
