@@ -52,6 +52,7 @@ describe('Client Developer API-key lifecycle', () => {
   let farmerToken: string;
   let adminToken: string;
   let grantedStation: { id: string };
+  let sourceStation: { id: string };
   let ungrantedStation: { id: string };
 
   beforeAll(async () => {
@@ -87,16 +88,38 @@ describe('Client Developer API-key lifecycle', () => {
     ]);
     const farm = await prisma.farm.create({ data: { name: 'Farm' } });
     const plot = await prisma.plot.create({ data: { farmId: farm.id, name: 'Plot' } });
-    [grantedStation, ungrantedStation] = await Promise.all([
+    const source = await prisma.dataSource.create({
+      data: {
+        ownerUserId: farmer.id,
+        name: 'Farmer Source',
+        baseUrl: 'https://weather.example/api/v1',
+        keyCiphertext: 'cipher',
+        keyNonce: 'nonce',
+        keyAuthTag: 'tag',
+        keyPreview: 'test',
+        connectionStatus: 'CONNECTED',
+        lastCheckedAt: new Date(),
+      },
+    });
+    [grantedStation, ungrantedStation, sourceStation] = await Promise.all([
       prisma.station.create({
         data: { plotId: plot.id, upstreamCode: 'granted', name: 'Granted' },
       }),
       prisma.station.create({
         data: { plotId: plot.id, upstreamCode: 'ungranted', name: 'Ungranted' },
       }),
+      prisma.station.create({
+        data: { plotId: plot.id, dataSourceId: source.id, upstreamCode: 'sourced', name: 'Sourced' },
+      }),
     ]);
     await prisma.clientStationGrant.create({
       data: { userId: client.id, stationId: grantedStation.id },
+    });
+    await prisma.dataSourceGrant.create({
+      data: { dataSourceId: source.id, userId: client.id },
+    });
+    await prisma.dataSourceGrantStation.create({
+      data: { dataSourceId: source.id, userId: client.id, stationId: sourceStation.id },
     });
     [clientToken, farmerToken, adminToken] = await Promise.all([
       accessToken(client.id),
@@ -205,13 +228,12 @@ describe('Client Developer API-key lifecycle', () => {
 
     expect(response.statusCode).toBe(200);
     expect(response.headers['cache-control']).toBe('no-store');
-    expect(response.json<{ data: { items: unknown[] } }>().data.items).toEqual([
-      {
-        id: grantedStation.id,
-        name: 'Granted',
-        code: 'granted',
-      },
-    ]);
+    const expectedStations = [
+      { id: grantedStation.id, name: 'Granted', code: 'granted' },
+      { id: sourceStation.id, name: 'Sourced', code: 'sourced' },
+    ].sort((left, right) => left.id.localeCompare(right.id));
+
+    expect(response.json<{ data: { items: unknown[] } }>().data.items).toEqual(expectedStations);
     expect(response.body).not.toContain(ungrantedStation.id);
 
     const farmerResponse = await app.inject({
@@ -263,5 +285,25 @@ describe('Client Developer API-key lifecycle', () => {
     );
 
     expect(responses.map(({ statusCode }) => statusCode).sort()).toEqual([201, 409]);
+  });
+
+  it('allows API key creation and rotation for source-scoped station grants', async () => {
+    const created = await app.inject({
+      method: 'POST',
+      url: '/api/v1/developer/api-keys',
+      headers: { authorization: `Bearer ${clientToken}` },
+      payload: { name: 'Source Scoped', stationIds: [sourceStation.id] },
+    });
+    expect(created.statusCode).toBe(201);
+    const keyData = created.json<CreatedKeyResponse>().data;
+    expect(keyData.apiKey.stationIds).toEqual([sourceStation.id]);
+
+    const rotated = await app.inject({
+      method: 'POST',
+      url: `/api/v1/developer/api-keys/${keyData.apiKey.id}/rotate`,
+      headers: { authorization: `Bearer ${clientToken}` },
+    });
+    expect(rotated.statusCode).toBe(201);
+    expect(rotated.json<CreatedKeyResponse>().data.apiKey.stationIds).toEqual([sourceStation.id]);
   });
 });

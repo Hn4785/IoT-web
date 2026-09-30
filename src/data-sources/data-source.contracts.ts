@@ -58,7 +58,12 @@ export type DataSourceDto = Readonly<{
 }>;
 
 export type DataSourceGrantDto = Readonly<{
-  user: Readonly<{ id: string; displayName: string; email: string }>;
+  user: Readonly<{
+    id: string;
+    displayName: string;
+    email: string;
+    role: 'FARMER' | 'CLIENT_DEVELOPER';
+  }>;
   stationIds: readonly string[];
   createdAt: string;
 }>;
@@ -67,6 +72,7 @@ export type DataSourceGrantCandidateDto = Readonly<{
   id: string;
   displayName: string;
   email: string;
+  role: 'FARMER' | 'CLIENT_DEVELOPER';
 }>;
 
 function parse<T>(schema: z.ZodType<T>, value: unknown, message: string): T {

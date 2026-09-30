@@ -336,8 +336,8 @@ export class DataSourceRepository {
       if (source.ownerUserId !== input.principal.userId) {
         throw new AppError('FORBIDDEN', 403, 'Only the source owner can manage access');
       }
-      if (target.role !== 'FARMER' || target.status !== 'ACTIVE') {
-        throw new AppError('CONFLICT', 409, 'Only active Farmer accounts can receive access');
+      if (!['FARMER', 'CLIENT_DEVELOPER'].includes(target.role) || target.status !== 'ACTIVE') {
+        throw new AppError('CONFLICT', 409, 'Only active Farmer and Client Developer accounts can receive access');
       }
       if (target.id === source.ownerUserId) {
         throw new AppError('CONFLICT', 409, 'The source owner already has access');
@@ -511,7 +511,7 @@ export class DataSourceRepository {
       select: {
         userId: true,
         createdAt: true,
-        user: { select: { id: true, displayName: true, email: true } },
+        user: { select: { id: true, displayName: true, email: true, role: true } },
         stations: {
           where: { station: soilStationWhere },
           select: { stationId: true },
@@ -524,7 +524,12 @@ export class DataSourceRepository {
     const page = rows.slice(0, query.limit);
     return {
       items: page.map((grant) => ({
-        user: grant.user,
+        user: {
+          id: grant.user.id,
+          displayName: grant.user.displayName,
+          email: grant.user.email,
+          role: grant.user.role as 'FARMER' | 'CLIENT_DEVELOPER',
+        },
         stationIds: grant.stations.map(({ stationId }) => stationId),
         createdAt: grant.createdAt.toISOString(),
       })),
@@ -548,7 +553,7 @@ export class DataSourceRepository {
 
     const cursor = query.cursor
       ? await this.prisma.user.findFirst({
-          where: { id: query.cursor, role: 'FARMER', status: 'ACTIVE' },
+          where: { id: query.cursor, role: { in: ['FARMER', 'CLIENT_DEVELOPER'] }, status: 'ACTIVE' },
           select: { id: true, createdAt: true },
         })
       : null;
@@ -556,7 +561,7 @@ export class DataSourceRepository {
 
     const rows = await this.prisma.user.findMany({
       where: {
-        role: 'FARMER',
+        role: { in: ['FARMER', 'CLIENT_DEVELOPER'] },
         status: 'ACTIVE',
         id: { not: source.ownerUserId },
         ...(cursor
@@ -568,13 +573,18 @@ export class DataSourceRepository {
             }
           : {}),
       },
-      select: { id: true, displayName: true, email: true, createdAt: true },
+      select: { id: true, displayName: true, email: true, role: true, createdAt: true },
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       take: query.limit + 1,
     });
     const page = rows.slice(0, query.limit);
     return {
-      items: page.map(({ id, displayName, email }) => ({ id, displayName, email })),
+      items: page.map(({ id, displayName, email, role }) => ({
+        id,
+        displayName,
+        email,
+        role: role as 'FARMER' | 'CLIENT_DEVELOPER',
+      })),
       nextCursor: rows.length > query.limit ? (page.at(-1)?.id ?? null) : null,
     };
   }
@@ -607,8 +617,8 @@ export class DataSourceRepository {
     if (source.ownerUserId !== principal.userId) {
       throw new AppError('FORBIDDEN', 403, 'Only the source owner can manage access');
     }
-    if (target.role !== 'FARMER' || target.status !== 'ACTIVE') {
-      throw new AppError('CONFLICT', 409, 'Only active Farmer accounts can receive access');
+    if (!['FARMER', 'CLIENT_DEVELOPER'].includes(target.role) || target.status !== 'ACTIVE') {
+      throw new AppError('CONFLICT', 409, 'Only active Farmer and Client Developer accounts can receive access');
     }
     if (target.id === source.ownerUserId) {
       throw new AppError('CONFLICT', 409, 'The source owner already has access');

@@ -5,7 +5,7 @@ import type { CurrentPrincipalValue } from '../authorization/current-principal.j
 import { TOKEN_HASH_SERVICE, TokenHashService } from '../auth/token-hash.service.js';
 import { AppError } from '../common/errors/app-error.js';
 import { PrismaService } from '../database/prisma.service.js';
-import type { Prisma } from '../generated/prisma/client.js';
+import { Prisma } from '../generated/prisma/client.js';
 import { SecurityAuditService } from '../security-audit/security-audit.service.js';
 import type { ApiKeyDto, CreateApiKeyInput } from './api-key.contracts.js';
 
@@ -66,18 +66,36 @@ export class ApiKeyService {
     principal: CurrentPrincipalValue,
   ): Promise<readonly AvailableApiKeyStation[]> {
     this.requireClientDeveloper(principal);
-    const grants = await this.prisma.clientStationGrant.findMany({
-      where: { userId: principal.userId },
-      select: {
-        station: { select: { id: true, name: true, upstreamCode: true } },
-      },
-      orderBy: { stationId: 'asc' },
-    });
-    return grants.map(({ station }) => ({
-      id: station.id,
-      name: station.name,
-      code: station.upstreamCode,
-    }));
+    const [directGrants, sourceGrants] = await Promise.all([
+      this.prisma.clientStationGrant.findMany({
+        where: { userId: principal.userId },
+        select: {
+          station: { select: { id: true, name: true, upstreamCode: true } },
+        },
+      }),
+      this.prisma.dataSourceGrantStation.findMany({
+        where: { userId: principal.userId },
+        select: {
+          station: { select: { id: true, name: true, upstreamCode: true } },
+        },
+      }),
+    ]);
+    const stationMap = new Map<string, AvailableApiKeyStation>();
+    for (const { station } of directGrants) {
+      stationMap.set(station.id, {
+        id: station.id,
+        name: station.name,
+        code: station.upstreamCode,
+      });
+    }
+    for (const { station } of sourceGrants) {
+      stationMap.set(station.id, {
+        id: station.id,
+        name: station.name,
+        code: station.upstreamCode,
+      });
+    }
+    return Array.from(stationMap.values()).sort((left, right) => left.id.localeCompare(right.id));
   }
 
   async create(
@@ -114,38 +132,45 @@ export class ApiKeyService {
 
     const credential = generateCredential();
     const now = new Date();
-    return this.prisma.$transaction(
-      async (transaction) => {
-        await this.requireCurrentGrants(transaction, principal.userId, stationIds);
-        const revoked = await transaction.apiKey.updateMany({
-          where: { id: current.id, ownerUserId: principal.userId, revokedAt: null },
-          data: { revokedAt: now },
-        });
-        if (revoked.count !== 1) throw new AppError('CONFLICT', 409, 'API key changed');
-        const replacement = await transaction.apiKey.create({
-          data: {
-            ownerUserId: principal.userId,
-            name: current.name,
-            prefix: credential.prefix,
-            keyHash: this.tokenHashes.hash(credential.key),
-            expiresAt: new Date(now.getTime() + API_KEY_LIFETIME_MS),
-            requestsPerMinute: current.requestsPerMinute,
-            scopes: { create: stationIds.map((stationId) => ({ stationId })) },
-          },
-          select: apiKeyWithScopes,
-        });
-        await this.audits.record(transaction, {
-          actorUserId: principal.userId,
-          action: 'API_KEY_ROTATED',
-          targetType: 'ApiKey',
-          targetId: replacement.id,
-          requestId,
-          metadata: { previousApiKeyId: current.id },
-        });
-        return { key: credential.key, apiKey: toApiKeyDto(replacement) };
-      },
-      { isolationLevel: 'Serializable' },
-    );
+    try {
+      return await this.prisma.$transaction(
+        async (transaction) => {
+          await this.requireCurrentGrants(transaction, principal.userId, stationIds);
+          const revoked = await transaction.apiKey.updateMany({
+            where: { id: current.id, ownerUserId: principal.userId, revokedAt: null },
+            data: { revokedAt: now },
+          });
+          if (revoked.count !== 1) throw new AppError('CONFLICT', 409, 'API key changed');
+          const replacement = await transaction.apiKey.create({
+            data: {
+              ownerUserId: principal.userId,
+              name: current.name,
+              prefix: credential.prefix,
+              keyHash: this.tokenHashes.hash(credential.key),
+              expiresAt: new Date(now.getTime() + API_KEY_LIFETIME_MS),
+              requestsPerMinute: current.requestsPerMinute,
+              scopes: { create: stationIds.map((stationId) => ({ stationId })) },
+            },
+            select: apiKeyWithScopes,
+          });
+          await this.audits.record(transaction, {
+            actorUserId: principal.userId,
+            action: 'API_KEY_ROTATED',
+            targetType: 'ApiKey',
+            targetId: replacement.id,
+            requestId,
+            metadata: { previousApiKeyId: current.id },
+          });
+          return { key: credential.key, apiKey: toApiKeyDto(replacement) };
+        },
+        { isolationLevel: 'Serializable' },
+      );
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2034') {
+        throw new AppError('CONFLICT', 409, 'API key changed');
+      }
+      throw error;
+    }
   }
 
   async revoke(
@@ -230,7 +255,7 @@ export class ApiKeyService {
     const principal = await this.authenticateCredential(rawKey);
     const stationIdIsValid = UUID_PATTERN.test(stationId);
     const queriedStationId = stationIdIsValid ? stationId : NIL_STATION_ID;
-    const [scope, grant] = await Promise.all([
+    const [scope, directGrant, sourceGrant] = await Promise.all([
       this.prisma.apiKeyStationScope.findUnique({
         where: {
           apiKeyId_stationId: {
@@ -247,8 +272,14 @@ export class ApiKeyService {
           },
         },
       }),
+      this.prisma.dataSourceGrantStation.findFirst({
+        where: {
+          userId: principal.ownerUserId,
+          stationId: queriedStationId,
+        },
+      }),
     ]);
-    if (!stationIdIsValid || !scope || !grant) {
+    if (!stationIdIsValid || !scope || (!directGrant && !sourceGrant)) {
       this.invalidKey();
     }
     return { ...principal, stationId };
@@ -300,10 +331,21 @@ export class ApiKeyService {
     stationIds: readonly string[],
   ): Promise<void> {
     if (stationIds.length === 0) return;
-    const count = await transaction.clientStationGrant.count({
-      where: { userId, stationId: { in: [...stationIds] } },
-    });
-    if (count !== stationIds.length) {
+    const [directGrants, sourceGrants] = await Promise.all([
+      transaction.clientStationGrant.findMany({
+        where: { userId, stationId: { in: [...stationIds] } },
+        select: { stationId: true },
+      }),
+      transaction.dataSourceGrantStation.findMany({
+        where: { userId, stationId: { in: [...stationIds] } },
+        select: { stationId: true },
+      }),
+    ]);
+    const granted = new Set([
+      ...directGrants.map(({ stationId }) => stationId),
+      ...sourceGrants.map(({ stationId }) => stationId),
+    ]);
+    if (stationIds.some((id) => !granted.has(id))) {
       throw new AppError('FORBIDDEN', 403, 'One or more stations are not granted');
     }
   }

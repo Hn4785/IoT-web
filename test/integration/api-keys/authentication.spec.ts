@@ -141,4 +141,80 @@ describe('API-key authentication', () => {
       code: 'INVALID_API_KEY',
     });
   });
+
+  it('authorizes source-scoped station grants and fails closed when removed unless legacy grant exists', async () => {
+    const farmer = await prisma.user.create({
+      data: {
+        email: 'farmer-auth@example.test',
+        displayName: 'Farmer Auth',
+        passwordHash: 'test',
+        role: 'FARMER',
+        status: 'ACTIVE',
+      },
+    });
+    const source = await prisma.dataSource.create({
+      data: {
+        ownerUserId: farmer.id,
+        name: 'Auth Source',
+        baseUrl: 'https://weather.example/api/v1',
+        keyCiphertext: 'cipher',
+        keyNonce: 'nonce',
+        keyAuthTag: 'tag',
+        keyPreview: 'test',
+        connectionStatus: 'CONNECTED',
+        lastCheckedAt: new Date(),
+      },
+    });
+    const plot = await prisma.plot.findFirstOrThrow();
+    const sourceStation = await prisma.station.create({
+      data: { plotId: plot.id, dataSourceId: source.id, upstreamCode: 'src-auth', name: 'Src Auth' },
+    });
+    const sourceKey = 'iot_live_Src12345_abcdefghijklmnopqrstuvwxyzABCDEFGH123456789';
+    await prisma.dataSourceGrant.create({
+      data: { dataSourceId: source.id, userId: client.id },
+    });
+    await prisma.dataSourceGrantStation.create({
+      data: { dataSourceId: source.id, userId: client.id, stationId: sourceStation.id },
+    });
+    await prisma.apiKey.create({
+      data: {
+        ownerUserId: client.id,
+        name: 'Source Key',
+        prefix: 'Src12345',
+        keyHash: tokenHashes.hash(sourceKey),
+        expiresAt: new Date(Date.now() + 60_000),
+        scopes: { create: { stationId: sourceStation.id } },
+      },
+    });
+
+    await expect(service.authenticate(sourceKey, sourceStation.id)).resolves.toMatchObject({
+      ownerUserId: client.id,
+      stationId: sourceStation.id,
+    });
+
+    await prisma.clientStationGrant.create({
+      data: { userId: client.id, stationId: sourceStation.id },
+    });
+
+    await prisma.dataSourceGrantStation.delete({
+      where: {
+        dataSourceId_userId_stationId: {
+          dataSourceId: source.id,
+          userId: client.id,
+          stationId: sourceStation.id,
+        },
+      },
+    });
+    await expect(service.authenticate(sourceKey, sourceStation.id)).resolves.toMatchObject({
+      ownerUserId: client.id,
+      stationId: sourceStation.id,
+    });
+
+    await prisma.clientStationGrant.delete({
+      where: { userId_stationId: { userId: client.id, stationId: sourceStation.id } },
+    });
+    await expect(service.authenticate(sourceKey, sourceStation.id)).rejects.toMatchObject({
+      code: 'INVALID_API_KEY',
+    });
+  });
 });

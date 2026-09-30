@@ -15,6 +15,7 @@ describe('API source access management', () => {
   let app: NestFastifyApplication;
   let ownerToken: string;
   let otherAdminToken: string;
+  let otherAdminId: string;
   let farmerToken: string;
   let clientId: string;
   let farmerId: string;
@@ -90,6 +91,7 @@ describe('API source access management', () => {
         },
       }),
     ]);
+    otherAdminId = otherAdmin.id;
     farmerId = farmer.id;
     candidateFarmerId = candidateFarmer.id;
     clientId = client.id;
@@ -186,7 +188,7 @@ describe('API source access management', () => {
     expect(oversight.statusCode).toBe(403);
   });
 
-  it('lists only active Farmer grant candidates for the source owner', async () => {
+  it('lists active Farmer and Client Developer grant candidates for the source owner', async () => {
     const ownerResponse = await app.inject({
       method: 'GET',
       url: `/api/v1/data-sources/${adminSourceId}/grant-candidates?limit=100`,
@@ -196,7 +198,7 @@ describe('API source access management', () => {
     const ownerPayload = ownerResponse.json<{
       success: true;
       data: {
-        items: { id: string; displayName: string; email: string }[];
+        items: { id: string; displayName: string; email: string; role: string }[];
         nextCursor: string | null;
       };
     }>();
@@ -206,19 +208,26 @@ describe('API source access management', () => {
       ownerPayload.data.items.sort((left, right) => left.email.localeCompare(right.email)),
     ).toEqual([
       {
+        id: clientId,
+        displayName: 'Access Client',
+        email: 'access-client@example.test',
+        role: 'CLIENT_DEVELOPER',
+      },
+      {
         id: farmerId,
         displayName: 'Access Farmer',
         email: 'access-farmer@example.test',
+        role: 'FARMER',
       },
       {
         id: candidateFarmerId,
         displayName: 'Candidate Farmer',
         email: 'candidate-farmer@example.test',
+        role: 'FARMER',
       },
     ]);
     expect(ownerResponse.body).not.toContain('disabled-farmer@example.test');
     expect(ownerResponse.body).not.toContain('access-admin@example.test');
-    expect(ownerResponse.body).not.toContain('access-client@example.test');
 
     const farmerOwnerResponse = await app.inject({
       method: 'GET',
@@ -228,6 +237,7 @@ describe('API source access management', () => {
     expect(farmerOwnerResponse.statusCode).toBe(200);
     expect(farmerOwnerResponse.body).not.toContain('access-farmer@example.test');
     expect(farmerOwnerResponse.body).toContain('candidate-farmer@example.test');
+    expect(farmerOwnerResponse.body).toContain('access-client@example.test');
 
     const nonOwnerResponse = await app.inject({
       method: 'GET',
@@ -290,6 +300,7 @@ describe('API source access management', () => {
               id: farmerId,
               displayName: 'Access Farmer',
               email: 'access-farmer@example.test',
+              role: 'FARMER',
             },
             stationIds: [adminStationId],
           },
@@ -389,7 +400,7 @@ describe('API source access management', () => {
     ).toBe(404);
   });
 
-  it('does not let Admin override a Farmer-owned source or grant a Client account', async () => {
+  it('does not let Admin override a Farmer-owned source or grant an Admin account', async () => {
     expect(
       (
         await request({
@@ -404,12 +415,25 @@ describe('API source access management', () => {
       (
         await request({
           method: 'PUT',
-          url: `/api/v1/data-sources/${adminSourceId}/grants/${clientId}/stations`,
+          url: `/api/v1/data-sources/${adminSourceId}/grants/${otherAdminId}/stations`,
           token: ownerToken,
           payload: { stationIds: [adminStationId] },
         })
       ).statusCode,
     ).toBe(409);
+    const clientGrant = await request({
+      method: 'PUT',
+      url: `/api/v1/data-sources/${adminSourceId}/grants/${clientId}/stations`,
+      token: ownerToken,
+      payload: { stationIds: [adminStationId] },
+    });
+    expect(clientGrant.statusCode).toBe(200);
+    const clientRevoke = await request({
+      method: 'DELETE',
+      url: `/api/v1/data-sources/${adminSourceId}/grants/${clientId}`,
+      token: ownerToken,
+    });
+    expect(clientRevoke.statusCode).toBe(200);
   });
 
   it('reveals the key only to its owner after password confirmation and audits without the key', async () => {
