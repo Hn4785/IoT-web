@@ -58,4 +58,5 @@ Verification: focused Explorer/docs tests, security assertions, and build.
 
 ## Open questions
 
-None. Settings remains a separate final Phase B checkpoint.
+None. The final Settings checkpoint reuses the protected change-password flow
+and intentionally adds no general account configuration surface.

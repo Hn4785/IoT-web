@@ -5,16 +5,16 @@ import test from "node:test";
 import { findActiveNavigationPath } from "../src/components/layout/sidebarSelection.ts";
 
 // ---------------------------------------------------------------------------
-// 1. Sidebar shows exactly Dashboard, API Access, API Tools for CLIENT_DEVELOPER
+// 1. Sidebar shows the four approved CLIENT_DEVELOPER destinations
 // ---------------------------------------------------------------------------
 
-test("client developer sidebar contains exactly Dashboard, API Access, API Tools", () => {
+test("client developer sidebar contains Dashboard, API Access, API Tools, and Settings", () => {
   const source = readFileSync(
     new URL("../src/components/layout/Sidebar.tsx", import.meta.url),
     "utf8",
   );
 
-  // Must contain these three items
+  // Must contain these four items
   assert.match(source, /label:\s*['"]Dashboard['"]/);
   assert.match(source, /label:\s*['"]API Access['"]/);
   assert.match(source, /label:\s*['"]API Tools['"]/);
@@ -30,6 +30,7 @@ test("client developer sidebar contains exactly Dashboard, API Access, API Tools
   assert.doesNotMatch(devBlock, /label:\s*['"]API Docs['"]/);
   assert.doesNotMatch(devBlock, /label:\s*['"]API Explorer['"]/);
   assert.doesNotMatch(devBlock, /label:\s*['"]API Metrics['"]/);
+  assert.match(devBlock, /label:\s*['"]Settings['"],\s*path:\s*['"]\/change-password['"],\s*icon:\s*Settings/);
 });
 
 test("client developer sidebar does not use Settings icon for API Access", () => {
@@ -46,6 +47,17 @@ test("client developer sidebar does not use Settings icon for API Access", () =>
   assert.match(devBlock, /API Access/);
   // API Access entry should not use Settings icon
   assert.doesNotMatch(devBlock, /API Access['"],\s*path:[^}]*icon:\s*Settings/);
+});
+
+test("change password copy distinguishes forced and voluntary changes", () => {
+  const source = readFileSync(
+    new URL("../src/pages/auth/ChangePassword.tsx", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(source, /requiresPasswordChange\(user\)/);
+  assert.match(source, /update your password to secure your account and unlock/);
+  assert.match(source, /Update your password to keep your AgriSense account secure/);
 });
 
 // ---------------------------------------------------------------------------

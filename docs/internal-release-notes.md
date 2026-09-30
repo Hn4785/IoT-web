@@ -86,8 +86,8 @@ Với mỗi thay đổi:
 
 ### Checkpoint Client Developer — 2026-09-30 (local only)
 
-- Gom điều hướng Client thành ba mục ổn định: `Dashboard`, `API Access` và
-  `API Tools`. API Access gồm `Keys`/`Access Scope`; API Tools gồm
+- Gom điều hướng Client thành bốn mục ổn định: `Dashboard`, `API Access`,
+  `API Tools` và `Settings`. API Access gồm `Keys`/`Access Scope`; API Tools gồm
   `Documentation`/`API Explorer`. Các URL cũ tiếp tục redirect có guard
   `CLIENT_DEVELOPER`; API Metrics bị ẩn khỏi menu và chỉ giữ thông báo contract
   chưa có, không dựng analytics.
@@ -96,7 +96,8 @@ Với mỗi thay đổi:
   trong API key scope. Luồng này tách biệt với chia sẻ nguồn của Farmer tại API
   Sources.
 - Đóng checkpoint frontend Phase B: Settings chỉ giữ thông báo/hành động đổi mật
-  khẩu. Browser local xác nhận drawer Client Developer hiển thị đủ NODE01–NODE06
+  khẩu bằng contract có sẵn; nội dung phân biệt đổi mật khẩu bắt buộc với chủ
+  động. Browser local xác nhận drawer Client Developer hiển thị đủ NODE01–NODE06
   để Admin cấp direct station grant.
 - Giữ nguyên contract API key thật: inventory, tạo, rotate, revoke, station scope
   và secret chỉ hiển thị một lần. Access Scope chỉ đọc effective access; không
@@ -113,7 +114,7 @@ Với mỗi thay đổi:
   đăng nhập bị đưa về `/login`; ma trận giao diện sau đăng nhập chưa được đánh
   dấu browser-verified vì không có session Client trong browser test cô lập.
 - Toàn bộ thay đổi chỉ commit local. Không push, deploy Pi, đổi backend, database,
-  dependency, auth/session hay Settings. Settings vẫn là checkpoint cuối Phase B.
+  dependency hay auth/session.
 
 ## v2.5.5-local — 2026-09-28 (Admin API Sources)
 

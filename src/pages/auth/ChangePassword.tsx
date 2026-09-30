@@ -14,6 +14,7 @@ import { authService } from "@/services/authService";
 import { useAuthStore } from "@/stores/authStore";
 import { normalizeApiError } from "@/utils/apiError";
 import { getDefaultRouteByRole } from "@/auth/defaultRoute";
+import { requiresPasswordChange } from "@/auth/passwordChange";
 
 import styles from "./ChangePassword.module.css";
 
@@ -51,6 +52,9 @@ export default function ChangePassword() {
 
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  const changePasswordDescription = user && requiresPasswordChange(user)
+    ? "Your account status is currently pending. Please update your password to secure your account and unlock the AgriSense system."
+    : "Update your password to keep your AgriSense account secure.";
 
   /*
    * Sau khi đổi password thành công:
@@ -239,11 +243,7 @@ export default function ChangePassword() {
             Change Password
           </h1>
 
-          <p>
-            Your account status is currently pending. Please
-            update your password to secure your account and unlock
-            the AgriSense system.
-          </p>
+          <p>{changePasswordDescription}</p>
         </div>
 
         <form
