@@ -17,34 +17,34 @@ Complete the Client Developer portal using only approved backend contracts. Cons
 
 ### Slice 1: Canonical Client navigation and route compatibility
 
-- [ ] Add canonical API Access and API Tools routes with explicit tabs.
-- [ ] Redirect legacy Keys, Permissions, Docs, and Explorer routes to the matching canonical tab.
-- [ ] Reduce Client sidebar to Dashboard, API Access, and API Tools; hide API Metrics.
-- [ ] Preserve CLIENT_DEVELOPER guards and the existing default dashboard route.
+- [x] Add canonical API Access and API Tools routes with explicit tabs.
+- [x] Redirect legacy Keys, Permissions, Docs, and Explorer routes to the matching canonical tab.
+- [x] Reduce Client sidebar to Dashboard, API Access, and API Tools; hide API Metrics.
+- [x] Preserve CLIENT_DEVELOPER guards and the existing default dashboard route.
 
 Verification: focused route/navigation tests and production type checking.
 
 ### Slice 2: API Access behavior and design
 
-- [ ] Reuse real key inventory, create, rotate, revoke, station scope, one-time secret, copy feedback, loading/error/empty states.
-- [ ] Keep effective access read-only and remove `N/A` wording where absence can be stated plainly.
-- [ ] Align the page to the 1440px content frame, project tokens, responsive controls, keyboard labels, and focusable tabs.
+- [x] Reuse real key inventory, create, rotate, revoke, station scope, one-time secret, copy feedback, loading/error/empty states.
+- [x] Keep effective access read-only and remove `N/A` wording where absence can be stated plainly.
+- [x] Align the page to the 1440px content frame, project tokens, responsive controls, keyboard labels, and focusable tabs.
 
 Verification: focused API key/access tests, lint, and responsive source assertions.
 
 ### Slice 3: API Tools behavior and design
 
-- [ ] Reuse contract-valid documentation and Explorer requests for health, stations, latest, and history.
-- [ ] Preserve validation, rate-limit headers, cursor handling, exact response envelopes, and in-memory-only API key handling.
-- [ ] Align Documentation and Explorer under one responsive tabbed area without inventing endpoints or response fields.
+- [x] Reuse contract-valid documentation and Explorer requests for health, stations, latest, and history.
+- [x] Preserve validation, rate-limit headers, cursor handling, exact response envelopes, and in-memory-only API key handling.
+- [x] Align Documentation and Explorer under one responsive tabbed area without inventing endpoints or response fields.
 
 Verification: focused Explorer/docs tests, security assertions, and build.
 
 ### Checkpoint: independent audit
 
-- [ ] Antigravity performs a read-only review of routing, security, API contracts, empty/error/loading states, accessibility, and design consistency.
-- [ ] Codex independently inspects the diff and runs the focused Client test set plus lint/build.
-- [ ] Record the checkpoint in `docs/internal-release-notes.md` and commit local only.
+- [x] Antigravity performs a read-only review of routing, security, API contracts, empty/error/loading states, accessibility, and design consistency.
+- [x] Codex independently inspects the diff and runs the focused Client test set plus lint/build.
+- [x] Record the checkpoint in `docs/internal-release-notes.md` and commit local only.
 
 ## Risks and mitigations
 

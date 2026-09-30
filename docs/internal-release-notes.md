@@ -84,6 +84,30 @@ Với mỗi thay đổi:
   hoàn thiện một lần trong bước Farmer và áp dụng chung cho cả Farmer lẫn Admin;
   chỉ cấu hình cảnh báo/thông báo, không can thiệp thiết bị từ xa.
 
+### Checkpoint Client Developer — 2026-09-30 (local only)
+
+- Gom điều hướng Client thành ba mục ổn định: `Dashboard`, `API Access` và
+  `API Tools`. API Access gồm `Keys`/`Access Scope`; API Tools gồm
+  `Documentation`/`API Explorer`. Các URL cũ tiếp tục redirect có guard
+  `CLIENT_DEVELOPER`; API Metrics bị ẩn khỏi menu và chỉ giữ thông báo contract
+  chưa có, không dựng analytics.
+- Giữ nguyên contract API key thật: inventory, tạo, rotate, revoke, station scope
+  và secret chỉ hiển thị một lần. Access Scope chỉ đọc effective access; không
+  thêm thao tác ghi hoặc mở rộng quyền ngoài backend.
+- API Explorer tiếp tục gửi `X-API-Key` trực tiếp qua service hiện có, chỉ giữ
+  key trong React memory, password-mask, tắt autocomplete và xóa khi Reset.
+  Bỏ station `NODE01` được điền sẵn; Client phải nhập station code thật.
+- Đồng bộ Dashboard, API Access, Documentation và Explorer theo content frame
+  1440px, design token, focus state và responsive layout chung. Trạng thái thiếu
+  dữ liệu dùng câu tiếng Anh cụ thể, không dùng `N/A` hay số liệu suy đoán.
+- Antigravity audit đọc-only không tìm thấy lỗi P0–P3. Codex kiểm tra lại diff;
+  frontend đạt 148/148 test, lint sạch và production build đạt. Browser cô lập
+  xác nhận route Client chưa
+  đăng nhập bị đưa về `/login`; ma trận giao diện sau đăng nhập chưa được đánh
+  dấu browser-verified vì không có session Client trong browser test cô lập.
+- Toàn bộ thay đổi chỉ commit local. Không push, deploy Pi, đổi backend, database,
+  dependency, auth/session hay Settings. Settings vẫn là checkpoint cuối Phase B.
+
 ## v2.5.5-local — 2026-09-28 (Admin API Sources)
 
 ### Đã sửa và cập nhật

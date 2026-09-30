@@ -76,12 +76,12 @@ test("developer section roots redirect to their default tabs and remain guarded"
     ["/developer/api-tools", "/developer/api-tools/docs"],
   ]) {
     const index = lines.findIndex((line: string) =>
-      line.includes(`\"${sectionPath}\"`),
+      line.includes(`"${sectionPath}"`),
     );
     assert.notEqual(index, -1, `${sectionPath} must exist`);
     const context = lines.slice(index, index + 6).join("\n");
     assert.match(context, /CLIENT_DEVELOPER/);
-    assert.match(context, new RegExp(`Navigate to=\"${defaultPath}\" replace`));
+    assert.match(context, new RegExp(`Navigate to="${defaultPath}" replace`));
   }
 });
 
