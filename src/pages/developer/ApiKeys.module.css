@@ -1,8 +1,12 @@
 .page {
   display: flex;
   flex-direction: column;
-  gap: 22px;
-  padding: 24px;
+  gap: var(--spacing-5);
+  width: 100%;
+  max-width: 1440px;
+  margin-inline: auto;
+  padding: var(--spacing-6);
+  box-sizing: border-box;
   color: var(--color-text-primary);
 }
 
@@ -10,11 +14,11 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 20px;
+  gap: var(--spacing-5);
 }
 
 .eyebrow {
-  margin-bottom: 6px;
+  margin-bottom: var(--spacing-1-5);
   color: var(--color-primary);
   font-family: var(--font-family-mono);
   font-size: var(--font-size-micro);
@@ -28,7 +32,7 @@
 }
 
 .header p {
-  margin: 6px 0 0;
+  margin: var(--spacing-1-5) 0 0;
   color: var(--color-text-secondary);
   font-size: var(--font-size-body-sm);
 }
@@ -38,13 +42,19 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  min-height: 40px;
-  padding: 0 15px;
+  gap: var(--spacing-2);
+  min-height: var(--height-button-md);
+  padding: 0 var(--spacing-4);
   border-radius: var(--radius-md);
   cursor: pointer;
   font-size: var(--font-size-body-sm);
   font-weight: var(--font-weight-semibold);
+}
+
+.primaryButton:focus-visible,
+.secondaryButton:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 .primaryButton {
@@ -249,6 +259,11 @@
   color: var(--color-text-primary);
 }
 
+.actions button:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
 .actions button:disabled {
   cursor: not-allowed;
   opacity: var(--opacity-disabled);
@@ -311,8 +326,8 @@
 }
 
 .modal input {
-  height: 42px;
-  padding: 0 12px;
+  height: var(--height-input-md);
+  padding: 0 var(--spacing-3);
   border: 1px solid var(--color-border-default);
   border-radius: var(--radius-md);
   outline: none;
@@ -320,13 +335,19 @@
   color: var(--color-text-primary);
 }
 
+.modal input:focus-visible {
+  border-color: var(--color-primary);
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
 .modalInfo,
 .secretWarning {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-top: 16px;
-  padding: 11px 12px;
+  gap: var(--spacing-2);
+  margin-top: var(--spacing-4);
+  padding: 11px var(--spacing-3);
   border-radius: var(--radius-md);
   background: var(--color-bg-subtle);
   color: var(--color-text-secondary);
@@ -336,8 +357,8 @@
 .modalActions {
   display: flex;
   justify-content: flex-end;
-  gap: 10px;
-  margin-top: 22px;
+  gap: var(--spacing-2-5);
+  margin-top: var(--spacing-5);
 }
 
 .secretWarning {
@@ -348,9 +369,9 @@
 .secretBox {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin: 14px 0 20px;
-  padding: 12px;
+  gap: var(--spacing-2);
+  margin: var(--spacing-3) 0 var(--spacing-5);
+  padding: var(--spacing-3);
   border-radius: var(--radius-md);
   background: var(--color-bg-dark);
   color: var(--color-text-inverse);
@@ -366,16 +387,22 @@
 .secretBox button {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--spacing-1-5);
   border: 0;
   border-radius: var(--radius-sm);
   padding: 7px 9px;
   cursor: pointer;
 }
 
-@media (max-width: 700px) {
+.secretBox button:focus-visible,
+.modalHeader > button:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+@media (max-width: 768px) {
   .page {
-    padding: 16px;
+    padding: var(--spacing-4);
   }
 
   .header {
@@ -388,8 +415,8 @@
 }
 
 .copyError {
-  margin: -10px 0 16px;
-  color: var(--color-danger);
+  margin: -10px 0 var(--spacing-4);
+  color: var(--color-error);
   font-size: var(--font-size-caption);
 }
 
