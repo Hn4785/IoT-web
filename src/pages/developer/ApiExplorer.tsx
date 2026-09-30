@@ -31,7 +31,7 @@ export default function ApiExplorer() {
   const [endpoint, setEndpoint] = useState<ExplorerEndpoint>("latest");
   const [apiKey, setApiKey] = useState("");
   const [input, setInput] = useState<ExplorerInput>({
-    station: "NODE01", fields: "moisture,temperature,ph", begin: defaultUtcInput(-1), end: defaultUtcInput(),
+    station: "", fields: "moisture,temperature,ph", begin: defaultUtcInput(-1), end: defaultUtcInput(),
     interval: "raw", aggregate: "", order: "asc", limit: "100", cursor: "",
   });
   const [request, setRequest] = useState<ExplorerRequest | null>(null);
@@ -58,7 +58,7 @@ export default function ApiExplorer() {
   const responseText = result ? JSON.stringify(result.body, null, 2) : "";
 
   const reset = () => {
-    setEndpoint("latest"); setApiKey(""); setInput({ station: "NODE01", fields: "moisture,temperature,ph", begin: defaultUtcInput(-1), end: defaultUtcInput(), interval: "raw", aggregate: "", order: "asc", limit: "100", cursor: "" });
+    setEndpoint("latest"); setApiKey(""); setInput({ station: "", fields: "moisture,temperature,ph", begin: defaultUtcInput(-1), end: defaultUtcInput(), interval: "raw", aggregate: "", order: "asc", limit: "100", cursor: "" });
     setRequest(null); setResult(null); setResponseTime(null); setCopyStatus("idle");
   };
 
@@ -71,7 +71,7 @@ export default function ApiExplorer() {
         <div className={styles.urlRow}><span className={styles.method}>GET</span><code>{selected.path}</code></div>
         {endpoint !== "health" && <label className={styles.field}><span>X-API-Key</span><div className={styles.inputWithIcon}><KeyRound size={16} /><input type="password" autoComplete="off" value={apiKey} onChange={(event) => setApiKey(event.target.value)} placeholder="Enter API key" disabled={isLoading} /></div></label>}
         <div className={styles.parameters}><div className={styles.subHeader}><h3>Query Parameters</h3><span>{endpoint === "health" ? "None" : "Contract bounded"}</span></div>
-          {(endpoint === "latest" || endpoint === "history") && <><label className={styles.field}><span>station *</span><input value={input.station ?? ""} onChange={(event) => setField("station", event.target.value)} placeholder="NODE01" disabled={isLoading} /></label><label className={styles.field}><span>fields</span><input value={input.fields ?? ""} onChange={(event) => setField("fields", event.target.value)} placeholder="moisture,temperature,ph" disabled={isLoading} /></label></>}
+          {(endpoint === "latest" || endpoint === "history") && <><label className={styles.field}><span>station *</span><input value={input.station ?? ""} onChange={(event) => setField("station", event.target.value)} placeholder="Enter station code" disabled={isLoading} /></label><label className={styles.field}><span>fields</span><input value={input.fields ?? ""} onChange={(event) => setField("fields", event.target.value)} placeholder="moisture,temperature,ph" disabled={isLoading} /></label></>}
           {endpoint === "stations" && <><label className={styles.field}><span>limit (1–100)</span><input type="number" min="1" max="100" value={input.limit ?? ""} onChange={(event) => setField("limit", event.target.value)} disabled={isLoading} /></label><label className={styles.field}><span>cursor</span><input value={input.cursor ?? ""} onChange={(event) => setField("cursor", event.target.value)} disabled={isLoading} /></label></>}
           {endpoint === "history" && <><label className={styles.field}><span>begin (UTC)</span><input type="datetime-local" value={input.begin ?? ""} onChange={(event) => setField("begin", event.target.value)} disabled={isLoading} /></label><label className={styles.field}><span>end (UTC)</span><input type="datetime-local" value={input.end ?? ""} onChange={(event) => setField("end", event.target.value)} disabled={isLoading} /></label><label className={styles.field}><span>interval</span><select value={input.interval ?? "raw"} onChange={(event) => { setField("interval", event.target.value); if (event.target.value === "raw") setField("aggregate", ""); }} disabled={isLoading}>{["raw", "5m", "30m", "1h", "1d"].map((value) => <option key={value}>{value}</option>)}</select></label>{input.interval !== "raw" && <label className={styles.field}><span>aggregate *</span><select value={input.aggregate ?? ""} onChange={(event) => setField("aggregate", event.target.value)} disabled={isLoading}><option value="">Select</option>{["mean", "min", "max", "first", "last"].map((value) => <option key={value}>{value}</option>)}</select></label>}<label className={styles.field}><span>order</span><select value={input.order ?? "asc"} onChange={(event) => setField("order", event.target.value)} disabled={isLoading}><option value="asc">asc</option><option value="desc">desc</option></select></label><label className={styles.field}><span>limit (1–500)</span><input type="number" min="1" max="500" value={input.limit ?? ""} onChange={(event) => setField("limit", event.target.value)} disabled={isLoading} /></label><label className={styles.field}><span>cursor</span><input value={input.cursor ?? ""} onChange={(event) => setField("cursor", event.target.value)} disabled={isLoading} /></label></>}
         </div>
