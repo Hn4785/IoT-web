@@ -13,6 +13,24 @@ Với mỗi thay đổi:
 3. Ghi rõ kết quả test; không đánh dấu hoàn thành nếu chưa có bằng chứng kiểm tra.
 4. Không ghi secret, mật khẩu, access token, refresh token hoặc API key vào file này.
 
+## Phase B Pi staging deployment — 2026-09-30
+
+- Đã triển khai backend commit `d152337` bằng image
+  `agrisense-api:d152337` và frontend commit `be73c29` bằng image
+  `agrisense-web:be73c29` trên Pi ARM64. Hai container cùng PostgreSQL đều
+  healthy; ngrok tiếp tục hoạt động.
+- Đã tạo backup database và Compose trước rollout. Toàn bộ 11 migration local
+  khớp 11 migration đã hoàn tất trên Pi nên không có migration mới cần chạy.
+- Theo quyết định đã chốt, đã xoá hierarchy `Farm Demo` trên Pi trong một
+  transaction: 2 plot demo, 12 station trùng, 1 membership, 1 client grant và
+  3 API-key scopes. Hai source đã removed và audit evidence được giữ lại; kiểm
+  tra sau xoá cho Farm/Plot demo đều bằng 0.
+- Frontend build thành công trước khi đóng image. Sau rollout, LAN và public
+  tunnel trả HTTP 200 cho web health, API health và readiness; `/login` trả 200,
+  endpoint audit không xác thực trả 401, API chạy bằng non-root user `node`.
+- Rollback giữ nguyên image `agrisense-api:v2.5.6`,
+  `agrisense-web:v2.5.6` cùng backup trước rollout.
+
 ## Quyết định phạm vi — 2026-09-28 (IoT Config và can thiệp thiết bị)
 
 ### Quyết định từ bên cung cấp
