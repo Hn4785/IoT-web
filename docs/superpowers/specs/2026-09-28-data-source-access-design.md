@@ -17,9 +17,10 @@ Depends on: `integration-core`, `identity-access`, `station-data`
 
 Allow an Admin or Farmer to connect a real observation API using its base URL
 and upstream `X-API-Key`, discover the real `CENTER`/`NODE` stations, and share
-read access without exposing the upstream credential. Admins can monitor every
-connected source. Client Developer credentials remain the existing platform
-API keys and are outside this source-sharing workflow.
+station-scoped access without exposing the upstream credential. Admins can
+monitor every connected source. The same `Manage Access` surface grants Farmer
+browser visibility and Client Developer API-key scope; account administration
+does not provide a second station-grant editor.
 
 ## Product language and UI boundary
 
@@ -48,9 +49,11 @@ integrations with chat providers are out of scope.
   Admin cannot revoke ownership of a Farmer-created source.
 - Only the owner may reveal or copy the stored upstream key, after confirming
   the current password. A non-owner Admin can never reveal it.
-- `CLIENT_DEVELOPER` cannot create, receive, list, reveal, or manage upstream
-  sources through browser routes. Existing client integration keys remain
-  separate.
+- `CLIENT_DEVELOPER` cannot create, list, reveal, or manage upstream sources
+  through browser routes. A source owner may grant selected source stations to
+  an active Client Developer. Those grants only define the maximum station set
+  available to that account's platform API keys; they do not expose the
+  upstream source or its credential in the Client browser portal.
 - `visibleAccountCount` counts the owner and explicit active grantees. Implicit
   Admin oversight is not counted.
 
@@ -77,7 +80,7 @@ integrations with chat providers are out of scope.
 
 `DataSource` owns a source name, approved origin, encrypted credential,
 owner, connection status, timestamps, and discovered stations. `DataSourceGrant`
-joins one source to one active Farmer. `Station` belongs to one source and its
+joins one source to one active Farmer or Client Developer. `Station` belongs to one source and its
 upstream code is unique within that source rather than globally.
 
 Existing environment-configured stations are attached to one immutable system
@@ -109,11 +112,20 @@ GET    /data-sources/:sourceId/grants?limit=50&cursor=...
 GET    /data-sources/:sourceId/grant-candidates?limit=50&cursor=...
 ```
 
-`grant-candidates` is owner-only and returns only active Farmer accounts that
-may receive source access. It exposes the minimum account fields required by
-the sharing dialog (`id`, `displayName`, and `email`), excludes the source
-owner, and never grants access to the Admin user-management contract. Admin and
-Farmer owners use this same source-scoped endpoint.
+`grant-candidates` is owner-only and returns active Farmer and Client Developer
+accounts that may receive station access. It exposes the minimum account fields
+required by the sharing dialog (`id`, `displayName`, `email`, and `role`),
+excludes the source owner, and never grants access through the Admin
+user-management contract. Admin and Farmer owners use this same source-scoped
+endpoint.
+
+Grant responses include the same `role` field on the nested user summary. For a
+Farmer, selected stations control browser hierarchy/latest/history visibility.
+For a Client Developer, selected stations are the authoritative maximum scope
+for API-key creation, rotation, and request authentication. Legacy direct
+`ClientStationGrant` rows remain readable for backward compatibility, but new
+browser administration is performed only through `API Sources -> Manage
+Access`; effective Client scope is the union during the compatibility period.
 
 Create input:
 
@@ -174,11 +186,14 @@ shared frontend code, not a duplicated data implementation.
   neither source nor credential.
 - Owner, grantee, non-grantee, Admin oversight, and Client Developer negatives
   are exercised through real HTTP integration tests.
-- Removing a grant closes Farmer hierarchy/latest/history access immediately.
+- Removing a grant closes Farmer hierarchy/latest/history access immediately
+  and removes the corresponding station from Client Developer key eligibility
+  and request authentication immediately.
 - A non-owner, including Admin, cannot reveal the key.
 - Reveal requires the current password, returns plaintext only in the response,
   and writes secret-free audit evidence.
-- Existing platform Client API-key behavior remains unchanged.
+- Existing Client API-key lifecycle remains unchanged except that source-scoped
+  grants are accepted as authoritative station eligibility.
 - Frontend tests cover paste parsing without sending the original message,
   owner-only actions, `Visible Accounts`, truthful empty/error copy, responsive
   layout, and absence of `N/A` on changed Admin/Farmer surfaces.
@@ -190,5 +205,8 @@ shared frontend code, not a duplicated data implementation.
 3. Route existing station reads through the resolved source credential.
 4. Admin `API Sources` and shared monitoring UI.
 5. Farmer create/owned/shared source UI.
-6. Client Developer cleanup without joining source sharing.
-7. Minimal account Settings and the final Phase B browser matrix.
+6. Client Developer station scope joins source sharing; remove its duplicate
+   station-grant editor from account administration.
+7. Remove the duplicate Client Settings sidebar entry. Keep `Change Password`
+   and `Log out` in the account menu for all three roles, and keep the forced
+   password-change authentication flow unchanged.
