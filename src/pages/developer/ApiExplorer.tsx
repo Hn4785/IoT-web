@@ -12,6 +12,7 @@ import {
   type ExplorerResponse,
 } from "@/services/developerExplorerService";
 import { copyText } from "@/utils/credentialInput";
+import DeveloperSectionTabs from "@/components/developer/DeveloperSectionTabs";
 import styles from "./ApiExplorer.module.css";
 
 const endpointOptions: Array<{ value: ExplorerEndpoint; label: string; path: string }> = [
@@ -63,6 +64,7 @@ export default function ApiExplorer() {
 
   return <div className={styles.page}>
     <div className={styles.header}><div><div className={styles.eyebrow}>DEVELOPER PORTAL / TESTING</div><h1>API Explorer</h1><p>Build a contract-valid request and inspect the exact response envelope.</p></div></div>
+    <DeveloperSectionTabs section="tools" />
     <section className={styles.workspace}>
       <div className={styles.requestPanel}><div className={styles.panelHeader}><div><h2>Request</h2><p>The API key stays in memory for this page only.</p></div><button className={styles.resetButton} onClick={reset} disabled={isLoading}><RotateCcw size={15} />Reset</button></div>
         <label className={styles.field}><span>Endpoint</span><div className={styles.endpointSelect}><select value={endpoint} onChange={(event) => { setEndpoint(event.target.value as ExplorerEndpoint); setRequest(null); setResult(null); }} disabled={isLoading}>{endpointOptions.map((option) => <option key={option.value} value={option.value}>{option.label} — {option.path}</option>)}</select><ChevronDown size={16} /></div></label>

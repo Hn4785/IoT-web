@@ -44,6 +44,11 @@ const SEGMENT_LABELS: Record<string, string> = {
   'api-docs': 'API Docs',
   'api-explorer': 'API Explorer',
   'api-metrics': 'API Metrics',
+  'api-access': 'API Access',
+  'scope': 'Access Scope',
+  'api-tools': 'API Tools',
+  'docs': 'Documentation',
+  'explorer': 'API Explorer',
 };
 
 function humanize(segment: string): string {

@@ -9,6 +9,7 @@ import {
 import { useState } from "react";
 import { copyText } from "@/utils/credentialInput";
 import { isInteractiveApiReferenceAvailable } from "@/utils/apiDocsAvailability";
+import DeveloperSectionTabs from "@/components/developer/DeveloperSectionTabs";
 import styles from "./ApiDocs.module.css";
 
 interface Endpoint {
@@ -147,6 +148,8 @@ export default function ApiDocs() {
           </a>
         )}
       </div>
+
+      <DeveloperSectionTabs section="tools" />
 
       <div className={styles.docsLayout}>
         <aside className={styles.sidebar}>

@@ -5,6 +5,7 @@ import { apiKeyService, type AvailableApiKeyStation, type DeveloperApiKey } from
 import { normalizeApiError } from "@/utils/apiError";
 import { copyText } from "@/utils/credentialInput";
 import { getApiKeyStatus } from "@/utils/developerOverview";
+import DeveloperSectionTabs from "@/components/developer/DeveloperSectionTabs";
 import styles from "./ApiKeys.module.css";
 
 const formatDate = (value: string | null) => value ? new Date(value).toLocaleString() : "Never";
@@ -77,6 +78,7 @@ export default function ApiKeys() {
     <div className={styles.header}><div><div className={styles.eyebrow}>DEVELOPER PORTAL / SECURITY</div><h1>API Keys</h1><p>Manage credentials used by server-side integrations.</p></div>
       <button className={styles.primaryButton} onClick={() => { setShowCreate(true); setGeneratedSecret(null); setNewKeyName(""); setSelectedStationIds(availableStations.map(({ id }) => id)); setCredentialCopied(false); setCredentialCopyFailed(false); }}><Plus size={17} />Create API Key</button>
     </div>
+    <DeveloperSectionTabs section="access" />
     <div className={styles.warning}><ShieldAlert size={19} /><div><strong>Keep API secrets secure.</strong><span>Never embed them in browser code or commit them to source control.</span></div></div>
     {error && <div className={styles.warning} role="alert"><span>{error}</span><button className={styles.secondaryButton} onClick={() => void loadData()}><RefreshCw size={15} />Retry</button></div>}
     <section className={styles.stats}><div><KeyRound size={19} /><span>Active Keys</span><strong>{activeCount}</strong></div><div><RefreshCw size={19} /><span>Expired</span><strong>{expiredCount}</strong></div><div><ShieldAlert size={19} /><span>Revoked</span><strong>{revokedCount}</strong></div></section>

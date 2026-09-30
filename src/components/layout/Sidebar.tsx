@@ -10,7 +10,9 @@ import {
   BellRing,
   Droplets,
   BarChart3,
+  BookOpen,
   DatabaseZap,
+  KeyRound,
   type LucideIcon,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
@@ -44,11 +46,8 @@ const NAV_CONFIG: Record<UserRole, NavItem[]> = {
   ],
   CLIENT_DEVELOPER: [
     { label: 'Dashboard', path: '/developer/dashboard', icon: LayoutDashboard },
-    { label: 'API Keys', path: '/developer/api-keys', icon: Settings },
-    { label: 'API Permissions', path: '/developer/api-permissions', icon: Users },
-    { label: 'API Docs', path: '/developer/api-docs', icon: History },
-    { label: 'API Explorer', path: '/developer/api-explorer', icon: Activity },
-    { label: 'API Metrics', path: '/developer/api-metrics', icon: Activity },
+    { label: 'API Access', path: '/developer/api-access', icon: KeyRound },
+    { label: 'API Tools', path: '/developer/api-tools', icon: BookOpen },
   ],
 };
 

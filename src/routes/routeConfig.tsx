@@ -146,26 +146,50 @@ export const protectedRoutes: AppRoute[] = [
     roles: ["CLIENT_DEVELOPER"],
     element: <DeveloperDashboard />,
   },
+  // --- Canonical API Access ---
   {
-    path: "/developer/api-keys",
+    path: "/developer/api-access/keys",
     roles: ["CLIENT_DEVELOPER"],
     element: <ApiKeys />,
   },
   {
-    path: "/developer/api-permissions",
+    path: "/developer/api-access/scope",
     roles: ["CLIENT_DEVELOPER"],
     element: <ApiPermissions />,
   },
+  // --- Canonical API Tools ---
   {
-    path: "/developer/api-docs",
+    path: "/developer/api-tools/docs",
     roles: ["CLIENT_DEVELOPER"],
     element: <ApiDocs />,
   },
   {
-    path: "/developer/api-explorer",
+    path: "/developer/api-tools/explorer",
     roles: ["CLIENT_DEVELOPER"],
     element: <ApiExplorer />,
   },
+  // --- Legacy redirects (one compatibility cycle) ---
+  {
+    path: "/developer/api-keys",
+    roles: ["CLIENT_DEVELOPER"],
+    element: <Navigate to="/developer/api-access/keys" replace />,
+  },
+  {
+    path: "/developer/api-permissions",
+    roles: ["CLIENT_DEVELOPER"],
+    element: <Navigate to="/developer/api-access/scope" replace />,
+  },
+  {
+    path: "/developer/api-docs",
+    roles: ["CLIENT_DEVELOPER"],
+    element: <Navigate to="/developer/api-tools/docs" replace />,
+  },
+  {
+    path: "/developer/api-explorer",
+    roles: ["CLIENT_DEVELOPER"],
+    element: <Navigate to="/developer/api-tools/explorer" replace />,
+  },
+  // --- API Metrics (hidden from nav, still accessible) ---
   {
     path: "/developer/api-metrics",
     roles: ["CLIENT_DEVELOPER"],
