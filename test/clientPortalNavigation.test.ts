@@ -8,18 +8,18 @@ import { findActiveNavigationPath } from "../src/components/layout/sidebarSelect
 // 1. Sidebar shows the four approved CLIENT_DEVELOPER destinations
 // ---------------------------------------------------------------------------
 
-test("client developer sidebar contains Dashboard, API Access, API Tools, and Settings", () => {
+test("client developer sidebar contains Dashboard, API Access, and API Tools only", () => {
   const source = readFileSync(
     new URL("../src/components/layout/Sidebar.tsx", import.meta.url),
     "utf8",
   );
 
-  // Must contain these four items
+  // Must contain these three items
   assert.match(source, /label:\s*['"]Dashboard['"]/);
   assert.match(source, /label:\s*['"]API Access['"]/);
   assert.match(source, /label:\s*['"]API Tools['"]/);
 
-  // Must NOT contain old separate items or metrics in CLIENT_DEVELOPER nav
+  // Must NOT contain old separate items, metrics, or Settings in CLIENT_DEVELOPER nav
   // Extract the CLIENT_DEVELOPER config block
   const devStart = source.indexOf("CLIENT_DEVELOPER");
   assert.notEqual(devStart, -1, "CLIENT_DEVELOPER config must exist");
@@ -30,7 +30,7 @@ test("client developer sidebar contains Dashboard, API Access, API Tools, and Se
   assert.doesNotMatch(devBlock, /label:\s*['"]API Docs['"]/);
   assert.doesNotMatch(devBlock, /label:\s*['"]API Explorer['"]/);
   assert.doesNotMatch(devBlock, /label:\s*['"]API Metrics['"]/);
-  assert.match(devBlock, /label:\s*['"]Settings['"],\s*path:\s*['"]\/change-password['"],\s*icon:\s*Settings/);
+  assert.doesNotMatch(devBlock, /label:\s*['"]Settings['"]/);
 });
 
 test("client developer sidebar does not use Settings icon for API Access", () => {

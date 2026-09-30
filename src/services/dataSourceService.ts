@@ -19,7 +19,7 @@ export interface DataSource {
 }
 
 export interface DataSourceGrant {
-  user: { id: string; displayName: string; email: string };
+  user: { id: string; displayName: string; email: string; role: "FARMER" | "CLIENT_DEVELOPER" };
   stationIds: string[];
   createdAt: string;
 }
@@ -28,6 +28,7 @@ export interface DataSourceGrantCandidate {
   id: string;
   displayName: string;
   email: string;
+  role: "FARMER" | "CLIENT_DEVELOPER";
 }
 
 export interface DataSourceStation {

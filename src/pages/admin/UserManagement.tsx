@@ -34,7 +34,6 @@ import {
   canTransferSuperAdminTo,
   requiresSensitiveChangeConfirmation,
 } from "./userManagementPolicy";
-import UserScopeEditor from "./UserScopeEditor";
 
 import styles from "./UserManagement.module.css";
 
@@ -634,7 +633,7 @@ export default function UserManagement() {
             {!editingUser && <label>Status<input value="Active" disabled /></label>}
           </div>
 
-          {editingUser && editingUser.role === "FARMER" && (
+          {editingUser && (editingUser.role === "FARMER" || editingUser.role === "CLIENT_DEVELOPER") && (
             <div className={styles.authBox} role="note">
               <strong>Shared access</strong>
               {(editingUser.sharedSources ?? []).length === 0 ? <span>No API sources are shared with this account.</span> : (editingUser.sharedSources ?? []).map((source) => (
@@ -652,15 +651,6 @@ export default function UserManagement() {
               <strong>Admin access</strong>
               <span>Admin access is determined by role; no Farm or Station grants are required.</span>
             </div>
-          )}
-          {editingUser && editingUser.role === "CLIENT_DEVELOPER" && (
-            <UserScopeEditor
-              user={editingUser}
-              onChange={(updated) => {
-                setEditingUser(updated);
-                setItems((current) => current.map((user) => (user.id === updated.id ? updated : user)));
-              }}
-            />
           )}
         </form>
       </Drawer>

@@ -61,3 +61,10 @@ test("Farmer API Sources Manage Access uses grant-candidates instead of userServ
   assert.doesNotMatch(page, /userService/);
   assert.doesNotMatch(page, /\/admin\/users/);
 });
+
+test("Farmer API Sources Manage Access presents role-neutral candidate accounts with visible role labels", () => {
+  const page = readFileSync(new URL("../src/pages/farm-owner/ApiSources.tsx", import.meta.url), "utf8");
+  assert.doesNotMatch(page, /setFarmers/);
+  assert.match(page, /Client Developer/);
+  assert.match(page, /Farmer/);
+});

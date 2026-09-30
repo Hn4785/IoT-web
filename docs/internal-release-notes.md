@@ -116,6 +116,19 @@ Với mỗi thay đổi:
 - Toàn bộ thay đổi chỉ commit local. Không push, deploy Pi, đổi backend, database,
   dependency hay auth/session.
 
+### Điều chỉnh hợp nhất API Source Access UI — 2026-09-30 (local only)
+
+- Hợp nhất giao diện phân quyền trạm của nguồn API: API Sources -> Manage Access
+  là UI duy nhất trên trình duyệt để gán station cho cả hai role `FARMER` và
+  `CLIENT_DEVELOPER`.
+- Quản lý tài khoản (User Management) chỉ sửa role và hiển thị Shared access dạng
+  chỉ đọc cho Client Developer tương tự Farmer, kèm hướng dẫn quản lý quyền tại
+  API Sources; loại bỏ việc render `UserScopeEditor` trực tiếp trong drawer.
+- Bỏ mục `Settings` khỏi sidebar của `CLIENT_DEVELOPER` (chỉ còn `Dashboard`,
+  `API Access`, `API Tools`); giữ nguyên luồng đổi mật khẩu và đăng xuất toàn cục.
+- Cập nhật kiểu `DataSourceGrant.user` và `DataSourceGrantCandidate` chứa `role`
+  và hiển thị nhãn role rõ ràng cho từng tài khoản trong modal Manage Access.
+
 ## v2.5.5-local — 2026-09-28 (Admin API Sources)
 
 ### Đã sửa và cập nhật

@@ -42,7 +42,7 @@ export default function ApiSources() {
 
   const [accessSource, setAccessSource] = useState<DataSource | null>(null);
   const [grants, setGrants] = useState<DataSourceGrant[]>([]);
-  const [farmers, setFarmers] = useState<DataSourceGrantCandidate[]>([]);
+  const [candidates, setCandidates] = useState<DataSourceGrantCandidate[]>([]);
   const [sourceStations, setSourceStations] = useState<DataSourceStation[]>([]);
   const [grantDrafts, setGrantDrafts] = useState<Record<string, string[]>>({});
   const [accessLoading, setAccessLoading] = useState(false);
@@ -152,7 +152,7 @@ export default function ApiSources() {
       setGrants(grantPage.items);
       setSourceStations(stationPage.items);
       setGrantDrafts(Object.fromEntries(grantPage.items.map((grant) => [grant.user.id, [...grant.stationIds]])));
-      setFarmers(candidatePage.items);
+      setCandidates(candidatePage.items);
     } catch (reason) {
       setError(normalizeApiError(reason).message);
     } finally {
@@ -302,19 +302,26 @@ export default function ApiSources() {
       <Modal isOpen={Boolean(accessSource)} onClose={() => setAccessSource(null)} title={`Manage Access${accessSource ? ` — ${accessSource.name}` : ""}`} description="Shared accounts can view station data but cannot reveal or revoke the source key." size="md">
         {accessLoading ? <Loading label="Loading accounts..." /> : (
           <div className={styles.accountList}>
-            {farmers.length === 0 && <p>No active Farmer accounts found.</p>}
-            {farmers.map((farmer) => {
-              const selected = new Set(grantDrafts[farmer.id] ?? []);
-              const existing = grantByUserId.get(farmer.id)?.stationIds ?? [];
+            {candidates.length === 0 && <p>No eligible accounts found.</p>}
+            {candidates.map((candidate) => {
+              const selected = new Set(grantDrafts[candidate.id] ?? []);
+              const existing = grantByUserId.get(candidate.id)?.stationIds ?? [];
               const changed = selected.size !== existing.length || existing.some((id) => !selected.has(id));
-              return <div key={farmer.id} className={styles.accountCard}>
-                <div className={styles.accountHeading}><div><strong>{farmer.displayName}</strong><span>{farmer.email}</span></div><span>{selected.size} selected</span></div>
+              return <div key={candidate.id} className={styles.accountCard}>
+                <div className={styles.accountHeading}>
+                  <div>
+                    <strong>{candidate.displayName}</strong>
+                    <span>{candidate.email}</span>
+                    <span>{candidate.role === "FARMER" ? "Farmer" : "Client Developer"}</span>
+                  </div>
+                  <span>{selected.size} selected</span>
+                </div>
                 {sourceStations.length === 0 && <p className={styles.help}>No soil stations were found for this source.</p>}
                 <div className={styles.stationChecks}>{sourceStations.map((station) => <label key={station.id}>
-                  <input type="checkbox" checked={selected.has(station.id)} onChange={() => toggleStation(farmer.id, station.id)} />
+                  <input type="checkbox" checked={selected.has(station.id)} onChange={() => toggleStation(candidate.id, station.id)} />
                   <span><strong>{station.name}</strong><small>{station.code}</small></span>
                 </label>)}</div>
-                <div className={styles.accountActions}><Button size="sm" variant={selected.size === 0 && existing.length > 0 ? "danger" : "outline"} disabled={!changed} loading={busyId === farmer.id} onClick={() => void saveGrant(farmer.id)}>{selected.size === 0 && existing.length > 0 ? "Revoke Access" : "Save Access"}</Button></div>
+                <div className={styles.accountActions}><Button size="sm" variant={selected.size === 0 && existing.length > 0 ? "danger" : "outline"} disabled={!changed} loading={busyId === candidate.id} onClick={() => void saveGrant(candidate.id)}>{selected.size === 0 && existing.length > 0 ? "Revoke Access" : "Save Access"}</Button></div>
               </div>;
             })}
           </div>

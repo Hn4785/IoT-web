@@ -49,9 +49,16 @@ test("Admin dashboard omits unsupported hardware inventory", () => {
   assert.doesNotMatch(dashboard, /Operational Health/);
 });
 
-test("Client Developer account editing renders UserScopeEditor for direct station grants", () => {
-  assert.match(users, /editingUser\.role === "CLIENT_DEVELOPER"[\s\S]{0,200}<UserScopeEditor/);
-  assert.match(users, /setEditingUser\(updated\)/);
+test("Client Developer account editing shows read-only shared access and omits UserScopeEditor", () => {
+  assert.doesNotMatch(users, /UserScopeEditor/);
+  assert.match(users, /editingUser\.role === "CLIENT_DEVELOPER"/);
+  assert.match(users, /Source access is managed from API Sources/);
+});
+
+test("Admin API Sources Manage Access presents role-neutral candidate accounts with visible role labels", () => {
+  assert.doesNotMatch(page, /setFarmers/);
+  assert.match(page, /Client Developer/);
+  assert.match(page, /Farmer/);
 });
 
 test("Admin account editing is role-focused and source access is read only", () => {

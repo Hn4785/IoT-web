@@ -47,7 +47,6 @@ const NAV_CONFIG: Record<UserRole, NavItem[]> = {
     { label: 'Dashboard', path: '/developer/dashboard', icon: LayoutDashboard },
     { label: 'API Access', path: '/developer/api-access', icon: KeyRound },
     { label: 'API Tools', path: '/developer/api-tools', icon: BookOpen },
-    { label: 'Settings', path: '/change-password', icon: Settings },
   ],
 };
 
