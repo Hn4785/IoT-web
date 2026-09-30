@@ -148,6 +148,11 @@ export const protectedRoutes: AppRoute[] = [
   },
   // --- Canonical API Access ---
   {
+    path: "/developer/api-access",
+    roles: ["CLIENT_DEVELOPER"],
+    element: <Navigate to="/developer/api-access/keys" replace />,
+  },
+  {
     path: "/developer/api-access/keys",
     roles: ["CLIENT_DEVELOPER"],
     element: <ApiKeys />,
@@ -158,6 +163,11 @@ export const protectedRoutes: AppRoute[] = [
     element: <ApiPermissions />,
   },
   // --- Canonical API Tools ---
+  {
+    path: "/developer/api-tools",
+    roles: ["CLIENT_DEVELOPER"],
+    element: <Navigate to="/developer/api-tools/docs" replace />,
+  },
   {
     path: "/developer/api-tools/docs",
     roles: ["CLIENT_DEVELOPER"],

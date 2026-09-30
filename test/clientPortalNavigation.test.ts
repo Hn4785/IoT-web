@@ -64,6 +64,27 @@ test("canonical API Access routes are defined with CLIENT_DEVELOPER role", () =>
   assert.match(source, /path:\s*["']\/developer\/api-tools\/explorer["']/);
 });
 
+test("developer section roots redirect to their default tabs and remain guarded", () => {
+  const source = readFileSync(
+    new URL("../src/routes/routeConfig.tsx", import.meta.url),
+    "utf8",
+  );
+  const lines = source.split("\n");
+
+  for (const [sectionPath, defaultPath] of [
+    ["/developer/api-access", "/developer/api-access/keys"],
+    ["/developer/api-tools", "/developer/api-tools/docs"],
+  ]) {
+    const index = lines.findIndex((line: string) =>
+      line.includes(`\"${sectionPath}\"`),
+    );
+    assert.notEqual(index, -1, `${sectionPath} must exist`);
+    const context = lines.slice(index, index + 6).join("\n");
+    assert.match(context, /CLIENT_DEVELOPER/);
+    assert.match(context, new RegExp(`Navigate to=\"${defaultPath}\" replace`));
+  }
+});
+
 // ---------------------------------------------------------------------------
 // 3. Legacy routes redirect to canonical routes
 // ---------------------------------------------------------------------------

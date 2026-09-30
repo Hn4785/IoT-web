@@ -4,7 +4,6 @@ import {
   Users,
   Settings,
   History,
-  Activity,
   Leaf,
   Radio,
   BellRing,
