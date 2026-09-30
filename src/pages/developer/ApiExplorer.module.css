@@ -1,8 +1,12 @@
 .page {
   display: flex;
   flex-direction: column;
-  gap: 22px;
-  padding: 24px;
+  gap: var(--spacing-5);
+  width: 100%;
+  max-width: 1440px;
+  margin-inline: auto;
+  padding: var(--spacing-6);
+  box-sizing: border-box;
   color: var(--color-text-primary);
 }
 
@@ -12,13 +16,13 @@
 }
 
 .header p {
-  margin: 6px 0 0;
+  margin: var(--spacing-1-5) 0 0;
   color: var(--color-text-secondary);
   font-size: var(--font-size-body-sm);
 }
 
 .eyebrow {
-  margin-bottom: 6px;
+  margin-bottom: var(--spacing-1-5);
   color: var(--color-primary);
   font-family: var(--font-family-mono);
   font-size: var(--font-size-micro);
@@ -51,8 +55,8 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 15px;
-  padding: 18px 20px;
+  gap: var(--spacing-4);
+  padding: var(--spacing-4) var(--spacing-5);
   border-bottom: 1px solid var(--color-border-subtle);
 }
 
@@ -62,7 +66,7 @@
 }
 
 .panelHeader p {
-  margin: 4px 0 0;
+  margin: var(--spacing-1) 0 0;
   color: var(--color-text-tertiary);
   font-size: var(--font-size-caption);
 }
@@ -70,8 +74,9 @@
 .resetButton {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: var(--spacing-1-5);
   border: 0;
+  border-radius: var(--radius-sm);
   background: transparent;
   color: var(--color-text-secondary);
   cursor: pointer;
@@ -81,9 +86,9 @@
 .field {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 0 20px;
-  margin-top: 17px;
+  gap: var(--spacing-1-5);
+  padding: 0 var(--spacing-5);
+  margin-top: var(--spacing-4);
 }
 
 .field > span {
@@ -95,15 +100,24 @@
 .field input,
 .field select {
   width: 100%;
-  height: 40px;
+  height: var(--height-input-md);
   box-sizing: border-box;
-  padding: 0 11px;
+  padding: 0 var(--spacing-3);
   border: 1px solid var(--color-border-default);
   border-radius: var(--radius-md);
   outline: none;
   background: var(--color-bg-surface);
   color: var(--color-text-primary);
-  font-size: var(--font-size-caption);
+  font-size: var(--font-size-body);
+}
+
+.field input:focus-visible,
+.field select:focus-visible,
+.resetButton:focus-visible,
+.sendButton:focus-visible,
+.responseToolbar button:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 .endpointSelect {
@@ -112,7 +126,7 @@
 
 .endpointSelect select {
   appearance: none;
-  padding-right: 35px;
+  padding-right: var(--spacing-8);
 }
 
 .endpointSelect svg {
@@ -126,9 +140,9 @@
 .urlRow {
   display: flex;
   align-items: center;
-  gap: 9px;
-  margin: 15px 20px 0;
-  padding: 10px;
+  gap: var(--spacing-2);
+  margin: var(--spacing-4) var(--spacing-5) 0;
+  padding: var(--spacing-2-5);
   border-radius: var(--radius-md);
   background: var(--color-bg-dark);
   color: var(--color-text-inverse);
@@ -141,7 +155,7 @@
 }
 
 .method {
-  padding: 4px 6px;
+  padding: var(--spacing-1) var(--spacing-1-5);
   border-radius: var(--radius-sm);
   background: var(--color-primary-light);
   color: var(--color-primary-dark);
@@ -162,12 +176,12 @@
 }
 
 .inputWithIcon input {
-  padding-left: 34px;
+  padding-left: var(--spacing-8);
 }
 
 .parameters {
-  margin-top: 20px;
-  padding: 17px 0;
+  margin-top: var(--spacing-5);
+  padding: var(--spacing-4) 0;
   border-top: 1px solid var(--color-border-subtle);
   border-bottom: 1px solid var(--color-border-subtle);
 }
@@ -176,7 +190,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 20px;
+  padding: 0 var(--spacing-5);
 }
 
 .subHeader h3 {
@@ -193,9 +207,9 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 7px;
-  min-height: 42px;
-  margin: 20px;
+  gap: var(--spacing-2);
+  min-height: var(--height-button-md);
+  margin: var(--spacing-5);
   border: 1px solid var(--color-primary);
   border-radius: var(--radius-md);
   background: var(--color-primary);
@@ -206,8 +220,8 @@
 }
 
 .securityNote {
-  margin: 0 20px 20px;
-  padding: 11px;
+  margin: 0 var(--spacing-5) var(--spacing-5);
+  padding: var(--spacing-3);
   border-radius: var(--radius-md);
   background: var(--color-bg-subtle);
   color: var(--color-text-tertiary);
@@ -217,20 +231,20 @@
 .responseMeta {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--spacing-2-5);
 }
 
 .responseMeta > span {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--spacing-1);
   color: var(--color-text-tertiary);
   font-family: var(--font-family-mono);
   font-size: var(--font-size-tiny);
 }
 
 .status {
-  padding: 4px 7px;
+  padding: var(--spacing-1) var(--spacing-1-5);
   border-radius: var(--radius-sm);
   background: var(--color-primary-light);
   color: var(--color-primary-dark) !important;
@@ -241,7 +255,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 9px 15px;
+  padding: var(--spacing-2) var(--spacing-4);
   border-bottom: 1px solid var(--color-border-subtle);
   background: var(--color-bg-subtle);
   color: var(--color-text-tertiary);
@@ -252,8 +266,9 @@
 .responseToolbar button {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: var(--spacing-1-5);
   border: 0;
+  border-radius: var(--radius-sm);
   background: transparent;
   color: var(--color-text-secondary);
   cursor: pointer;
@@ -268,10 +283,10 @@
 
 .responseBody pre {
   margin: 0;
-  padding: 20px;
+  padding: var(--spacing-5);
   font-family: var(--font-family-mono);
   font-size: var(--font-size-caption);
-  line-height: 1.65;
+  line-height: var(--line-height-base);
 }
 
 .placeholder {
@@ -281,7 +296,7 @@
   justify-content: center;
   height: 100%;
   min-height: 500px;
-  gap: 8px;
+  gap: var(--spacing-2);
   color: var(--color-text-inverse);
   text-align: center;
 }
@@ -304,8 +319,8 @@
 
 .contractNotice {
   display: flex;
-  gap: 8px;
-  padding: 13px 15px;
+  gap: var(--spacing-2);
+  padding: var(--spacing-3) var(--spacing-4);
   border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-md);
   background: var(--color-bg-subtle);
@@ -340,5 +355,11 @@
   .requestPanel {
     border-right: 0;
     border-bottom: 1px solid var(--color-border-subtle);
+  }
+}
+
+@media (max-width: 768px) {
+  .page {
+    padding: var(--spacing-4);
   }
 }
