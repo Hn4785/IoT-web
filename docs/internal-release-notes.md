@@ -77,57 +77,29 @@ Với mỗi thay đổi:
 - Database Pi hiện chỉ có system source sau migration; managed source cần được
   nhập lại trên đúng môi trường Pi để thực hiện browser acceptance với key thật.
 
-### Tồn đọng Phase B dùng chung
+### Phase B hoàn tất local — 2026-09-30
 
-- Alert Center chưa được coi là hoàn tất cho người dùng vì station live hiện
-  chưa cung cấp confirmed soil field metadata để tạo rule. Hạng mục này sẽ được
-  hoàn thiện một lần trong bước Farmer và áp dụng chung cho cả Farmer lẫn Admin;
-  chỉ cấu hình cảnh báo/thông báo, không can thiệp thiết bị từ xa.
-
-### Checkpoint Client Developer — 2026-09-30 (local only)
-
-- Gom điều hướng Client thành bốn mục ổn định: `Dashboard`, `API Access`,
-  `API Tools` và `Settings`. API Access gồm `Keys`/`Access Scope`; API Tools gồm
-  `Documentation`/`API Explorer`. Các URL cũ tiếp tục redirect có guard
-  `CLIENT_DEVELOPER`; API Metrics bị ẩn khỏi menu và chỉ giữ thông báo contract
-  chưa có, không dựng analytics.
-- Khôi phục luồng cấp direct station grants (`UserScopeEditor`) trong User
-  Management khi sửa tài khoản `CLIENT_DEVELOPER`, giúp trạm được chọn xuất hiện
-  trong API key scope. Luồng này tách biệt với chia sẻ nguồn của Farmer tại API
-  Sources.
-- Đóng checkpoint frontend Phase B: Settings chỉ giữ thông báo/hành động đổi mật
-  khẩu bằng contract có sẵn; nội dung phân biệt đổi mật khẩu bắt buộc với chủ
-  động. Browser local xác nhận drawer Client Developer hiển thị đủ NODE01–NODE06
-  để Admin cấp direct station grant.
-- Giữ nguyên contract API key thật: inventory, tạo, rotate, revoke, station scope
-  và secret chỉ hiển thị một lần. Access Scope chỉ đọc effective access; không
-  thêm thao tác ghi hoặc mở rộng quyền ngoài backend.
-- API Explorer tiếp tục gửi `X-API-Key` trực tiếp qua service hiện có, chỉ giữ
-  key trong React memory, password-mask, tắt autocomplete và xóa khi Reset.
-  Bỏ station `NODE01` được điền sẵn; Client phải nhập station code thật.
-- Đồng bộ Dashboard, API Access, Documentation và Explorer theo content frame
-  1440px, design token, focus state và responsive layout chung. Trạng thái thiếu
-  dữ liệu dùng câu tiếng Anh cụ thể, không dùng `N/A` hay số liệu suy đoán.
-- Antigravity audit đọc-only không tìm thấy lỗi P0–P3. Codex kiểm tra lại diff;
-  frontend đạt 148/148 test, lint sạch và production build đạt. Browser cô lập
-  xác nhận route Client chưa
-  đăng nhập bị đưa về `/login`; ma trận giao diện sau đăng nhập chưa được đánh
-  dấu browser-verified vì không có session Client trong browser test cô lập.
-- Toàn bộ thay đổi chỉ commit local. Không push, deploy Pi, đổi backend, database,
-  dependency hay auth/session.
-
-### Điều chỉnh hợp nhất API Source Access UI — 2026-09-30 (local only)
-
-- Hợp nhất giao diện phân quyền trạm của nguồn API: API Sources -> Manage Access
-  là UI duy nhất trên trình duyệt để gán station cho cả hai role `FARMER` và
-  `CLIENT_DEVELOPER`.
-- Quản lý tài khoản (User Management) chỉ sửa role và hiển thị Shared access dạng
-  chỉ đọc cho Client Developer tương tự Farmer, kèm hướng dẫn quản lý quyền tại
-  API Sources; loại bỏ việc render `UserScopeEditor` trực tiếp trong drawer.
-- Bỏ mục `Settings` khỏi sidebar của `CLIENT_DEVELOPER` (chỉ còn `Dashboard`,
-  `API Access`, `API Tools`); giữ nguyên luồng đổi mật khẩu và đăng xuất toàn cục.
-- Cập nhật kiểu `DataSourceGrant.user` và `DataSourceGrantCandidate` chứa `role`
-  và hiển thị nhãn role rõ ràng cho từng tài khoản trong modal Manage Access.
+- [x] Admin/Super Admin, Farmer và Client Developer dùng hierarchy, latest,
+  history, dashboard/report và API Explorer từ contract thật, không fallback dữ
+  liệu mẫu.
+- [x] API Sources -> Manage Access là giao diện duy nhất để cấp quyền station từ
+  nguồn API cho cả `FARMER` và `CLIENT_DEVELOPER`. User Management chỉ sửa role
+  và hiển thị Shared access dạng chỉ đọc.
+- [x] Admin và Farmer dùng chung Alert Center với canonical soil fields,
+  Automatic/Paused rules, lifecycle và in-app notifications. Rule chỉ tạo cảnh
+  báo, không ghi hay can thiệp thiết bị từ xa.
+- [x] Client giữ ba mục `Dashboard`, `API Access`, `API Tools`; không có sidebar
+  Settings riêng. Change Password và Log out vẫn nằm trong menu tài khoản dùng
+  chung cho cả ba role, bao gồm luồng bắt buộc đổi mật khẩu.
+- [x] Client API key giữ contract tạo/copy/rotate/revoke, station scope và secret
+  chỉ hiển thị một lần. API Explorer giữ key trong React memory và không điền sẵn
+  station giả.
+- [x] Frontend đạt 152/152 test, lint sạch và production build thành công. Sau
+  khi Docker được khôi phục, PostgreSQL healthy và health/readiness qua backend
+  lẫn frontend proxy đều trả HTTP 200. Product owner đã nghiệm thu luồng local.
+- Đây là bằng chứng nghiệm thu local; không xác nhận bản đã được deploy lên Pi.
+  Ma trận tự động responsive/accessibility/failure-recovery rộng hơn vẫn là
+  release-hardening gate, không phải phần triển khai Phase B còn thiếu.
 
 ## v2.5.5-local — 2026-09-28 (Admin API Sources)
 

@@ -104,7 +104,7 @@ Page/Hook -> Service -> apiClient -> Backend controller
 
 ### Phase B - Station và dữ liệu đất
 
-| Màn hình | Contract | Việc còn lại |
+| Màn hình | Contract | Trạng thái |
 | --- | --- | --- |
 | Farm -> Plot -> Station | `GET /farms`, `/farms/:id/plots`, `/plots/:id/stations` | Dùng chung `stationBrowserService` |
 | Soil Dashboard | `GET /stations/:id/data/latest`, `/history` | Đã nối; giữ polling hữu hạn |
@@ -158,8 +158,8 @@ Trạng thái frontend hiện tại:
    còn hiệu chuẩn/can thiệp cảm biến được thực hiện trực tiếp tại hiện trường.
    Reason code hiện tại được giữ để tương thích, không phải cam kết sẽ bổ sung
    remote write.
-5. Còn phải chạy browser matrix cho quyền Admin/Farmer, mất membership và stale
-   session trước khi nghiệm thu tích hợp.
+5. Product owner đã nghiệm thu luồng local Admin/Farmer ngày 2026-09-30. Ma trận
+   tự động về mất membership, stale session và recovery tiếp tục là release gate.
 
 ### Phase D - audit và vận hành
 
@@ -225,56 +225,20 @@ Sau gate tĩnh, chạy browser matrix cho Admin, Farmer và Client Developer tr�
 - phiên mới, phiên hết hạn và logout;
 - upstream/database hoạt động và tạm mất kết nối.
 
-## 8. Thứ tự hoàn thiện hiện tại
+## 8. Trạng thái tích hợp hiện tại
 
-1. Admin/Super Admin đã được người dùng chấp nhận với đủ 6 station; các chức
-   năng không có device contract tiếp tục fail-closed.
-2. Hoàn tất Farmer theo thứ tự Dashboard → Soil Dashboard → Historical Analysis
-   → History Report → Notifications → Alerts/Alert Center. Việc còn lại là chuẩn
-   hóa giao diện và browser matrix cho scope, mất quyền, stale/cache và lỗi upstream.
-3. Chỉ sau khi người dùng kiểm tra Farmer mới chuyển sang Client Developer: API
-   Keys → Permissions → Docs → Explorer → Metrics khi có contract.
-4. Sau ba role, chạy browser matrix liên role và QA recovery; production vẫn cần
-   TLS/proxy, shared limiter, backup ngoài máy, MFA và live-device evidence.
+Phase B được đánh dấu hoàn tất local ngày 2026-09-30. Điều hướng hiện hành:
 
-Trạng thái phiên bản và lỗi còn mở chỉ ghi tại
+- Admin/Super Admin quản lý nguồn và quyền station tại **API Sources**; User
+  Management chỉ sửa role và đọc phạm vi đã chia sẻ.
+- Farmer dùng Dashboard, Soil Dashboard, Historical Analysis/Report,
+  Notifications và Alert Center theo scope backend.
+- Client Developer dùng **Dashboard**, **API Access** và **API Tools**. Không có
+  sidebar Settings riêng; Change Password và Log out ở menu tài khoản dùng chung.
+- Ngưỡng cảnh báo thuộc Alert Center và không điều khiển thiết bị. Các màn hình
+  không có contract thật tiếp tục fail-closed, không dựng số liệu hay toggle giả.
+
+Lịch sử phiên bản chỉ ghi tại
 [`docs/internal-release-notes.md`](../internal-release-notes.md); checklist backend
-chỉ ghi tại `D:/IoT-api/tasks/todo.md`.
-
-## 9. Kế hoạch rút gọn trang và Settings
-
-Không thêm route cấp cao mới trước khi xử lý các trang đang trùng nhiệm vụ. Việc
-gộp trang phải giữ nguyên API contract, role guard và redirect từ URL cũ trong ít
-nhất một phiên bản để không làm hỏng bookmark.
-
-| Role      | Trang hiện tại                                                          | Đích đề xuất                                                                                              |
-| --------- | ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| Farmer    | `Alerts`, `Alert Center`                                                | Một trang **Cảnh báo** với tab `Đang hoạt động`, `Lịch sử`, `Quy tắc`; action vẫn phụ thuộc quyền backend |
-| Farmer    | `Historical Analysis`, `History Report`                                 | Một trang **Lịch sử & Báo cáo** gồm biểu đồ, bảng, bộ lọc và xuất CSV                                     |
-| Farmer    | `Dashboard`, `Soil Dashboard`                                           | Giữ riêng nhưng đổi nhãn rõ thành **Tổng quan** và **Theo dõi đất**                                       |
-| Farmer    | `Notifications`                                                         | Giữ thành **Hộp thông báo**; đây không phải trang Settings                                                |
-| Admin     | `Stations & Devices`, `Device Health`, `IoT Config`, `Config Proposals` | Giữ **Trạm & Thiết bị** và Device Health; ẩn/gỡ IoT Config và Config Proposals khỏi navigation, route cũ chỉ giải thích can thiệp onsite |
-| Developer | `API Keys`, `API Permissions`                                           | Một trang **API Access** với tab `Keys` và `Phạm vi truy cập`                                             |
-| Developer | `API Docs`, `API Explorer`                                              | Một trang **API Tools** với tab `Tài liệu` và `Thử API`                                                   |
-| Developer | `API Metrics`                                                           | Ẩn khỏi navigation tới khi backend có usage/latency/quota contract thật                                   |
-
-Trang `/settings` dùng chung chỉ được chứa chức năng có nguồn dữ liệu rõ ràng:
-
-- Có thể làm với contract hiện tại: xem thông tin tài khoản, đổi mật khẩu và
-  đăng xuất. Ngôn ngữ, múi giờ hoặc theme chỉ được lưu local nếu sản phẩm thực sự
-  cần và phải ghi rõ đây là tùy chọn trên thiết bị hiện tại.
-- Chưa được dựng toggle giả: Email/SMS/Push, thời gian lưu thông báo, quản lý
-  phiên trên thiết bị khác và usage quota. Không đưa cấu hình ghi xuống thiết bị
-  vào Settings; remote write nằm ngoài phạm vi sản phẩm hiện tại.
-- Ngưỡng, số mẫu vi phạm/phục hồi và tần suất nhắc lại thuộc **Quy tắc cảnh
-  báo**, không thuộc Settings chung. `cooldown`/`repeatInterval` hiện chưa có
-  contract; phải cập nhật spec và backend trước khi thêm control frontend.
-- Ngưỡng cảnh báo chỉ điều khiển logic cảnh báo của ứng dụng, không thay đổi
-  cấu hình cảm biến. Hiệu chuẩn hoặc can thiệp thiết bị phải thực hiện trực tiếp
-  tại hiện trường.
-- User/Farm/Station assignment tiếp tục thuộc **Người dùng & Phân quyền**; audit
-  tiếp tục chỉ hiện cho Super Admin, không chuyển vào Settings.
-
-Thứ tự thực hiện UI: chốt route map → gộp hai cặp Farmer → gom khu vực Admin →
-gom Developer → bổ sung Settings tối thiểu → chạy lại browser matrix ba role ở
-desktop và mobile. Không chỉnh visual sâu trước khi navigation mới được duyệt.
+chỉ ghi tại `D:/IoT-api/tasks/todo.md`. Production/Pi deployment và ma trận QA
+recovery rộng hơn được theo dõi như release gate riêng.
