@@ -9,6 +9,7 @@ import {
 import PageHeader from "@/components/layout/PageHeader";
 import ErrorState from "@/components/common/ErrorState";
 import Loading from "@/components/common/Loading";
+import LineChart, { type LineChartSeries } from "@/components/charts/LineChart";
 
 import { useStationHierarchy } from "@/hooks/useStationHierarchy";
 import {
@@ -19,11 +20,18 @@ import { normalizeApiError } from "@/utils/apiError";
 import type { SoilField } from "@/types/soil";
 
 import { historyDepthPresentation } from "./historicalDepthPresentation.ts";
-import { areaPoints, historyWindow, type HistoryDays } from "./historicalChartControls.ts";
+import { historyWindow, type HistoryDays } from "./historicalChartControls.ts";
 import { measurementSummary } from "./historicalSummary.ts";
 import styles from "./HistoricalAnalysis.module.css";
 
 const EMPTY_HISTORY: Record<string, SoilHistoryData> = {};
+
+const SERIES_COLORS = [
+  "var(--color-primary, #16a34a)",
+  "var(--color-info, #0284c7)",
+  "var(--color-warning, #d97706)",
+  "#64748b",
+];
 
 const metricOptions: {
   value: SoilField;
@@ -52,6 +60,14 @@ const metricOptions: {
   },
 ];
 
+interface HistoryState {
+  key: string;
+  begin: string;
+  end: string;
+  data: Record<string, SoilHistoryData>;
+  error: string;
+}
+
 function SelectBox({
   label,
   value,
@@ -77,42 +93,9 @@ function SelectBox({
   );
 }
 
-function linePoints(values: number[]) {
-  const width = 900;
-  const height = 250;
-  const padding = 16;
-
-  if (values.length < 2) return "";
-
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const range = max - min || 1;
-
-  return values
-    .map((value, index) => {
-      const x =
-        padding +
-        (index / (values.length - 1)) *
-          (width - padding * 2);
-
-      const y =
-        height -
-        padding -
-        ((value - min) / range) *
-          (height - padding * 2);
-
-      return `${x},${y}`;
-    })
-    .join(" ");
-}
-
 export default function HistoricalAnalysis() {
   const hierarchy = useStationHierarchy();
-  const [historyState, setHistoryState] = useState<{
-    key: string;
-    data: Record<string, SoilHistoryData>;
-    error: string;
-  } | null>(null);
+  const [historyState, setHistoryState] = useState<HistoryState | null>(null);
 
   const [selectedMetric, setSelectedMetric] =
     useState<SoilField>("moisture");
@@ -147,11 +130,23 @@ export default function HistoricalAnalysis() {
     ] as const)).then(
       (entries) => {
         if (!active) return;
-        setHistoryState({ key: historyKey, data: Object.fromEntries(entries), error: "" });
+        setHistoryState({
+          key: historyKey,
+          begin,
+          end,
+          data: Object.fromEntries(entries),
+          error: "",
+        });
       },
       (reason) => {
         if (!active) return;
-        setHistoryState({ key: historyKey, data: {}, error: normalizeApiError(reason).message });
+        setHistoryState({
+          key: historyKey,
+          begin,
+          end,
+          data: {},
+          error: normalizeApiError(reason).message,
+        });
       },
     );
     return () => { active = false; };
@@ -161,6 +156,22 @@ export default function HistoricalAnalysis() {
   const historyByStation = currentHistory?.data ?? EMPTY_HISTORY;
   const historyError = currentHistory?.error ?? "";
   const historyLoading = hierarchy.stations.length > 0 && !currentHistory;
+
+  const isPending = hierarchy.loading || historyLoading;
+  const hasError = Boolean(hierarchy.error || historyError);
+  const currentError = hierarchy.error || historyError;
+
+  const timeDomain = currentHistory
+    ? { begin: currentHistory.begin, end: currentHistory.end }
+    : undefined;
+
+  const backendUnit = useMemo(() => {
+    for (const history of Object.values(historyByStation)) {
+      const found = history.series.find((s) => s.field === selectedMetric && s.unit);
+      if (found?.unit) return found.unit;
+    }
+    return metric.unit;
+  }, [historyByStation, selectedMetric, metric.unit]);
 
   const availableDepths = useMemo(() => Array.from(new Set(
     Object.values(historyByStation).flatMap((history) =>
@@ -189,6 +200,16 @@ export default function HistoricalAnalysis() {
       };}),
   ), [hierarchy.stations, historyByStation, selectedDepths, selectedMetric, depthPresentation]);
 
+  const chartSeries: LineChartSeries[] = useMemo(() => series.map((item, index) => ({
+    name: item.label,
+    color: SERIES_COLORS[index % SERIES_COLORS.length],
+    data: item.points.map((point) => ({
+      value: point.value,
+      timestamp: point.observedAt,
+      quality: point.quality,
+    })),
+  })), [series]);
+
   const exportCsv = () => {
     const safeCell = (value: string | number) => {
       const text = String(value);
@@ -203,7 +224,7 @@ export default function HistoricalAnalysis() {
         selectedMetric,
         point.observedAt,
         point.value,
-        metric.unit,
+        backendUnit,
       ])),
     ];
     const blob = new Blob([rows.map((row) => row.map(safeCell).join(",")).join("\n")], {
@@ -222,7 +243,7 @@ export default function HistoricalAnalysis() {
   );
   const summary = measurementSummary(allValues);
   const formatMeasurement = (value: number | null) =>
-    value == null ? "N/A" : `${value.toFixed(1)}${metric.unit}`;
+    value == null ? "N/A" : `${value.toFixed(1)}${backendUnit}`;
 
   const toggleDepth = (depth: number) => {
     setSelectedDepths((current) =>
@@ -235,10 +256,10 @@ export default function HistoricalAnalysis() {
   return (
     <main className={styles.page}>
       <PageHeader
-        title="Historical Analysis & Correlation"
+        title="Historical Analysis"
         description={depthPresentation.showDepth
-          ? "Compare soil profiles across depths and multiple stations."
-          : "Compare soil history across stations."}
+          ? "Station comparison and trends across soil depths over time."
+          : "Station comparison and trends across stations over time."}
         actions={
           <button className={styles.exportButton} disabled={series.length === 0} onClick={exportCsv}>
             <Download size={13} />
@@ -246,11 +267,6 @@ export default function HistoricalAnalysis() {
           </button>
         }
       />
-
-      {hierarchy.loading && <Loading label="Loading authorized stations..." />}
-      {historyLoading && <Loading label="Loading soil history..." />}
-      {hierarchy.error && <ErrorState description={hierarchy.error} onRetry={hierarchy.reload} />}
-      {historyError && <ErrorState description={historyError} />}
 
       <section className={styles.filterBar}>
         <SelectBox
@@ -348,17 +364,19 @@ export default function HistoricalAnalysis() {
       <section className={styles.chartCard}>
         <div className={styles.chartHeader}>
           <div>
-            <h2>{metric.label} Multi-Series Correlation</h2>
+            <h2>{metric.label} Station Comparison & Trends</h2>
             <span>{depthPresentation.showDepth
-              ? "Compare stations and depths over the selected period."
-              : "Compare stations over the selected period."}</span>
+              ? "Station comparison and depth trends over the selected period."
+              : "Station comparison and trends over the selected period."}</span>
           </div>
 
           <div className={styles.chartControls}>
             <button type="button" className={chartView === "line" ? styles.activeView : ""} aria-pressed={chartView === "line"} onClick={() => setChartView("line")}>
               Line
             </button>
-            <button type="button" className={chartView === "area" ? styles.activeView : ""} aria-pressed={chartView === "area"} onClick={() => setChartView("area")}>Area</button>
+            <button type="button" className={chartView === "area" ? styles.activeView : ""} aria-pressed={chartView === "area"} onClick={() => setChartView("area")}>
+              Area
+            </button>
             <button type="button" title="Chart information" aria-label="Chart information" aria-expanded={showChartInfo} onClick={() => setShowChartInfo((current) => !current)}>
               <Info size={12} />
             </button>
@@ -366,143 +384,132 @@ export default function HistoricalAnalysis() {
         </div>
         {showChartInfo && (
           <p className={styles.chartInfo}>
-            Daily mean values from authorized stations for the selected {historyDays}-day range. Each series uses its own vertical scale; use the summary table to compare absolute values.
+            Daily mean values from authorized stations for the selected {historyDays}-day range, plotted on a common scale in your local timezone.
           </p>
         )}
 
-        <div className={styles.chart}>
-          <div className={styles.gridLines}>
-            <span />
-            <span />
-            <span />
-            <span />
-          </div>
-
-          <svg
-            viewBox="0 0 900 250"
-            preserveAspectRatio="none"
-            className={styles.svg}
-          >
-            {series.map((item, index) => (
-              chartView === "area" ? (
-                <polygon
-                  key={item.id}
-                  points={areaPoints(item.values)}
-                  className={index % 4 === 0 ? styles.lineGreen : index % 4 === 1 ? styles.lineBlue : index % 4 === 2 ? styles.lineOrange : styles.lineSlate}
-                  fill="currentColor"
-                  fillOpacity="0.14"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                />
-              ) : (
-                <polyline
-                  key={item.id}
-                  points={linePoints(item.values)}
-                  fill="none"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className={index % 4 === 0 ? styles.lineGreen : index % 4 === 1 ? styles.lineBlue : index % 4 === 2 ? styles.lineOrange : styles.lineSlate}
-                />
-              )
-            ))}
-          </svg>
-          {series.length === 0 && !hierarchy.loading && !historyLoading && !historyError && (
-            <p className={styles.chartEmpty}>No historical measurements for the selected filters.</p>
+        <div className={styles.chartContainer}>
+          {hasError ? (
+            <ErrorState
+              description={currentError}
+              onRetry={hierarchy.error ? hierarchy.reload : undefined}
+            />
+          ) : isPending ? (
+            <Loading label={hierarchy.loading ? "Loading authorized stations..." : "Loading soil history..."} />
+          ) : hierarchy.stations.length === 0 ? (
+            <p className={styles.chartEmpty}>
+              No stations available for the selected farm and plot. Select a plot with authorized stations to view historical trends.
+            </p>
+          ) : (
+            <LineChart
+              series={chartSeries}
+              timeDomain={timeDomain}
+              showDots={false}
+              showArea={chartView === "area"}
+              unit={backendUnit}
+              emptyMessage="No historical measurements for the selected filters."
+              ariaLabel={`${metric.label} historical trends`}
+            />
           )}
         </div>
 
-        <div className={styles.legend}>
-          {series.map((item, index) => (
-            <span key={item.id}>
-              <i
-                className={
-                  index % 4 === 0
-                    ? styles.legendGreen
-                    : index % 4 === 1
-                      ? styles.legendBlue
-                      : index % 4 === 2
-                        ? styles.legendOrange
-                        : styles.legendSlate
-                }
-              />
-              {item.label}
-            </span>
-          ))}
-        </div>
+        {series.length > 0 && !isPending && !hasError && hierarchy.stations.length > 0 && (
+          <div className={styles.legend}>
+            {series.map((item, index) => (
+              <span key={item.id}>
+                <i
+                  className={
+                    index % 4 === 0
+                      ? styles.legendGreen
+                      : index % 4 === 1
+                        ? styles.legendBlue
+                        : index % 4 === 2
+                          ? styles.legendOrange
+                          : styles.legendSlate
+                  }
+                />
+                {item.label}
+              </span>
+            ))}
+          </div>
+        )}
       </section>
 
-      <section className={styles.bottomGrid}>
-        <div className={styles.statisticsCard}>
-          <h2>Summary Statistics</h2>
+      {!isPending && !hasError && hierarchy.stations.length > 0 && (
+        <section className={styles.bottomGrid}>
+          <div className={styles.statisticsCard}>
+            <h2>Summary Statistics</h2>
 
-          <table>
-            <thead>
-              <tr>
-                <th>Station</th>
-                {depthPresentation.showDepth && <th>Depth</th>}
-                <th>Average</th>
-                <th>Minimum</th>
-                <th>Maximum</th>
-                <th>Std Deviation</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {series.map((item) => {
-                const values = item.values;
-                const itemSummary = measurementSummary(values);
-
-                return (
-                  <tr key={item.id}>
-                    <td>{item.stationLabel}</td>
-                    {depthPresentation.showDepth && <td>{item.depthLabel}</td>}
-                    <td>{formatMeasurement(itemSummary.average)}</td>
-                    <td>{formatMeasurement(itemSummary.minimum)}</td>
-                    <td>{formatMeasurement(itemSummary.maximum)}</td>
-                    <td>{formatMeasurement(itemSummary.standardDeviation)}</td>
+            <div className={styles.tableContainer}>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Station</th>
+                    {depthPresentation.showDepth && <th>Depth</th>}
+                    <th>Average</th>
+                    <th>Minimum</th>
+                    <th>Maximum</th>
+                    <th>Std Deviation</th>
                   </tr>
-                );
-              })}
-              {series.length === 0 && (
-                <tr><td colSpan={depthPresentation.showDepth ? 6 : 5}>No measurements available.</td></tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+                </thead>
 
-        <div className={styles.insights}>
-          <InsightCard
-            title="Selected Metric Average"
-            value={summary.average == null
-              ? "No measurements available."
-              : `${formatMeasurement(summary.average)} average across selected data.`}
-            icon="↗"
-          />
+                <tbody>
+                  {series.map((item) => {
+                    const values = item.values;
+                    const itemSummary = measurementSummary(values);
 
-          <InsightCard
-            title="Root Zone Depletion Warning"
-            value={
-              summary.minimum != null
-                ? `${formatMeasurement(summary.minimum)} is the lowest observed value in the selected range.`
-                : "No depletion warning available."
-            }
-            icon="△"
-            warning
-          />
+                    return (
+                      <tr key={item.id}>
+                        <td>{item.stationLabel}</td>
+                        {depthPresentation.showDepth && <td>{item.depthLabel}</td>}
+                        <td>{formatMeasurement(itemSummary.average)}</td>
+                        <td>{formatMeasurement(itemSummary.minimum)}</td>
+                        <td>{formatMeasurement(itemSummary.maximum)}</td>
+                        <td>{formatMeasurement(itemSummary.standardDeviation)}</td>
+                      </tr>
+                    );
+                  })}
+                  {series.length === 0 && (
+                    <tr>
+                      <td colSpan={depthPresentation.showDepth ? 6 : 5}>
+                        No measurements available for the selected date range.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
 
-          <InsightCard
-            title="Total Observations Calculated"
-            value={`${allValues.length} telemetry points analyzed for selected ${depthPresentation.showDepth ? "station/depth combinations" : "stations"}.`}
-            icon="▤"
-          />
-        </div>
-      </section>
+          <div className={styles.insights}>
+            <InsightCard
+              title="Selected Metric Average"
+              value={summary.average == null
+                ? "No measurements available for the selected date range."
+                : `${formatMeasurement(summary.average)} average across selected daily mean samples.`}
+              icon="↗"
+            />
 
-      <div className={styles.summaryFooter}>
-        Average {formatMeasurement(summary.average)} · Min {formatMeasurement(summary.minimum)}
-        {" "}· Max {formatMeasurement(summary.maximum)} · Std Dev {formatMeasurement(summary.standardDeviation)}
-      </div>
+            <InsightCard
+              title="Lowest Observed Value"
+              value={
+                summary.minimum != null
+                  ? `${formatMeasurement(summary.minimum)} lowest observed daily mean in the selected range.`
+                  : "No measurements available for the selected date range."
+              }
+              icon="↓"
+            />
+
+            <InsightCard
+              title="Daily Mean Samples Calculated"
+              value={allValues.length > 0
+                ? `${allValues.length} daily mean samples analyzed for selected ${depthPresentation.showDepth ? "station/depth combinations" : "stations"}.`
+                : "No measurements available for the selected date range."}
+              icon="▤"
+            />
+          </div>
+        </section>
+      )}
     </main>
   );
 }

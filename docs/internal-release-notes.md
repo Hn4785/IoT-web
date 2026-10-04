@@ -15,12 +15,21 @@ Với mỗi thay đổi:
 
 ## v2.5.6 — 2026-10-04 (biểu đồ và Notifications)
 
-- Làm rõ trục số/thời gian, đơn vị, chất lượng dữ liệu và tooltip; căn lại
-  Notifications, phân biệt đã đọc/chưa đọc, rỗng và lỗi tải.
-- Nền giao diện đạt 162/162 test, lint và build. Kiểm tra inbox bằng fixture
-  riêng, không ghi dữ liệu giả vào ứng dụng hay database.
-- Soil Dashboard, Historical Analysis và History & Report đang được nối tiếp;
-  chưa push GitHub hoặc triển khai Pi cho đợt cập nhật này.
+- Căn lại Soil Dashboard, Historical Analysis, History & Report và Notifications;
+  giữ bố cục chính, bộ lọc, quyền truy cập và luồng xuất CSV hiện có.
+- Biểu đồ có trục số/thời gian và đơn vị rõ hơn, tooltip đọc được bằng bàn phím,
+  giảm chấm dày và giới hạn chiều cao. Các chuỗi so sánh và NPK dùng chung thang
+  đo/thời gian, giữ khoảng trống khi thiếu mẫu và vẫn hiển thị điểm đơn lẻ.
+- Phân biệt chất lượng dữ liệu với đánh giá đất; bỏ ngưỡng khuyến nghị cố định và
+  cảnh báo suy diễn từ giá trị thấp nhất. Ngưỡng cảnh báo vẫn do Alert Center quản lý.
+  Giải thích dữ liệu trung bình giờ/ngày, mốc UTC của bộ lọc và giờ địa phương trên trục.
+- Notifications rõ trạng thái đã đọc/chưa đọc, mức độ, rỗng và lỗi tải; không thêm SMS/email.
+- Codex review độc lập và chạy 178/178 test, lint, TypeScript/build và diff check đều đạt.
+  Browser QA dùng fixture cách ly ở viewport 1440px/520px: kiểm tra so sánh trạm,
+  Line/Area, tooltip, đổi chỉ số, điểm đơn lẻ, rỗng/lỗi và không tràn ngang.
+  Không ghi dữ liệu giả vào ứng dụng/database; chưa xác nhận tải file CSV trong browser QA.
+- Chỉ sửa frontend; không đổi API, authentication, database, tích hợp hay điều khiển thiết bị.
+  Đã sẵn sàng phát hành; GitHub/Pi sẽ ghi bằng chứng sau rollout web-only.
 
 ## Phase B Pi staging deployment — 2026-09-30
 

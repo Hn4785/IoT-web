@@ -1,20 +1,21 @@
 .page {
-  padding: 20px;
-  max-width: 1600px;
-  margin: 0 auto;
+  padding: var(--spacing-6);
+  width: min(100%, 1440px);
+  margin-inline: auto;
+  box-sizing: border-box;
 }
 
 .exportButton {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  height: 32px;
+  height: 40px;
   padding: 0 10px;
   border: 1px solid var(--color-border-default);
   border-radius: 6px;
   background: var(--color-bg-surface);
   color: var(--color-text-secondary);
-  font-size: 11px;
+  font-size: 13px;
   cursor: pointer;
 }
 
@@ -43,7 +44,7 @@
 
 .filter > span {
   color: var(--color-text-tertiary);
-  font-size: 9px;
+  font-size: 12px;
   white-space: nowrap;
 }
 
@@ -54,7 +55,7 @@
 .selectWrap select,
 .dateFilter,
 .staticFilter {
-  height: 30px;
+  height: 40px;
   min-width: 105px;
   padding: 0 24px 0 8px;
   appearance: none;
@@ -62,7 +63,7 @@
   border-radius: 6px;
   background: var(--color-bg-surface);
   color: var(--color-text-primary);
-  font-size: 9px;
+  font-size: 13px;
 }
 
 .selectWrap svg {
@@ -88,13 +89,13 @@
 
 .depthButton,
 .depthActive {
-  height: 28px;
+  height: 40px;
   padding: 0 7px;
   border: 1px solid var(--color-border-default);
   border-radius: 5px;
   background: var(--color-bg-surface);
   color: var(--color-text-secondary);
-  font-size: 9px;
+  font-size: 13px;
   cursor: pointer;
 }
 
@@ -146,14 +147,14 @@
 
 .chartHeader h2 {
   margin: 0;
-  font-size: 11px;
+  font-size: 16px;
 }
 
 .chartHeader span {
   display: block;
   margin-top: 3px;
   color: var(--color-text-tertiary);
-  font-size: 9px;
+  font-size: 13px;
 }
 
 .chartControls {
@@ -162,12 +163,12 @@
 }
 
 .chartControls button {
-  height: 25px;
+  height: 32px;
   padding: 0 7px;
   border: 1px solid var(--color-border-default);
   background: var(--color-bg-surface);
   color: var(--color-text-tertiary);
-  font-size: 9px;
+  font-size: 13px;
   cursor: pointer;
 }
 
@@ -191,42 +192,23 @@
   border-radius: 5px;
   background: var(--color-bg-subtle);
   color: var(--color-text-secondary);
-  font-size: 10px;
+  font-size: 13px;
 }
 
-.chart {
+.chartContainer {
   position: relative;
-  height: 250px;
-  overflow: hidden;
-}
-
-.gridLines {
-  position: absolute;
-  inset: 15px 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-}
-
-.gridLines span {
-  border-top: 1px dashed var(--color-border-subtle);
-}
-
-.svg {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
+  min-height: 280px;
 }
 
 .chartEmpty {
-  position: relative;
   display: grid;
   place-items: center;
-  height: 100%;
+  min-height: 240px;
   margin: 0;
   color: var(--color-text-tertiary);
-  font-size: 11px;
+  font-size: 13px;
+  text-align: center;
+  padding: 16px;
 }
 
 .lineGreen {
@@ -256,7 +238,7 @@
   flex-wrap: wrap;
   margin-top: 4px;
   color: var(--color-text-tertiary);
-  font-size: 8px;
+  font-size: 12px;
 }
 
 .legend span {
@@ -301,21 +283,27 @@
   margin: 0;
   padding: 12px;
   border-bottom: 1px solid var(--color-border-subtle);
-  font-size: 11px;
+  font-size: 16px;
+}
+
+.tableContainer {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .statisticsCard table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 9px;
+  font-size: 13px;
 }
 
 .statisticsCard th,
 .statisticsCard td {
-  height: 35px;
+  height: 40px;
   padding: 0 10px;
   text-align: left;
   border-bottom: 1px solid var(--color-border-subtle);
+  white-space: nowrap;
 }
 
 .statisticsCard th {
@@ -351,7 +339,7 @@
   display: flex;
   justify-content: space-between;
   gap: 8px;
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .insightTitle span {
@@ -362,19 +350,18 @@
 .insightCard p {
   margin: 6px 0 0;
   color: var(--color-text-tertiary);
-  font-size: 9px;
+  font-size: 13px;
   line-height: 1.45;
-}
-
-.summaryFooter {
-  margin-top: 10px;
-  color: var(--color-text-tertiary);
-  text-align: right;
-  font-size: 9px;
 }
 
 @media (max-width: 900px) {
   .bottomGrid {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .page {
+    padding: var(--spacing-4);
   }
 }

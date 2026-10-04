@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Download, RefreshCw } from "lucide-react";
 
 import { Button } from "../../components/common/Button.tsx";
+import Loading from "../../components/common/Loading.tsx";
 import LineChart, { type LineChartPoint } from "../../components/charts/LineChart.tsx";
 import PageHeader from "../../components/layout/PageHeader.tsx";
 import { useStationHierarchy } from "../../hooks/useStationHierarchy.ts";
@@ -98,11 +99,19 @@ export default function HistoryReport() {
   const data = currentData?.data ?? null;
   const error = currentData?.error ?? "";
 
+  const isLoading = hierarchy.loading || Boolean(hierarchy.selectedStationId && !currentData && !error && !hierarchy.error);
+
   const series = data?.series.find((item) => item.field === field);
   const points = useMemo<LineChartPoint[]>(() => (series?.points ?? []).map((point) => ({
-    label: new Intl.DateTimeFormat("vi-VN", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).format(new Date(point.observedAt)),
     value: point.value,
+    timestamp: point.observedAt,
+    quality: point.quality,
   })), [series]);
+
+  const timeDomain = useMemo(() => ({
+    begin: `${begin}T00:00:00.000Z`,
+    end: `${end}T23:59:59.999Z`,
+  }), [begin, end]);
 
   function exportCsv() {
     if (!series) return;
@@ -117,7 +126,11 @@ export default function HistoryReport() {
 
   return (
     <div className={styles.page}>
-      <PageHeader title="History & Report" description="Bounded UTC soil history from the connected backend." actions={<Button icon={<Download size={16} />} disabled={!series?.points.length} onClick={exportCsv}>Export CSV</Button>} />
+      <PageHeader
+        title="History & Report"
+        description="Historical soil telemetry from connected backend. Date filters apply UTC boundaries (00:00:00Z to 23:59:59Z); chart timeline labels are shown in your local timezone."
+        actions={<Button icon={<Download size={16} />} disabled={!series?.points.length} onClick={exportCsv}>Export CSV</Button>}
+      />
       <section className={styles.filters}>
         <label>Farm<select value={hierarchy.selectedFarmId} onChange={(event) => hierarchy.setSelectedFarmId(event.target.value)}><option value="">Select a farm</option>{hierarchy.farms.map((farm) => <option key={farm.id} value={farm.id}>{farm.name}</option>)}</select></label>
         <label>Plot<select value={hierarchy.selectedPlotId} onChange={(event) => hierarchy.setSelectedPlotId(event.target.value)} disabled={!hierarchy.selectedFarmId}><option value="">Select a plot</option>{hierarchy.plots.map((plot) => <option key={plot.id} value={plot.id}>{plot.name}</option>)}</select></label>
@@ -130,8 +143,29 @@ export default function HistoryReport() {
       {(error || hierarchy.error) && <p className={styles.error} role="alert">{error || hierarchy.error}</p>}
       <section className={styles.card}>
         <h2>{fields.find((item) => item.value === field)?.label}</h2>
-        {points.length ? <LineChart data={points} unit={series?.unit ?? ""} /> : <p className={styles.empty}>No historical measurements for the selected range.</p>}
-        <footer className={styles.reportFooter}>{points.length} measurements · {data?.isFromCache ? "cache" : "upstream"}{data?.isStale ? " · stale" : ""}</footer>
+        {isLoading ? (
+          <Loading label="Loading history report..." />
+        ) : error || hierarchy.error ? (
+          <p className={styles.empty}>Unable to load measurements.</p>
+        ) : !hierarchy.selectedStationId ? (
+          <p className={styles.empty}>Select a station to view history report.</p>
+        ) : points.length ? (
+          <LineChart
+            data={points}
+            unit={series?.unit ?? ""}
+            showDots={false}
+            height={280}
+            timeDomain={timeDomain}
+            ariaLabel={`${fields.find((item) => item.value === field)?.label} history report`}
+          />
+        ) : (
+          <p className={styles.empty}>No historical measurements for the selected range.</p>
+        )}
+        {currentData && !isLoading && !error && !hierarchy.error && (
+          <footer className={styles.reportFooter}>
+            {points.length} hourly mean data points · {data?.isFromCache ? "cache" : "upstream"}{data?.isStale ? " · stale" : ""}
+          </footer>
+        )}
       </section>
     </div>
   );
