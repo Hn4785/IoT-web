@@ -29,7 +29,13 @@ Với mỗi thay đổi:
   Line/Area, tooltip, đổi chỉ số, điểm đơn lẻ, rỗng/lỗi và không tràn ngang.
   Không ghi dữ liệu giả vào ứng dụng/database; chưa xác nhận tải file CSV trong browser QA.
 - Chỉ sửa frontend; không đổi API, authentication, database, tích hợp hay điều khiển thiết bị.
-  Đã sẵn sàng phát hành; GitHub/Pi sẽ ghi bằng chứng sau rollout web-only.
+- Đã push nhánh `FE` lên GitHub tại code commit `e03b23f` và triển khai image
+  `agrisense-web:e03b23f` trên Pi. Build dùng API cùng origin `/api/v1`, không nạp dotenv.
+  Archive SHA-256: `0c3e8e0300630372c1be74fdb23e3838f453336241181f93b24d8a39801b323d`.
+- Web healthy, API health qua web proxy healthy; hash `/login` và các entry JS/CSS
+  khớp artifact. ID/thời điểm khởi động API và PostgreSQL không đổi sau rollout.
+  Giữ image `agrisense-web:be73c29` và Compose trước rollout để rollback.
+  Đây là bản Pi test nội bộ, không phải checkpoint production-ready hay role E2E mới.
 
 ## Phase B Pi staging deployment — 2026-09-30
 
