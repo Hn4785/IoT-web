@@ -16,6 +16,53 @@ function formatDate(value: string) {
   }).format(new Date(value));
 }
 
+function eventLabel(eventType: NotificationDto["eventType"]) {
+  switch (eventType) {
+    case "OPENED":
+      return "Alert opened";
+    case "ACKNOWLEDGED":
+      return "Alert acknowledged";
+    case "RESOLVED":
+      return "Alert resolved";
+    default:
+      return eventType;
+  }
+}
+
+function fieldLabel(field: string) {
+  switch (field.toUpperCase()) {
+    case "MOISTURE":
+      return "Soil Moisture";
+    case "TEMPERATURE":
+      return "Soil Temperature";
+    case "PH":
+      return "pH Level";
+    case "EC":
+      return "Electrical Conductivity";
+    case "NITROGEN":
+      return "Nitrogen (N)";
+    case "PHOSPHORUS":
+      return "Phosphorus (P)";
+    case "POTASSIUM":
+      return "Potassium (K)";
+    default:
+      return field;
+  }
+}
+
+function statusLabel(status: string) {
+  switch (status.toUpperCase()) {
+    case "OPEN":
+      return "Open";
+    case "ACKNOWLEDGED":
+      return "Acknowledged";
+    case "RESOLVED":
+      return "Resolved";
+    default:
+      return status;
+  }
+}
+
 export default function NotificationSettings() {
   const [items, setItems] = useState<NotificationDto[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -98,38 +145,88 @@ export default function NotificationSettings() {
       <PageHeader
         title="Notifications"
         description="In-app alert notifications delivered for your authorized farms."
-        actions={<Button variant="outline" icon={<RefreshCw size={16} />} onClick={() => {
-          void load();
-        }}>Refresh</Button>}
+        actions={
+          <Button
+            variant="outline"
+            icon={<RefreshCw size={16} />}
+            loading={loading}
+            onClick={() => {
+              void load();
+            }}
+          >
+            Refresh
+          </Button>
+        }
       />
       <div className={styles.toolbar}>
-        <button className={!showUnread ? styles.active : ""} onClick={() => setShowUnread(false)}>All</button>
-        <button className={showUnread ? styles.active : ""} onClick={() => setShowUnread(true)}>Unread <span>{unreadCount}</span></button>
+        <button
+          type="button"
+          className={!showUnread ? styles.active : ""}
+          aria-pressed={!showUnread}
+          disabled={loading}
+          onClick={() => setShowUnread(false)}
+        >
+          All
+        </button>
+        <button
+          type="button"
+          className={showUnread ? styles.active : ""}
+          aria-pressed={showUnread}
+          disabled={loading}
+          onClick={() => setShowUnread(true)}
+        >
+          Unread <span>{unreadCount}</span>
+        </button>
       </div>
-      {error && <p className={styles.error} role="alert">{error}</p>}
+      {error && items.length > 0 && <p className={styles.error} role="alert">{error}</p>}
       <section className={styles.inbox}>
-        {loading ? <p className={styles.empty}>Loading notifications…</p> : items.length === 0 ? (
-          <p className={styles.empty}>No notifications in this view.</p>
-        ) : items.map((item) => (
-          <article key={item.id} className={`${styles.item} ${item.isRead ? "" : styles.unread}`}>
-            <span className={styles.icon}><Bell size={18} /></span>
-            <div className={styles.content}>
-              <div className={styles.heading}>
-                <strong>{item.eventType}: {item.field} · {item.station.code}</strong>
-                <span className={item.severity === "CRITICAL" ? styles.critical : styles.warning}>{item.severity}</span>
+        {loading ? (
+          <p className={styles.empty}>Loading notifications…</p>
+        ) : error && items.length === 0 ? (
+          <div className={styles.emptyInbox} role="alert">
+            <Bell size={32} className={styles.emptyIcon} aria-hidden="true" />
+            <h3>Unable to load notifications</h3>
+            <p>{error}. Please click Refresh to try loading notifications again.</p>
+          </div>
+        ) : items.length === 0 ? (
+          <div className={styles.emptyInbox} role="status">
+            <Bell size={32} className={styles.emptyIcon} aria-hidden="true" />
+            <h3>{showUnread ? "No unread notifications" : "Inbox is empty"}</h3>
+            <p>
+              {showUnread
+                ? "You have caught up with all alert notifications."
+                : "There are currently no alert notifications for your authorized stations."}
+            </p>
+          </div>
+        ) : (
+          items.map((item) => (
+            <article key={item.id} className={`${styles.item} ${item.isRead ? "" : styles.unread}`}>
+              <span className={styles.icon} aria-hidden="true"><Bell size={18} /></span>
+              <div className={styles.content}>
+                <div className={styles.heading}>
+                  <strong>{eventLabel(item.eventType)}: {fieldLabel(item.field)} · {item.station.code}</strong>
+                  <span className={item.severity === "CRITICAL" ? styles.critical : styles.warning}>
+                    {item.severity === "CRITICAL" ? "Critical Alert" : "Warning Alert"}
+                  </span>
+                  <span className={`${styles.readStateBadge} ${item.isRead ? styles.readState : styles.unreadState}`}>
+                    {item.isRead ? "Read" : "Unread"}
+                  </span>
+                </div>
+                <p>{item.station.name} · Alert status: {statusLabel(item.alertStatus)}</p>
+                <time dateTime={item.createdAt}>{formatDate(item.createdAt)}</time>
               </div>
-              <p>{item.station.name} · alert status {item.alertStatus}</p>
-              <time dateTime={item.createdAt}>{formatDate(item.createdAt)}</time>
-            </div>
-            <Button
-              size="sm"
-              variant="ghost"
-              icon={<CheckCheck size={16} />}
-              loading={updatingId === item.id}
-              onClick={() => void toggleRead(item)}
-            >{item.isRead ? "Mark unread" : "Mark read"}</Button>
-          </article>
-        ))}
+              <Button
+                size="sm"
+                variant="ghost"
+                icon={<CheckCheck size={16} />}
+                loading={updatingId === item.id}
+                onClick={() => void toggleRead(item)}
+              >
+                {item.isRead ? "Mark unread" : "Mark read"}
+              </Button>
+            </article>
+          ))
+        )}
       </section>
       {!loading && nextCursor && (
         <div className={styles.pagination}>
@@ -138,7 +235,7 @@ export default function NotificationSettings() {
           </Button>
         </div>
       )}
-      <p className={styles.note}>Email and SMS are not enabled in this release; this page reflects the backend in-app notification contract.</p>
+      <p className={styles.note}>Alert notifications are delivered in-app for authorized farms and stations.</p>
     </div>
   );
 }

@@ -1,6 +1,12 @@
 import { useMemo, useState } from "react";
 import type { CSSProperties, MouseEvent } from "react";
 import styles from "./LineChart.module.css";
+import {
+  computeAdaptiveTicks,
+  computeTimeGeometry,
+  formatTimeAxisLabel,
+  mapQualityLabel,
+} from "./soilChartPresentation.ts";
 
 export interface LineChartPoint {
   label?: string;
@@ -11,6 +17,7 @@ export interface LineChartPoint {
 
 export interface LineChartProps {
   data: LineChartPoint[];
+  timeDomain?: { begin?: string; end?: string };
 
   width?: number;
   height?: number;
@@ -71,26 +78,10 @@ function formatValue(value: number, unit?: string) {
   return unit ? `${formatted} ${unit}` : formatted;
 }
 
-function formatTimestamp(timestamp?: string) {
-  if (!timestamp) {
-    return undefined;
-  }
-
-  const date = new Date(timestamp);
-
-  if (Number.isNaN(date.getTime())) {
-    return timestamp;
-  }
-
-  return new Intl.DateTimeFormat(undefined, {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  }).format(date);
-}
 
 export default function LineChart({
   data,
+  timeDomain,
   width = DEFAULT_WIDTH,
   height = DEFAULT_HEIGHT,
   min,
@@ -114,7 +105,7 @@ export default function LineChart({
     () =>
       data
         .map((point) => point.value)
-        .filter((value): value is number => value !== null),
+        .filter((value): value is number => value !== null && Number.isFinite(value)),
     [data],
   );
 
@@ -150,41 +141,16 @@ export default function LineChart({
   }, [min, max, validValues]);
 
   const points = useMemo(() => {
-    if (data.length === 0) {
-      return [];
-    }
-
-    return data.map((point, index) => {
-      const x =
-        data.length === 1
-          ? PADDING.left + chartWidth / 2
-          : PADDING.left +
-            (index / (data.length - 1)) * chartWidth;
-
-      if (point.value === null) {
-        return {
-          ...point,
-          x,
-          y: null,
-        };
-      }
-
-      const ratio =
-        (point.value - domain.min) /
-        (domain.max - domain.min);
-
-      const y =
-        PADDING.top +
-        chartHeight -
-        Math.max(0, Math.min(1, ratio)) * chartHeight;
-
-      return {
-        ...point,
-        x,
-        y,
-      };
+    if (data.length === 0) return [];
+    return computeTimeGeometry(data, {
+      chartWidth,
+      paddingLeft: PADDING.left,
+      chartHeight,
+      paddingTop: PADDING.top,
+      domain,
+      timeDomain,
     });
-  }, [data, chartWidth, chartHeight, domain]);
+  }, [data, chartWidth, chartHeight, domain, timeDomain]);
 
   const segments = useMemo(() => {
     const result: string[] = [];
@@ -234,21 +200,14 @@ export default function LineChart({
   }, [segments, chartHeight]);
 
   const yTicks = useMemo(() => {
-    const count = 5;
-    const range = domain.max - domain.min;
-
-    return Array.from(
-      { length: count },
-      (_, index) => {
-        const ratio = index / (count - 1);
-
-        return {
-          value: domain.max - ratio * range,
-          y: PADDING.top + ratio * chartHeight,
-        };
-      },
-    );
+    const ticks = computeAdaptiveTicks(domain.min, domain.max, 5);
+    return ticks.map((tick, index) => ({
+      ...tick,
+      y: PADDING.top + (index / Math.max(1, ticks.length - 1)) * chartHeight,
+    }));
   }, [domain, chartHeight]);
+
+  const activeTooltip = showTooltip && tooltip && points[tooltip.index]?.y != null ? tooltip : null;
 
   const handlePointMouseEnter = (
     event: MouseEvent<SVGCircleElement>,
@@ -289,9 +248,19 @@ export default function LineChart({
       <svg
         className={styles.chart}
         viewBox={`0 0 ${width} ${height}`}
-        role="img"
-        aria-label={ariaLabel}
       >
+        <g role="group" aria-label={ariaLabel}>
+        {showLabels && unit && (
+          <text
+            className={styles.axisLabel}
+            x={PADDING.left - 8}
+            y={PADDING.top - 6}
+            textAnchor="end"
+          >
+            {unit}
+          </text>
+        )}
+
         {showGrid &&
           yTicks.map((tick) => (
             <g key={tick.y}>
@@ -310,7 +279,7 @@ export default function LineChart({
                   y={tick.y + 4}
                   textAnchor="end"
                 >
-                  {tick.value.toFixed(0)}
+                  {tick.label}
                 </text>
               )}
             </g>
@@ -338,46 +307,76 @@ export default function LineChart({
           />
         ))}
 
-        {showDots &&
-          points.map((point, index) =>
-            point.y === null ? null : (
-              <circle
-                key={`point-${index}`}
-                className={styles.dot}
-                cx={point.x}
-                cy={point.y}
-                r={tooltip?.index === index ? 5 : 3}
-                onMouseEnter={(event) =>
-                  handlePointMouseEnter(event, index)
-                }
-                onMouseLeave={() => setTooltip(null)}
-              />
-            ),
-          )}
-
-        {showLabels && data.length > 0 && (
-          <>
-            <text
-              className={styles.axisLabel}
-              x={PADDING.left}
-              y={height - 8}
-              textAnchor="start"
-            >
-              {data[0].label ?? ""}
-            </text>
-
-            <text
-              className={styles.axisLabel}
-              x={width - PADDING.right}
-              y={height - 8}
-              textAnchor="end"
-            >
-              {data[data.length - 1].label ?? ""}
-            </text>
-          </>
+        {data.length === 1 && !showDots && points[0]?.y != null && (
+          <circle cx={points[0].x} cy={points[0].y} r={4} className={styles.dot} />
         )}
 
-        {tooltip && points[tooltip.index]?.y !== null && (
+        {points.map((point, index) =>
+          point.y === null ? null : (
+            <circle
+              key={`point-${index}`}
+              className={showDots ? styles.dot : styles.hitTarget}
+              cx={point.x}
+              cy={point.y}
+              r={tooltip?.index === index ? 5 : showDots ? 3 : 7}
+              tabIndex={showTooltip ? 0 : undefined}
+              role={showTooltip ? "button" : undefined}
+              aria-label={
+                showTooltip
+                  ? `${formatValue(point.value as number, unit)}${point.timestamp ? ` at ${formatTimeAxisLabel(point.timestamp)}` : ""}${point.quality ? ` (${mapQualityLabel(point.quality).label})` : ""}`
+                  : undefined
+              }
+              onMouseEnter={showTooltip ? (event) => handlePointMouseEnter(event, index) : undefined}
+              onMouseLeave={showTooltip ? () => setTooltip(null) : undefined}
+              onFocus={showTooltip ? () => setTooltip({ index, x: point.x, y: point.y ?? PADDING.top }) : undefined}
+              onBlur={showTooltip ? () => setTooltip(null) : undefined}
+              onTouchStart={showTooltip ? () => setTooltip({ index, x: point.x, y: point.y ?? PADDING.top }) : undefined}
+            />
+          ),
+        )}
+
+        {showLabels && data.length > 0 && (
+          data.length === 1 || (data[0].timestamp && data[0].timestamp === data[data.length - 1].timestamp) ? (
+            <text
+              className={styles.axisLabel}
+              x={points[0]?.x ?? PADDING.left + chartWidth / 2}
+              y={height - 8}
+              textAnchor="middle"
+            >
+              {data[0].timestamp ? formatTimeAxisLabel(data[0].timestamp) : (data[0].label ?? "")}
+            </text>
+          ) : (
+            <>
+              <text
+                className={styles.axisLabel}
+                x={PADDING.left}
+                y={height - 8}
+                textAnchor="start"
+              >
+                {timeDomain?.begin
+                  ? formatTimeAxisLabel(timeDomain.begin)
+                  : data[0].timestamp
+                    ? formatTimeAxisLabel(data[0].timestamp)
+                    : (data[0].label ?? "")}
+              </text>
+
+              <text
+                className={styles.axisLabel}
+                x={width - PADDING.right}
+                y={height - 8}
+                textAnchor="end"
+              >
+                {timeDomain?.end
+                  ? formatTimeAxisLabel(timeDomain.end)
+                  : data[data.length - 1].timestamp
+                    ? formatTimeAxisLabel(data[data.length - 1].timestamp)
+                    : (data[data.length - 1].label ?? "")}
+              </text>
+            </>
+          )
+        )}
+
+        {tooltip && activeTooltip && (
           <g
             className={styles.crosshair}
             pointerEvents="none"
@@ -390,9 +389,10 @@ export default function LineChart({
             />
           </g>
         )}
+        </g>
       </svg>
 
-      {tooltip && (
+      {tooltip && activeTooltip && (
         <div
           className={styles.tooltip}
           style={{
@@ -410,16 +410,14 @@ export default function LineChart({
           {showTimestamp &&
             data[tooltip.index].timestamp && (
               <span>
-                {formatTimestamp(
-                  data[tooltip.index].timestamp,
-                )}
+                {formatTimeAxisLabel(data[tooltip.index].timestamp)}
               </span>
             )}
 
           {showQuality &&
             data[tooltip.index].quality && (
               <span>
-                Quality: {data[tooltip.index].quality}
+                Quality: {mapQualityLabel(data[tooltip.index].quality).label}
               </span>
             )}
         </div>

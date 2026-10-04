@@ -13,6 +13,15 @@ Với mỗi thay đổi:
 3. Ghi rõ kết quả test; không đánh dấu hoàn thành nếu chưa có bằng chứng kiểm tra.
 4. Không ghi secret, mật khẩu, access token, refresh token hoặc API key vào file này.
 
+## v2.5.6 — 2026-10-04 (biểu đồ và Notifications)
+
+- Làm rõ trục số/thời gian, đơn vị, chất lượng dữ liệu và tooltip; căn lại
+  Notifications, phân biệt đã đọc/chưa đọc, rỗng và lỗi tải.
+- Nền giao diện đạt 162/162 test, lint và build. Kiểm tra inbox bằng fixture
+  riêng, không ghi dữ liệu giả vào ứng dụng hay database.
+- Soil Dashboard, Historical Analysis và History & Report đang được nối tiếp;
+  chưa push GitHub hoặc triển khai Pi cho đợt cập nhật này.
+
 ## Phase B Pi staging deployment — 2026-09-30
 
 - Đã triển khai backend commit `d152337` bằng image

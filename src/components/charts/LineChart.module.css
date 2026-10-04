@@ -88,3 +88,6 @@
   border-radius: 8px;
   background: var(--color-bg-subtle, #f8fafc);
 }
+
+.hitTarget { fill: transparent; stroke: transparent; cursor: pointer; }
+.hitTarget:focus-visible { fill: var(--color-primary, #16a34a); stroke: var(--color-surface, #ffffff); stroke-width: 2; outline: none; }

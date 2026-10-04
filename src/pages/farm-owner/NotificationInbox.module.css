@@ -1,21 +1,30 @@
-.page { display: grid; gap: 20px; }
+.page { display: grid; gap: 20px; width: min(100%, 1440px); margin-inline: auto; box-sizing: border-box; padding: var(--spacing-6); }
 .toolbar { display: flex; gap: 8px; }
 .toolbar button { border: 1px solid #d8e0ea; background: #fff; color: #475569; border-radius: 999px; padding: 8px 14px; cursor: pointer; }
-.toolbar button.active { border-color: #18a957; background: #e8f8ef; color: #147a42; }
+.toolbar button:focus-visible { outline: 2px solid #18a957; outline-offset: 2px; }
+.toolbar button:disabled { opacity: 0.6; cursor: not-allowed; }
+.toolbar button.active { border-color: #18a957; background: #e8f8ef; color: #147a42; font-weight: 600; }
 .toolbar span { margin-left: 5px; font-weight: 700; }
 .inbox { overflow: hidden; border: 1px solid #e2e8f0; border-radius: 14px; background: #fff; }
 .item { display: grid; grid-template-columns: auto 1fr auto; gap: 14px; align-items: center; padding: 16px 18px; border-bottom: 1px solid #edf1f5; }
 .item:last-child { border-bottom: 0; }
 .unread { background: #f0fdf4; }
+.readStateBadge { display: inline-flex; align-items: center; font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 4px; }
+.unreadState { color: #147a42; background: #e8f8ef; }
+.readState { color: #64748b; background: #f1f5f9; }
 .icon { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 50%; background: #dcfce7; color: #168a46; }
-.heading { display: flex; gap: 8px; align-items: center; }
+.heading { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .content p { margin: 5px 0; color: #475569; }
 .content time { color: #64748b; font-size: 13px; }
 .critical, .warning { border-radius: 999px; padding: 3px 7px; font-size: 11px; font-weight: 700; }
 .critical { background: #fee2e2; color: #b91c1c; }
 .warning { background: #fef3c7; color: #92400e; }
+.emptyInbox { padding: 48px 16px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.emptyInbox h3 { margin: 0; font-size: 16px; color: #0f172a; }
+.emptyInbox p { margin: 0; color: #64748b; font-size: 13px; max-width: 400px; }
+.emptyIcon { color: #94a3b8; margin-bottom: 4px; }
 .empty { padding: 40px; text-align: center; color: #64748b; }
 .error { background: #fff1f2; color: #be123c; border: 1px solid #fecdd3; border-radius: 10px; padding: 12px 14px; }
 .pagination { display: flex; justify-content: center; }
 .note { color: #64748b; font-size: 13px; }
-@media (max-width: 720px) { .item { grid-template-columns: auto 1fr; } .item > button { grid-column: 2; justify-self: start; } }
+@media (max-width: 720px) { .page { padding: var(--spacing-4); } .item { grid-template-columns: auto 1fr; } .item > button { grid-column: 2; justify-self: start; } }
