@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   computeAdaptiveTicks,
+  computeSharedDomain,
   computeTimeGeometry,
   formatTimeAxisLabel,
   mapQualityLabel,
@@ -159,4 +160,30 @@ test("quality labels map explicitly without green good for unknown", () => {
   assert.equal(mapQualityLabel("out_of_range").variant, "warning");
   assert.equal(mapQualityLabel(undefined).label, "Unknown");
   assert.equal(mapQualityLabel(undefined).variant, "neutral");
+});
+
+test("computeSharedDomain calculates unified numeric bounds across multiple series", () => {
+  const domain = computeSharedDomain([{ data: [{ value: 10 }, { value: 30 }] }, { data: [{ value: 5 }, { value: 80 }] }]);
+  assert.equal(domain.min, 5 - 7.5);
+  assert.equal(domain.max, 80 + 7.5);
+  assert.deepEqual(computeSharedDomain([{ data: [{ value: 10 }] }], 0, 100), { min: 0, max: 100 });
+  assert.deepEqual(computeSharedDomain([]), { min: 0, max: 100 });
+  const zeroDomain = computeSharedDomain([{ data: [{ value: 0 }] }]);
+  assert.ok(zeroDomain.min < 0 && zeroDomain.max > 0);
+  assert.deepEqual(computeSharedDomain([{ data: [{ value: 50 }, { value: 50 }] }]), { min: 45, max: 55 });
+});
+
+test("malformed timestamp amid valid timestamps produces a gap and never NaN in coordinates", () => {
+  const res = computeTimeGeometry(
+    [{ timestamp: "2026-10-04T10:00:00Z", value: 10 }, { timestamp: "bad", value: 15 }, { timestamp: "2026-10-04T12:00:00Z", value: 20 }],
+    { chartWidth: 600, paddingLeft: 40, chartHeight: 200, paddingTop: 20, domain: { min: 0, max: 20 } },
+  );
+  assert.equal(res.length, 3);
+  assert.ok(Number.isFinite(res[1].x));
+  assert.equal(res[1].y, null);
+});
+
+test("malformed-only series stays a gap with a shared timeline", () => {
+  const [point] = computeTimeGeometry([{ timestamp: "bad", value: 10 }], { chartWidth: 600, paddingLeft: 40, chartHeight: 200, paddingTop: 20, domain: { min: 0, max: 20 }, timeDomain: { begin: "2026-10-04T10:00:00Z", end: "2026-10-04T12:00:00Z" } });
+  assert.equal(point.y, null);
 });

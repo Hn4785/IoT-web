@@ -1,14 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   Activity,
   CheckCircle2,
   ChevronDown,
   Circle,
+  RefreshCw,
   Wifi,
 } from "lucide-react";
 
 import PageHeader from "@/components/layout/PageHeader";
-import LineChart from "@/components/charts/LineChart";
+import LineChart, { type LineChartSeries } from "@/components/charts/LineChart";
+import { mapQualityLabel } from "@/components/charts/soilChartPresentation";
+import { Button } from "@/components/common/Button";
 import ErrorState from "@/components/common/ErrorState";
 import Loading from "@/components/common/Loading";
 
@@ -102,15 +106,6 @@ function formatUpdatedAt(value: string) {
   return `${Math.floor(minutes / 60)}h ago`;
 }
 
-function qualityLabel(quality?: string) {
-  if (!quality) return "Unknown";
-
-  return quality
-    .split("_")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
-}
-
 function buildChartData(history: SoilHistoryData | null, field: SoilField) {
   const points = history?.series.find((series) => series.field === field)?.points ?? [];
   return points.map((point) => ({
@@ -126,8 +121,10 @@ function buildChartData(history: SoilHistoryData | null, field: SoilField) {
 
 export default function RealtimeSoilMonitoring() {
   const hierarchy = useStationHierarchy();
+  const [reloadKey, setReloadKey] = useState(0);
   const [dataState, setDataState] = useState<{
     stationId: string;
+    reloadKey: number;
     latest: LatestSoilDataDto | null;
     history: SoilHistoryData | null;
     error: string;
@@ -136,12 +133,14 @@ export default function RealtimeSoilMonitoring() {
   useEffect(() => {
     let active = true;
     if (!hierarchy.selectedStationId) return () => { active = false; };
+    const currentStationId = hierarchy.selectedStationId;
+    const currentReloadKey = reloadKey;
 
     const end = new Date();
     const begin = new Date(end.getTime() - 24 * 60 * 60 * 1000);
     Promise.all([
-      stationBrowserService.getLatest(hierarchy.selectedStationId),
-      stationBrowserService.getHistory(hierarchy.selectedStationId, {
+      stationBrowserService.getLatest(currentStationId),
+      stationBrowserService.getHistory(currentStationId, {
         fields: METRICS.map((metric) => metric.field),
         begin: begin.toISOString(),
         end: end.toISOString(),
@@ -153,7 +152,8 @@ export default function RealtimeSoilMonitoring() {
       ([nextLatest, nextHistory]) => {
         if (!active) return;
         setDataState({
-          stationId: hierarchy.selectedStationId,
+          stationId: currentStationId,
+          reloadKey: currentReloadKey,
           latest: nextLatest,
           history: nextHistory,
           error: "",
@@ -162,7 +162,8 @@ export default function RealtimeSoilMonitoring() {
       (reason) => {
         if (!active) return;
         setDataState({
-          stationId: hierarchy.selectedStationId,
+          stationId: currentStationId,
+          reloadKey: currentReloadKey,
           latest: null,
           history: null,
           error: normalizeApiError(reason).message,
@@ -170,9 +171,11 @@ export default function RealtimeSoilMonitoring() {
       },
     );
     return () => { active = false; };
-  }, [hierarchy.selectedStationId]);
+  }, [hierarchy.selectedStationId, reloadKey]);
 
-  const currentData = dataState?.stationId === hierarchy.selectedStationId ? dataState : null;
+  const currentData = (dataState?.stationId === hierarchy.selectedStationId && dataState?.reloadKey === reloadKey)
+    ? dataState
+    : null;
   const latest = currentData?.latest ?? null;
   const history = currentData?.history ?? null;
   const dataError = currentData?.error ?? "";
@@ -180,9 +183,10 @@ export default function RealtimeSoilMonitoring() {
   const latestView = useMemo(() => latest ? adaptLatestSoilData(latest) : null, [latest]);
   const getMetricValue = (field: SoilField): SoilValue | undefined => {
     const reading = latestView?.fields[field];
+    const metric = METRICS.find((m) => m.field === field);
     return reading ? {
       value: reading.value,
-      unit: reading.unit ?? "",
+      unit: reading.unit || metric?.unit || "",
       quality: reading.quality,
       measuredAt: reading.observedAt,
     } : undefined;
@@ -192,30 +196,66 @@ export default function RealtimeSoilMonitoring() {
     {
       field: "moisture" as SoilField,
       title: "Soil Moisture Over Time (24h)",
-      helper: "Optimal Target: 30% - 40%",
+      helper: "Hourly mean over 24h",
+      unit: "%",
     },
     {
       field: "temperature" as SoilField,
       title: "Soil Temperature Over Time (24h)",
-      helper: "Optimal Range: 18°C - 26°C",
+      helper: "Hourly mean over 24h",
+      unit: "°C",
     },
     {
       field: "ph" as SoilField,
       title: "pH Over Time (24h)",
-      helper: "Acidic Warning threshold < 5.5",
+      helper: "Hourly mean over 24h",
+      unit: "pH",
     },
     {
       field: "ec" as SoilField,
       title: "Electrical Conductivity (24h)",
-      helper: "Target: 0.8 - 1.5 mS/cm",
+      helper: "Hourly mean over 24h",
+      unit: "µS/cm",
     },
   ];
+
+  const npkSeries: LineChartSeries[] = useMemo(
+    () => [
+      {
+        name: "Nitrogen (N)",
+        color: "var(--color-primary, #16a34a)",
+        data: buildChartData(history, "nitrogen"),
+      },
+      {
+        name: "Phosphorus (P)",
+        color: "var(--color-info, #0284c7)",
+        data: buildChartData(history, "phosphorus"),
+      },
+      {
+        name: "Potassium (K)",
+        color: "var(--color-warning, #d97706)",
+        data: buildChartData(history, "potassium"),
+      },
+    ],
+    [history],
+  );
 
   return (
     <main className={styles.page}>
       <PageHeader
-        title="Realtime Soil Monitoring"
-        description="Live telemetry streaming directly from active Plot soil probes."
+        title="Soil Monitoring Dashboard"
+        description="Latest station snapshot and 24-hour historical trends for active plot soil probes."
+        actions={
+          <Button
+            variant="outline"
+            size="sm"
+            icon={<RefreshCw size={14} className={dataLoading ? styles.spin : undefined} />}
+            disabled={!hierarchy.selectedStationId || dataLoading}
+            onClick={() => setReloadKey((k) => k + 1)}
+          >
+            Refresh
+          </Button>
+        }
       />
 
       {hierarchy.loading && <Loading label="Loading authorized stations..." />}
@@ -227,15 +267,24 @@ export default function RealtimeSoilMonitoring() {
       <div className={styles.liveBar}>
         <div className={styles.liveStatus}>
           <span className={styles.liveDot} />
-          <strong>{latest ? "Live" : "Waiting"}</strong>
-          <span>{latest ? `Updated ${formatUpdatedAt(latest.fetchedAt)}` : "No measurement loaded"}</span>
+          <strong>{latest ? "Snapshot" : "Waiting"}</strong>
+          <span>{latest ? `Fetched ${formatUpdatedAt(latest.fetchedAt)}` : "No snapshot loaded"}</span>
         </div>
 
         <div className={styles.connectionStatus}>
           <Wifi size={13} />
           <span>
-            {dataLoading ? "Loading" : latest?.isStale ? "Stale" : latest ? "Connected" : "Unavailable"}
+            {dataLoading
+              ? "Refreshing..."
+              : latest?.isStale
+                ? "Stale"
+                : latest?.isFromCache
+                  ? "Cached"
+                  : latest
+                    ? "Connected"
+                    : "Unavailable"}
           </span>
+          {history?.isFromCache && <span className={styles.cacheBadge}>Cache</span>}
         </div>
       </div>
 
@@ -274,8 +323,17 @@ export default function RealtimeSoilMonitoring() {
             label: `${item.code} — ${item.name}`,
           }))}
         />
-
       </section>
+
+      <div className={styles.qualityNotice}>
+        <span>
+          Reported quality reflects telemetry and sample status (&lsquo;Data valid&rsquo; indicates normal sensor transmission, not agronomic suitability or guaranteed soil health). For configured alert thresholds, visit the{" "}
+          <Link to="/farm-owner/alert-center" className={styles.alertLink}>
+            Alert Center
+          </Link>
+          .
+        </span>
+      </div>
 
       <section className={styles.metricGrid}>
         {METRICS.map((metric) => {
@@ -301,6 +359,7 @@ export default function RealtimeSoilMonitoring() {
 
             <LineChart
               data={buildChartData(history, chart.field)}
+              unit={history?.series.find((s) => s.field === chart.field)?.unit || chart.unit}
               height={210}
               showDots={false}
               showArea={false}
@@ -317,7 +376,8 @@ export default function RealtimeSoilMonitoring() {
           <div className={styles.chartHeader}>
             <div className={styles.chartTitleWithIcon}>
               <Activity size={14} />
-              <h2>NPK Daily Macronutrient Concentration Trends (7 Days)</h2>
+              <h2>NPK Macronutrient Concentration Trends (24h)</h2>
+              <span>Hourly mean over 24h</span>
             </div>
 
             <div className={styles.legend}>
@@ -336,22 +396,18 @@ export default function RealtimeSoilMonitoring() {
             </div>
           </div>
 
-          <div className={styles.npkChart}>
-            <NpkLine
-              values={buildChartData(history, "nitrogen").map((point) => point.value)}
-              className={styles.nitrogenLine}
-            />
-
-            <NpkLine
-              values={buildChartData(history, "phosphorus").map((point) => point.value)}
-              className={styles.phosphorusLine}
-            />
-
-            <NpkLine
-              values={buildChartData(history, "potassium").map((point) => point.value)}
-              className={styles.potassiumLine}
-            />
-          </div>
+          <LineChart
+            series={npkSeries}
+            unit="mg/kg"
+            height={220}
+            showDots={false}
+            showArea={false}
+            showQuality
+            showTimestamp
+            showLabels
+            showGrid
+            ariaLabel="NPK Macronutrient Concentration Trends (24h)"
+          />
         </article>
       </section>
 
@@ -410,10 +466,13 @@ function MetricCard({
   metric: MetricConfig;
   value?: SoilValue;
 }) {
-  const isWarning =
-    value?.quality === "out_of_range" ||
-    value?.quality === "stale" ||
-    value?.quality === "uncalibrated";
+  const quality = mapQualityLabel(value?.quality);
+  const badgeClass =
+    quality.variant === "warning"
+      ? `${styles.qualityBadge} ${styles.warning}`
+      : quality.variant === "neutral"
+        ? `${styles.qualityBadge} ${styles.neutral}`
+        : styles.qualityBadge;
 
   return (
     <article className={styles.metricCard}>
@@ -426,83 +485,24 @@ function MetricCard({
           ? value.value.toFixed(metric.decimals)
           : "—"}
 
-        <small>{metric.unit}</small>
+        <small>{value?.unit || metric.unit}</small>
       </div>
 
-      <div
-        className={
-          isWarning
-            ? `${styles.qualityBadge} ${styles.warning}`
-            : styles.qualityBadge
-        }
-      >
-        {value?.quality === "good" ? (
+      <div className={badgeClass}>
+        {quality.variant === "good" ? (
           <CheckCircle2 size={10} />
         ) : (
           <Circle size={10} />
         )}
 
-        {qualityLabel(value?.quality)}
+        {quality.label}
       </div>
 
       <span className={styles.metricUpdated}>
         {value?.measuredAt
-          ? `Updated ${formatUpdatedAt(value.measuredAt)}`
+          ? `Sampled ${formatUpdatedAt(value.measuredAt)}`
           : "No recent data"}
       </span>
     </article>
-  );
-}
-
-function NpkLine({
-  values,
-  className,
-}: {
-  values: number[];
-  className: string;
-}) {
-  if (values.length < 2) return null;
-
-  const width = 760;
-  const height = 150;
-  const padding = 12;
-
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const range = max - min || 1;
-
-  const points = values
-    .map((value, index) => {
-      const x =
-        padding +
-        (index / (values.length - 1)) *
-          (width - padding * 2);
-
-      const y =
-        height -
-        padding -
-        ((value - min) / range) *
-          (height - padding * 2);
-
-      return `${x},${y}`;
-    })
-    .join(" ");
-
-  return (
-    <svg
-      className={styles.npkSvg}
-      viewBox={`0 0 ${width} ${height}`}
-      preserveAspectRatio="none"
-      aria-hidden="true"
-    >
-      <polyline
-        points={points}
-        className={className}
-        fill="none"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
   );
 }

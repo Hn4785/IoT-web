@@ -64,7 +64,7 @@ test("notification inbox displays unable-to-load explanation when initial fetch 
 test("LineChart wiring filters finite values, uses accessible group, gates showTooltip, and renders unit", () => {
   const tsx = fs.readFileSync("src/components/charts/LineChart.tsx", "utf-8");
   assert.ok(tsx.includes("const activeTooltip ="), "A stale point index must be guarded after a data update");
-  assert.ok(tsx.includes("points[0]?.y != null"), "A missing single-point geometry must not be dereferenced");
+  assert.ok(tsx.includes("if (pt.y === null) return null"), "Missing or invalid point geometry must not be rendered");
 
   // Finite value filtering prevents NaN poisoning
   assert.ok(
@@ -96,8 +96,7 @@ test("LineChart wiring filters finite values, uses accessible group, gates showT
 
   // Tooltip timestamp with timezone
   assert.ok(
-    tsx.includes("formatTimeAxisLabel(\n                  data[tooltip.index].timestamp,") ||
-    tsx.includes("formatTimeAxisLabel(data[tooltip.index].timestamp)"),
+    tsx.includes("formatTimeAxisLabel(activePoint.timestamp)"),
     "Tooltip must include date and local timezone context",
   );
 });

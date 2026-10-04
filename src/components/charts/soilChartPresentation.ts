@@ -71,9 +71,13 @@ export function computeTimeGeometry(
 
   return points.map((point, index) => {
     let x: number;
+    const t = point.timestamp ? new Date(point.timestamp).getTime() : NaN;
+    if (point.timestamp && Number.isNaN(t)) {
+      return { ...point, value: null, x: paddingLeft, y: null };
+    }
+
     if (points.length === 1) {
       if (hasTimestamps && point.timestamp && timeDomain?.begin && timeDomain?.end && timeSpan > 0) {
-        const t = new Date(point.timestamp).getTime();
         const ratio = (t - minTime) / timeSpan;
         x = paddingLeft + Math.max(0, Math.min(1, ratio)) * chartWidth;
       } else {
@@ -144,4 +148,27 @@ export function mapQualityLabel(quality?: string): { label: string; variant: Qua
     default:
       return { label: "Unknown", variant: "neutral" };
   }
+}
+
+export function computeSharedDomain(
+  seriesList: Array<{ data?: Array<{ value: number | null }> } | Array<{ value: number | null }>>,
+  explicitMin?: number,
+  explicitMax?: number,
+): { min: number; max: number } {
+  const vals: number[] = [];
+  for (const item of seriesList) {
+    const pts = Array.isArray(item) ? item : (item?.data ?? []);
+    for (const p of pts) {
+      if (p.value !== null && Number.isFinite(p.value)) vals.push(p.value);
+    }
+  }
+  if (vals.length === 0) return { min: explicitMin ?? 0, max: explicitMax ?? 100 };
+  const dMin = explicitMin ?? Math.min(...vals);
+  const dMax = explicitMax ?? Math.max(...vals);
+  if (dMin === dMax) {
+    const offset = Math.abs(dMin) * 0.1 || 1;
+    return { min: explicitMin ?? dMin - offset, max: explicitMax ?? dMax + offset };
+  }
+  const pad = (dMax - dMin) * 0.1;
+  return { min: explicitMin ?? dMin - pad, max: explicitMax ?? dMax + pad };
 }
