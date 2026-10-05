@@ -128,7 +128,7 @@ export default function HistoryReport() {
     <div className={styles.page}>
       <PageHeader
         title="History & Report"
-        description="Historical soil telemetry from connected backend. Date filters apply UTC boundaries (00:00:00Z to 23:59:59Z); chart timeline labels are shown in your local timezone."
+        description="Historical soil data. Date filters use UTC; chart times use your local timezone."
         actions={<Button icon={<Download size={16} />} disabled={!series?.points.length} onClick={exportCsv}>Export CSV</Button>}
       />
       <section className={styles.filters}>

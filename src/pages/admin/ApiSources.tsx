@@ -9,6 +9,7 @@ import Loading from "@/components/common/Loading";
 import { ConfirmDialog, Modal } from "@/components/common/Modal";
 import PageHeader from "@/components/layout/PageHeader";
 import { useStationHierarchy } from "@/hooks/useStationHierarchy";
+import { useApiSources } from "@/hooks/useApiSources";
 import {
   dataSourceService,
   type DataSource,
@@ -27,10 +28,8 @@ export default function ApiSources() {
   const navigate = useNavigate();
   const hierarchy = useStationHierarchy();
   const revealTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [sources, setSources] = useState<DataSource[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { sources, setSources, loading, refreshing, error, setError, checks, markChecked, loadSources } = useApiSources();
   const [busyId, setBusyId] = useState("");
-  const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
 
   const [addOpen, setAddOpen] = useState(false);
@@ -52,27 +51,6 @@ export default function ApiSources() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [revealedKey, setRevealedKey] = useState("");
   const [copyStatus, setCopyStatus] = useState("");
-
-  const loadSources = async () => {
-    setLoading(true);
-    setError("");
-    try {
-      setSources((await dataSourceService.list()).items);
-    } catch (reason) {
-      setError(normalizeApiError(reason).message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    let active = true;
-    dataSourceService.list().then(
-      (page) => { if (active) setSources(page.items); },
-      (reason) => { if (active) setError(normalizeApiError(reason).message); },
-    ).finally(() => { if (active) setLoading(false); });
-    return () => { active = false; };
-  }, []);
 
   useEffect(() => () => {
     if (revealTimer.current) clearTimeout(revealTimer.current);
@@ -112,6 +90,7 @@ export default function ApiSources() {
         plot: resolveChoice(plotName, hierarchy.plots),
       });
       setSources((current) => [created, ...current]);
+      markChecked(created.id);
       setNotice(`${created.name} is connected.`);
       closeAdd();
     } catch (reason) {
@@ -126,6 +105,7 @@ export default function ApiSources() {
     setError("");
     try {
       const result = await dataSourceService.test(source.id);
+      markChecked(source.id);
       setSources((current) => current.map((item) => item.id === source.id
         ? { ...item, ...result }
         : item));
@@ -234,12 +214,13 @@ export default function ApiSources() {
         title="API Sources"
         description="Connect station APIs, review who can see them, and manage access owned by your account."
         actions={<div className={styles.headerActions}>
-          <Button variant="outline" icon={<RefreshCw size={16} />} onClick={() => void loadSources()}>Refresh</Button>
+          <Button variant="outline" icon={<RefreshCw size={16} />} loading={refreshing} disabled={Boolean(busyId)} onClick={() => void loadSources()}>Refresh</Button>
           <Button icon={<Plus size={16} />} onClick={() => setAddOpen(true)}>Add API Source</Button>
         </div>}
       />
       {error && <ErrorState description={error} onRetry={() => { setError(""); void loadSources(); }} />}
       {notice && <p className={styles.notice} role="status">{notice}</p>}
+      <p className={styles.help}>API reachability checks run on entry and Refresh; results may be reused for 30 seconds.</p>
       {loading && <Loading label="Loading API sources..." />}
       {!loading && !error && sources.length === 0 && (
         <EmptyState
@@ -263,14 +244,14 @@ export default function ApiSources() {
                   <td>{source.owner.displayName}<span className={styles.subtle}>{source.owner.role === "ADMIN" ? "Admin" : "Farmer"}</span></td>
                   <td>{source.stationCount}</td>
                   <td>{source.visibleAccountCount}</td>
-                  <td><span className={`${styles.status} ${source.connectionStatus === "CONNECTED" ? styles.connected : styles.failed}`}>
-                    {source.connectionStatus === "CONNECTED" ? "Connected" : "Last check failed"}
+                  <td><span role="status" className={`${styles.status} ${checks[source.id] !== "VERIFIED" ? styles.unverified : source.connectionStatus === "CONNECTED" ? styles.connected : styles.failed}`}>
+                    {checks[source.id] === "CHECKING" ? "Checking…" : checks[source.id] !== "VERIFIED" ? "Check unavailable" : source.connectionStatus === "CONNECTED" ? "Connected" : "Last check failed"}
                   </span></td>
                   <td>{formatVietnamDateTime(source.lastCheckedAt)}</td>
                   <td><div className={styles.actions}>
                     <Button size="sm" variant="ghost" icon={<BarChart3 size={14} />} onClick={() => navigate("/admin/devices")}>View Data</Button>
                     {source.canManageAccess && <Button size="sm" variant="ghost" icon={<Share2 size={14} />} onClick={() => void openAccess(source)}>Manage Access</Button>}
-                    {source.canManageAccess && <Button size="sm" variant="ghost" icon={<TestTube2 size={14} />} loading={busyId === source.id} onClick={() => void testConnection(source)}>Test</Button>}
+                    {source.canManageAccess && <Button size="sm" variant="ghost" icon={<TestTube2 size={14} />} disabled={refreshing} loading={busyId === source.id} onClick={() => void testConnection(source)}>Test</Button>}
                     {source.canRevealKey && <Button size="sm" variant="ghost" icon={<Eye size={14} />} onClick={() => setRevealSource(source)}>Reveal Key</Button>}
                     {source.canManageAccess && <Button size="sm" variant="ghost" icon={<Trash2 size={14} />} onClick={() => setRemoveSource(source)}>Remove Source</Button>}
                   </div></td>

@@ -24,6 +24,12 @@ export interface DataSourceGrant {
   createdAt: string;
 }
 
+export interface SourceConnectionStatus {
+  connectionStatus: "CONNECTED" | "FAILED";
+  lastCheckedAt: string;
+  isFromCache: boolean;
+}
+
 export interface DataSourceGrantCandidate {
   id: string;
   displayName: string;
@@ -56,6 +62,12 @@ interface HttpClient {
 
 export function createDataSourceService(client: HttpClient) {
   return {
+    async checkConnectionStatus(sourceId: string): Promise<SourceConnectionStatus> {
+      const response = await client.get<ApiSuccessEnvelope<SourceConnectionStatus>>(
+        API_ENDPOINTS.dataSources.connectionStatus(sourceId),
+      );
+      return unwrapApiResponse(response.data);
+    },
     async list(cursor?: string): Promise<CursorPage<DataSource>> {
       const response = await client.get<ApiSuccessEnvelope<CursorPage<DataSource>>>(
         API_ENDPOINTS.dataSources.base,

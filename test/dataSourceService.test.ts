@@ -3,6 +3,20 @@ import { test } from "node:test";
 
 import { createDataSourceService } from "../src/services/dataSourceService.ts";
 
+test("shared-source connection check uses the read-only endpoint and unwraps an offline result", async () => {
+  const calls: string[] = [];
+  const result = { connectionStatus: "FAILED" as const, lastCheckedAt: "2026-10-05T00:00:00.000Z", isFromCache: false };
+  const client = {
+    async get<T>(url: string) { calls.push(url); return { data: { success: true, data: result } as T }; },
+    async post<T>() { throw new Error("Owner mutation must not be used") as T; },
+    async put<T>() { throw new Error("Grant mutation must not be used") as T; },
+    async delete<T>() { throw new Error("Removal must not be used") as T; },
+  };
+  const service = createDataSourceService(client);
+  assert.deepEqual(await service.checkConnectionStatus("shared-source"), result);
+  assert.deepEqual(calls, ["/data-sources/shared-source/connection-status"]);
+});
+
 test("data source service maps the approved endpoints and unwraps envelopes", async () => {
   const calls: Array<{ method: string; url: string; body?: unknown }> = [];
   const source = {

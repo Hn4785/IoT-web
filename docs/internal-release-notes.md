@@ -13,6 +13,22 @@ Với mỗi thay đổi:
 3. Ghi rõ kết quả test; không đánh dấu hoàn thành nếu chưa có bằng chứng kiểm tra.
 4. Không ghi secret, mật khẩu, access token, refresh token hoặc API key vào file này.
 
+## v2.5.6 — 2026-10-05 (API Sources tự kiểm tra)
+
+- API Sources tự kiểm tra kết nối khi vào trang và khi bấm Refresh, áp dụng cho
+  chủ nguồn và Farmer được share. Phân biệt đang kiểm tra, lỗi kết nối và chưa
+  xác minh được; không dùng trạng thái Connected cũ khi kiểm tra thất bại.
+- Thêm endpoint `GET /data-sources/:sourceId/connection-status`, dùng credential
+  đã mã hoá ở backend và quyền xem hiện có. Cache tối đa 30 giây, gộp request
+  trùng và giới hạn đồng thời; không nhập lại station hay mở quyền quản lý nguồn.
+- Rút gọn mô tả History & Report, bỏ ký tự Z trên mô tả; bộ lọc vẫn dùng UTC.
+- Kiểm chứng: frontend 181/181, backend 427/427; lint, typecheck, build và secret
+  scan đạt. Browser fixture cách ly xác nhận Refresh, offline/phục hồi, lỗi kiểm
+  tra và viewport 520px không tràn ngang. Không thay dữ liệu ứng dụng/Pi.
+- Format của các file backend đã sửa đạt; `pnpm verify` toàn repo còn bị chặn bởi
+  4 file cũ chưa đúng Prettier, đã xác nhận lỗi tồn tại trong HEAD trước thay đổi.
+- Đang chuẩn bị push và triển khai Pi nội bộ; không có migration/dependency mới.
+
 ## v2.5.6 — 2026-10-04 (biểu đồ và Notifications)
 
 - Căn lại Soil Dashboard, Historical Analysis, History & Report và Notifications;

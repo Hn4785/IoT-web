@@ -10,6 +10,7 @@
 .status { display: inline-flex; align-items: center; padding: 5px 9px; border-radius: 999px; font-size: var(--font-size-caption); font-weight: var(--font-weight-semibold); }
 .connected { background: var(--color-primary-light); color: var(--color-primary-dark); }
 .failed { background: var(--color-error-light); color: var(--color-error-dark); }
+.unverified { background: var(--color-bg-subtle); color: var(--color-text-secondary); }
 .notice { margin: 0; padding: 10px 14px; border: 1px solid var(--color-primary); border-radius: var(--radius-md); background: var(--color-primary-light); color: var(--color-primary-dark); }
 .form { display: flex; flex-direction: column; gap: var(--spacing-4); }
 .form label { display: flex; flex: 1; flex-direction: column; gap: 6px; color: var(--color-text-secondary); font-size: var(--font-size-body-sm); font-weight: var(--font-weight-semibold); }

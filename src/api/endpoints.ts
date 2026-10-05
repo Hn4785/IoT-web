@@ -36,6 +36,7 @@ export const API_ENDPOINTS = {
     grantCandidates: (id: string) => `/data-sources/${id}/grant-candidates`,
     reveal: (id: string) => `/data-sources/${id}/reveal`,
     test: (id: string) => `/data-sources/${id}/test`,
+    connectionStatus: (id: string) => `/data-sources/${id}/connection-status`,
   },
 
   apiKeys: {
