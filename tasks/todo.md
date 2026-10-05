@@ -203,12 +203,14 @@ Evidence: [`2026-09-16-c1.md`](../docs/checkpoints/2026-09-16-c1.md).
 Evidence:
 [`2026-09-20-d1.md`](../docs/checkpoints/2026-09-20-d1.md) and
 [`2026-09-20-d-local.md`](../docs/checkpoints/2026-09-20-d-local.md).
-Latest backend regression gate (2026-10-05): 85/85 files, 510/510 tests, coverage
+D-local historical regression gate (2026-10-05): 85/85 files, 510/510 tests, coverage
 88.69% statements / 78.52% branches / 93.99% functions / 91.27% lines and
 `pnpm verify`. Test DB has all 12 migrations; post-update secret scan passed for 268 files.
 Frontend: 181/181 tests, lint, build and zero production dependency advisories.
 Fresh image/restore evidence: [D revalidation](../docs/checkpoints/2026-10-05-d-local.md).
-September checkpoints are retained historical evidence, not current counts.
+These D and September checkpoints are retained historical evidence, not current
+F-product counts. Latest local F-product: backend 89 files/557 tests and frontend
+218 tests, with verification linked below; coverage was not rerun for F-product.
 
 ## Frontend and tester integration order
 
@@ -263,8 +265,9 @@ and must not duplicate the full contract.
    latest readings persist. Raw-history backfill remains `invalid`/unverified;
    this rollout does not close F-product, F7 or production gates. All future F/FE
    releases transfer verified logic only, never sample/test databases.
-   Latest owner instruction resumes F7-F10/F-product locally only. Do not push
+   F7-F10/F-product are now complete locally with linked evidence. Do not push
    GitHub or update Pi during this iteration; verified commits remain local.
+   F11 onwards are not closed by this checkpoint or authorized as part of this slice.
 2. Close FE-2/FE-5/FE-6/QA-1/QA-2 through F16 with actual evidence, not blanket ticks.
 3. Preserve the no-device-write scope and B/C owner acceptance.
 4. Keep local/Pi acceptance distinct from website/public production acceptance.
@@ -279,11 +282,12 @@ guide is a separate deliverable.
 Detailed acceptance, candidate files, dependencies and verification are in
 [tasks/plan.md](plan.md); only the short task index is maintained here.
 
-- [ ] F0: Reconcile old TODO/issue evidence and clear verified quality/config debt.
+- [x] F0-local: Reconcile old TODO/issue evidence and clear verified quality/config debt.
       CI/config/format and capability-map debt reconciled locally. Owner-approved
       dependency patches passed fresh production audit (zero advisories) and full
-      regression on 2026-10-05. Broader issue/browser/target reconciliation remains
-      open; dependency success alone does not close F0 or authorize public release.
+      regression on 2026-10-05. Verified issue fixes are linked in the ledger;
+      unresolved broad browser and target acceptance are explicitly assigned to
+      F16/F1-target/D-production. This local closure does not authorize public release.
 - [x] F1-data: Approve persistence/provenance/coverage and retention/capacity contracts.
       Owner approved 90-day real raw history plus separate last-known snapshots;
       detailed section 16 schema/DTO/collection contract approved 2026-10-05.
@@ -299,11 +303,16 @@ Detailed acceptance, candidate files, dependencies and verification are in
       [checkpoint evidence](../docs/checkpoints/2026-10-05-f-data-progress.md).
       Original checkpoint applied migration only to local `iot_test`. Later Pi
       follow-up is recorded above; no F7 UI changes or full live-backfill claim.
-- [ ] F7: Show exact-station last-known latest data; isolate endpoint failures.
-      Resumed with F8-F10/F-product by owner on 2026-10-05. Verify/commit local
-      only; no GitHub push or Pi update until the F publishing gate is met.
-- [ ] F8: Preserve exact-query history; isolate failed stations and stale responses.
-- [ ] F9: Invalidate retained data on account/session/grant/source changes.
+- [x] F7: Show exact-station last-known latest data; isolate endpoint failures.
+      Independent endpoints, original timestamps, request/route fencing and
+      empty/denied purging verified locally; FE commit `d405a64`.
+- [x] F8: Preserve exact-query history; isolate failed stations and stale responses.
+      Full query identity, per-station retry, original provenance/coverage,
+      gap/CSV semantics and unchanged-query retention on scope shrink verified
+      locally; FE commit `3959bb5`.
+- [x] F9: Invalidate retained data on account/session/grant/source changes.
+      Session/environment scope, all-level hierarchy refresh with unchanged IDs,
+      stale pagination fencing and access-loss purging verified locally.
 - [x] F10: Verify fresh-only automatic alerts and notification recovery without duplicates.
       Backend local: canonical backfill is not relabeled as fresh upstream; stored
       snapshots cannot advance automatic rules. Positive evaluation rechecks READY,
@@ -311,7 +320,14 @@ Detailed acceptance, candidate files, dependencies and verification are in
       lifecycle/recipient/restart/lease tests pass; full gate 89 files/557 tests and
       `pnpm verify`. Browser F-product and live-provider/target gates remain separate.
       [evidence](../docs/checkpoints/2026-10-05-f-product-progress.md).
-- [ ] Checkpoint F-product: Role/browser acceptance for online/stored/empty/denied states.
+- [x] Checkpoint F-product-local: Role/browser acceptance for online/stored/empty/denied states.
+      Isolated browser fixtures exercise actual pages for Admin/Super Admin,
+      Farmer and Client Developer; backend 557/557 and frontend 218/218 tests,
+      typecheck/lint/build and backend format/audit pass. No provider/DB/Pi calls
+      in the browser fixture and no authentication E2E/live-target certification.
+      FE-2/FE-5/FE-6/QA-1/F16 remain separate, including native CSV download.
+      [evidence](../docs/checkpoints/2026-10-05-f-product-progress.md).
+      Local commits only; no GitHub push, Pi change or fixture/sample delivery.
 - [ ] F11: Reproducible full-app packaging, migration runner and ARM64/server gates.
 - [ ] F12-team: Validate deployment profile/target prerequisites for receiving-team handoff.
 - [ ] F13-team: Team deployment, smoke and schema-safe rollback acceptance.

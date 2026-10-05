@@ -32,11 +32,76 @@ Verification (local test database host `localhost`, database `iot_test` only):
 - No schema/migration, authentication, authorization, public contract or dependency
   changes in this slice. No external provider, Pi, GitHub or server validation claimed.
 
-## Remaining local acceptance
+## F7/F9 frontend — complete locally (`d405a64`)
 
-- F7 exact-station latest and independent endpoints: under implementation/review.
-- F8 exact-query history and per-station failure isolation: under implementation.
-- F9 account/session/environment/scope purging: not yet verified.
-- F-product role/browser online/stored/empty/denied matrix: remains open.
-- FE-2/FE-5/FE-6/QA-1 broad browser acceptance remains under F16, not silently
-  closed by unit tests or earlier owner B/C acceptance.
+- Latest, history and alerts fail independently; transient failures retain only
+  the same station's valid current-session result, with its original timestamp.
+- Route/request generations fence late responses. Successful empty results,
+  mismatched station responses and observed 401/403/404 remove retained readings.
+- Account/session/role/environment changes remount the private workspace; source
+  and grant revalidation refresh Farm/Plot/Station even when parent IDs are unchanged.
+  Old pagination cannot repopulate revoked stations or a different parent.
+- StrictMode setup/cleanup does not leave the hierarchy permanently loading.
+- Refresh retains an authorized station's private fallback during hierarchy loading,
+  but cannot display it after a confirmed empty/denied scope.
+
+## F8 frontend — complete locally (`3959bb5`)
+
+- History identity includes actual begin/end, station, fields, interval, aggregate,
+  order, limit and cursor. Changing any query cannot display a different query's
+  retained result. Per-station generations reject out-of-order responses.
+- Analysis loads/retries each station independently; failure of B does not remove A.
+  Refresh with B revoked and A temporarily unavailable retains only exact-query A
+  as Last known/Stale, removes B and reports unknown rather than complete coverage.
+- Report Apply revalidates hierarchy and data. A same-query transient error keeps
+  the original successful result; changed metric, empty or denied responses clear it.
+- Provenance distinguishes upstream/cache/stored/browser-retained data; coverage
+  distinguishes complete/partial/unknown and truncation. Fetch timestamps remain
+  original. Chart gaps do not become invented CSV rows or statistics samples.
+- CSV includes exact query and per-station origin/coverage/fetch metadata; formula
+  and quoting boundaries are tested. Real measurement zero remains valid.
+
+Verification:
+
+- Behavioral RED/GREEN regressions cover retained station/scope/hierarchy behavior
+  and 13 exact-query history cases. Independent review found a station-list shrink
+  issue; its new failing regression, minimal fix and browser repro now pass.
+- Fresh full frontend `npm test`: 218/218 passed, zero failed/skipped; `npm run lint`
+  and `npm run build` passed (including TypeScript), `git diff --check` passed.
+- Final read-only review: no remaining scoped actionable F7/F8/F9 findings;
+  focused retention/scope probes 37/37 passed.
+- Backend production audit rerun: no known vulnerabilities; `pnpm verify` passed.
+  Security commit `6f5a9e2` remains required for the eventual combined publication.
+
+## Checkpoint F-product-local — complete within approved scope
+
+The browser harness imports the actual router/layout/pages/hooks with StrictMode.
+Its adapters use isolated in-memory fixtures, not provider/database/Pi requests,
+database seeds or delivery data. The role controls are not real authentication E2E.
+
+| Role / pages exercised                     | Online | Stored | Empty | Denied | Additional evidence                                                                                                |
+| ------------------------------------------ | ------ | ------ | ----- | ------ | ------------------------------------------------------------------------------------------------------------------ |
+| Admin / Station Detail                     | Pass   | Pass   | Pass  | Pass   | Stored is stale; denied removes readings                                                                           |
+| Super Admin / Station Detail               | Pass   | Pass   | Pass  | Pass   | A-to-B route with delayed metadata; latest denial is visible independently                                         |
+| Farmer / Dashboard, Soil, Analysis, Report | Pass   | Pass   | Pass  | Pass   | Independent failures, same-query retention, original timestamps, scope shrink, changed query and per-station retry |
+| Client Developer / API Explorer            | Pass   | Pass   | Pass  | Pass   | Stored DTO remains stale; empty fields and forbidden response replace prior data                                   |
+
+All role data states above passed on local pages. This is not the complete role/page
+E2E matrix, live-provider recovery, target deployment or performance certification.
+Native CSV download could not be confirmed with the browser adapter; CSV content
+unit verification is not claimed as successful end-to-end download.
+
+## Status reconciliation and delivery boundary
+
+- F0-local and F7-F10/F-product-local are checked in the canonical TODO; verified
+  Sheet STT 40-47 move to fixed in the issue ledger with their original numbers.
+- Tab Trung STT 40-47 was read back after the update: all eight status dropdowns
+  are Đã xử lý, retest date is 05/10/2026, owners and other form columns are unchanged.
+  Misaligned F10 notes were moved back to STT 46/47; orphan notes on blank row 48
+  were cleared without deleting a row or changing the Linh tab.
+- FE-1/FE-3/FE-4 are implementation-complete. FE-2/FE-5/FE-6/QA-1 and broad browser
+  acceptance remain under F16, not silently closed by these scoped checks.
+- F11 onwards and D-production/F1-target remain open; receiving-team server,
+  infrastructure, backup destination/owners and target acceptance are not invented.
+- Local commits only. No GitHub push, Pi update, fixture/sample/test DB delivery,
+  schema change or provider coverage claim in this slice.

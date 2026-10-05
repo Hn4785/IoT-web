@@ -2,6 +2,10 @@
 
 Updated: 2026-10-05
 Status: D app/local and local Checkpoint F-data complete on 2026-10-05.
+F7-F10 and Checkpoint F-product-local are also complete with 557 backend and 218
+frontend tests plus isolated role/browser data-state evidence. See
+[F-product evidence](../docs/checkpoints/2026-10-05-f-product-progress.md).
+F11 onwards, broad FE/QA and receiving-team target gates remain open.
 Follow-up owner authorization: publish only completed F-data logic to Git/Pi for
 internal testing, preserving existing data and applying its two additive migrations.
 Latest owner instruction: resume F7-F10 through Checkpoint F-product, but keep
@@ -391,7 +395,8 @@ The owner subsequently resumed work through F-data. F2-F6 and local F-data are n
 fixture-verified with fresh full-suite, OpenAPI, migration and capacity evidence:
 [F-data checkpoint](../docs/checkpoints/2026-10-05-f-data-progress.md).
 Live-provider recovery, actual Pi/server capacity and public deployment remain
-separate gates. Current work is F7-F10 and local F-product acceptance; F11 onward
-is not implicitly authorized by the local-only publishing instruction.
+separate gates. F7-F10 and local F-product acceptance are now complete with linked
+evidence; F11 onward is not implicitly authorized by the local-only publishing
+instruction.
 No Pi database change, remote push or receiving-team deployment in this iteration.
 Team-owned target gates cannot be checked off with local substitute evidence.

@@ -4,7 +4,7 @@ Cập nhật gần nhất: 2026-10-05. Đây là file theo dõi lỗi chính c�
 
 ## Gate hiện tại
 
-- Gate D local ngày 2026-10-05: 85/85 file, 510/510 test đạt; `pnpm verify`
+- Gate D local lịch sử ngày 2026-10-05: 85/85 file, 510/510 test đạt; `pnpm verify`
   đạt format/typecheck/lint/Prisma generate/build; coverage 88.69% statements,
   78.52% branches, 93.99% functions, 91.27% lines. Production audit không còn
   advisory sau bản vá đã được duyệt; `iot_test` có đủ 12 migrations.
@@ -17,8 +17,10 @@ Cập nhật gần nhất: 2026-10-05. Đây là file theo dõi lỗi chính c�
 - Baseline trước F-product ngày 2026-10-05: 88/88 file, 550/550 backend tests và
   `pnpm verify` đạt; frontend 181/181 tests đạt. Đây là baseline, không chứng minh
   các lỗi mới dưới đây đã được sửa hoặc đã qua browser acceptance.
-- Sau sửa F10 local: 89/89 file, 557/557 backend tests và `pnpm verify` đạt.
-  Hai lỗi Sheet 46–47 đã có RED/GREEN và chuyển xuống Đã sửa;
+- Gate F-product local mới nhất: 89/89 file, 557/557 backend tests và `pnpm verify`
+  đạt; frontend 218/218 tests, lint và TypeScript/build đạt. Không chạy lại coverage
+  cho F-product; không dùng số liệu coverage D cũ như số liệu mới.
+  Sheet 40–47 đã có regression, review và bằng chứng phù hợp, chuyển xuống Đã sửa;
   [bằng chứng F-product](../checkpoints/2026-10-05-f-product-progress.md).
 - Chủ dự án yêu cầu chỉ sửa/test/commit local đến khi hoàn tất F; không push
   GitHub hoặc cập nhật Pi trong đợt này. Lỗi F-product đã ghi riêng vào tab Trung,
@@ -63,91 +65,16 @@ kiểm chứng browser/nguồn thật theo phạm vi nghiệm thu hiện tại.
 
 ## Chưa sửa
 
-### [ ] [Cao, F7/Frontend] Lỗi endpoint phụ làm mất latest hợp lệ — Sheet 40
+### [ ] [F16/FE acceptance] Kiểm chứng browser/API thật còn lại
 
-- `RealtimeSoilMonitoring.tsx` và `FarmDashboard.tsx` dùng `Promise.all` cho
-  latest cùng history/alerts; một rejection đặt cả latest thành null.
-- Cần tải độc lập và giữ đúng-trạm last-known khi lỗi tạm thời, với nhãn cũ và
-  timestamp gốc. Test latest thành công/endpoint phụ lỗi và chiều ngược lại.
-
-### [ ] [Cao, F7/Frontend] Chi tiết trạm giữ số đo của route cũ — Sheet 41
-
-- `StationDetail.tsx` giữ station/latest không gắn ID. A → B, metadata B thành
-  công/latest B thất bại có thể render readings A dưới station B.
-- Phải gắn identity, chặn phản hồi trễ, xoá bản giữ lại khi 401/403/404 hoặc
-  response rỗng thành công. Regression đổi route và mất quyền trước khi đóng.
-
-### [ ] [Trung bình, F8/Frontend] Một trạm lỗi xoá mọi chuỗi lịch sử — Sheet 42
-
-- `HistoricalAnalysis.tsx` dùng `Promise.all`, nhánh lỗi thay history bằng `{}`.
-- Cần giữ từng trạm tải thành công, báo/retry riêng trạm lỗi và không xuất CSV
-  như thể toàn bộ dữ liệu đã đầy đủ. Test ít nhất hai trạm, một trạm lỗi.
-
-### [ ] [Trung bình, F8/Frontend] Khóa lịch sử thiếu khoảng thời gian thật — Sheet 43
-
-- `HistoricalAnalysis.tsx` tạo key từ metric/days/station IDs, nhưng begin/end
-  được tạo động sau đó. Hai request khác khoảng có thể có cùng key.
-- Cần key gồm actual begin/end, trạm, fields, interval/aggregate/cursor/order/limit;
-  giữ fencing phản hồi cũ đang có. Test thay bộ lọc và response đảo thứ tự.
-
-### [ ] [Cao, F9/Frontend] Refresh không tải lại quyền trạm khi ID cha giữ nguyên — Sheet 44
-
-- `useStationHierarchy.ts` chỉ cho effect farms phụ thuộc reloadKey; effect
-  plots/stations chỉ theo ID cha. Lỗi/parent rỗng cũng giữ danh sách cũ.
-- Cần reload cả descendants, ràng buộc state với account/role/session/environment
-  và purge khi quan sát mất quyền. Không thay luồng authentication.
-
-### [ ] [Trung bình, F7-F8/Frontend] Bỏ provenance và coverage từ DTO — Sheet 45
-
-- `types/soil.ts`/adapter bỏ dataOrigin; `stationBrowserService.ts` bỏ history
-  dataOrigin/coverage. Footer report phân loại cache thay vì nguồn bản lưu bền.
-- Cần tiêu thụ trường đã duyệt ở station-data section 16; không suy luận stored
-  nghĩa là provider Connected, không suy luận ít sample nghĩa là đủ coverage.
-
-Các mục trên vẫn đang sửa/kiểm chứng. Mỗi mục được chuyển
-xuống phần Đã sửa sau regression độc lập; F-product/FE browser gate vẫn riêng.
-
-### [Trung bình, Frontend/Farmer] Historical Analysis còn điều khiển giả
-
-- Rà mã ngày 2026-09-25: `Last 30 Days` là nhãn cố định có biểu tượng xổ xuống,
-  còn nút `Area` và `Chart information` không có hành động. API history vẫn
-  lấy đúng cửa sổ 30 ngày nhưng người dùng có thể tưởng các điều khiển hoạt động.
-  Mã FE local đã thay bằng chọn 7/30/90 ngày gọi lại API trong giới hạn 90 ngày
-  của backend, chuyển Line/Area và mở thông tin biểu đồ. Unit test, build, lint
-  đạt; bản xem trước component trong browser xác nhận 7 ngày, Area và thông tin
-  đổi trạng thái đúng. Chưa kiểm tra với tài khoản Farmer và API thật trên browser,
-  nên chưa đóng checkpoint Farmer.
-
-### [Trung bình, Frontend/Farmer] Hộp thông báo chỉ hiển thị trang đầu
-
-- Kiểm tra mã ngày 2026-09-25: trang Farmer gọi inbox với `limit: 100` nhưng
-  chưa dùng `nextCursor`. Khi tài khoản có hơn 100 thông báo, các mục cũ hơn
-  không thể xem trong trang này. Backend đã trả cursor; cần nút tải thêm hoặc
-  phân trang trước khi đánh dấu Farmer browser checkpoint hoàn tất.
-- Mã FE local đã thêm nút tải tiếp theo `nextCursor`, ghép các trang không trùng
-  và bỏ kết quả request cũ khi đổi bộ lọc/làm mới. Kiểm thử unit đỏ trước sửa,
-  xanh sau sửa; chưa thử tài khoản Farmer có hơn 100 mục trên browser/API thật.
-- Historical Analysis local đã ẩn Depth ở bộ lọc, biểu đồ, bảng và CSV khi
-  nguồn không có depth; kiểm thử có/không có depth đạt. Bản xem trước component
-  xác nhận không còn nhãn hoặc cột Depth khi dữ liệu rỗng, nhưng chưa có phiên
-  Farmer/API local để xác nhận với telemetry thật.
-- Màn hình Historical Analysis local đã thay `0.0`/`NaN` giả ở trạng thái rỗng
-  bằng `N/A` và thông báo không có số đo; số đo 0 thật vẫn được giữ và tính.
-  Unit test, build và lint đạt; chưa đối chiếu API thật trong browser.
-
-### [Trung bình, Frontend] Thanh tìm kiếm toàn cục chưa hoạt động
-
-- Bằng chứng ngày 2026-09-24: ảnh Admin ở Device Health và Stations & Devices cho
-  thấy ô tìm kiếm nhận từ khóa `device`, nhưng chưa có kết quả hoặc điều hướng.
-  Người dùng dễ hiểu nhầm tính năng đã sẵn sàng. Chưa kiểm chứng bằng browser.
-- Phạm vi ảnh hưởng: thanh tìm kiếm dùng chung; cần xác định hành vi theo quyền
-  Admin/Super Admin, Farmer và Client Developer. Đây không phải lỗi API backend.
-- Hướng xử lý: nối tìm kiếm với dữ liệu và điều hướng thật theo từng role, hoặc
-  ẩn/vô hiệu hóa ô tìm kiếm cho đến khi sẵn sàng. Cần kiểm tra hồi quy trên các
-  role, kể cả trạng thái không có kết quả và không có quyền truy cập.
-- Mã FE local ngày 2026-09-25 đã tìm station qua phân cấp được cấp quyền,
-  điều hướng theo role và ẩn ô tìm kiếm với Developer; 3 kiểm thử mới đạt.
-  Chưa có browser role matrix, nên chưa đóng lỗi.
+- Historical Analysis đã sửa điều khiển, dữ liệu rỗng và F8; Notifications đã có
+  tải thêm; tìm kiếm chung đã nối station đúng role. Các lỗi implementation này
+  được tích riêng ở phần Đã sửa, không tiếp tục ghi là chưa có code.
+- Chưa đóng E2E đầy đủ: đăng nhập/credential, Audit role/filter/cursor,
+  notification hơn 100 mục và quyền thay đổi, tìm kiếm mọi role, responsive/
+  accessibility toàn trang, tải CSV native và provider thật phục hồi.
+- Checkpoint F-product-local chỉ đóng các trạng thái dữ liệu trên các trang đã
+  kiểm tra. FE-2/FE-5/FE-6/QA-1/F16 vẫn mở với bằng chứng riêng.
 
 ### [Thấp, Frontend/UI] Bố cục khoảng 4–5 trang chưa cân đối
 
@@ -210,6 +137,70 @@ xuống phần Đã sửa sau regression độc lập; F-product/FE browser gate
   trong bộ nhớ frontend, kể cả request logout thất bại.
 
 ## Đã sửa
+
+### [x] [Cao, F7/Frontend, 2026-10-05] Lỗi endpoint phụ làm mất latest hợp lệ — Sheet 40
+
+- Latest/history/alerts tải độc lập; lỗi tạm thời chỉ giữ bản hợp lệ đúng trạm,
+  giữ timestamp gốc và nhãn Last known/Stale. Rỗng/mất quyền không dùng fallback.
+- Regression và browser local xác nhận cả hai chiều endpoint lỗi; FE `d405a64`.
+  Full frontend 218/218, lint/build đạt; chưa push GitHub/Pi.
+
+### [x] [Cao, F7/Frontend, 2026-10-05] Chi tiết trạm giữ số đo của route cũ — Sheet 41
+
+- State gắn station ID và generation; phản hồi trễ/metadata chậm không đặt số đo
+  A dưới B. Latest denial hiển thị độc lập và xoá bản giữ lại khi 401/403/404.
+- Regression và browser Admin/Super Admin local xác nhận đổi trạm, stored,
+  empty/denied; FE `d405a64`, gate như Sheet 40.
+
+### [x] [Trung bình, F8/Frontend, 2026-10-05] Một trạm lỗi xoá mọi chuỗi lịch sử — Sheet 42
+
+- Tải/retry từng trạm; A thành công còn nguyên khi B lỗi. B bị thu hồi bị loại;
+  A lỗi tạm thời vẫn giữ đúng-query với nhãn cũ và coverage chưa xác nhận.
+- RED/GREEN và browser Analysis local xác nhận hai trạm và scope shrink;
+  FE `3959bb5`, 13 test history mới, full frontend 218/218 đạt.
+
+### [x] [Trung bình, F8/Frontend, 2026-10-05] Khóa lịch sử thiếu khoảng thời gian thật — Sheet 43
+
+- Key chứa actual begin/end, station, fields, interval/aggregate/order/limit/cursor;
+  fencing chặn phản hồi cũ. Query mới không tái dùng kết quả query trước.
+- Test định danh/reorder và browser đổi ngày/metric, Report Apply cùng-query đạt;
+  CSV giữ metadata query/nguồn thật, không thêm hàng biểu đồ giả; FE `3959bb5`.
+
+### [x] [Cao, F9/Frontend, 2026-10-05] Refresh không tải lại quyền trạm khi ID cha giữ nguyên — Sheet 44
+
+- Reload toàn hierarchy và gắn scope account/session/role/environment; chặn page
+  cũ/sai parent, xoá trạm mất quyền, không đổi authentication flow.
+- Regression và browser refresh cùng Farm/Plot ID, thu hồi B và đổi phiên đạt;
+  StrictMode không kẹt loading; FE `d405a64`, full gate như Sheet 40.
+
+### [x] [Trung bình, F7-F8/Frontend, 2026-10-05] Bỏ provenance và coverage từ DTO — Sheet 45
+
+- DTO/adapter dùng trường đã duyệt; UI phân biệt upstream/cache/stored/last-known,
+  complete/partial/unknown và truncated. Stored không có nghĩa là Connected.
+- Test và browser Soil/Analysis/Report local xác nhận Stale, thời điểm fetch gốc,
+  coverage thiếu/chưa xác nhận và trạng thái rỗng; FE `d405a64`/`3959bb5`.
+  [Bằng chứng chung](../checkpoints/2026-10-05-f-product-progress.md).
+
+### [x] [Frontend implementation] Historical Analysis không còn điều khiển giả
+
+- Đã có chọn 7/30/90 ngày, Line/Area và thông tin biểu đồ; unit/browser local
+  xác nhận hành động. Không còn Depth khi metadata không có depth; empty dùng
+  N/A/thông báo không có số đo, vẫn giữ giá trị 0 thật.
+- Full frontend 218/218 đạt. Provider thật và native CSV download thuộc F16,
+  không coi implementation hoàn tất là đã nghiệm thu toàn bộ Farmer E2E.
+
+### [x] [Frontend implementation] Notifications đã dùng cursor tải tiếp
+
+- Nút tải thêm sử dụng nextCursor, ghép trang không trùng, bỏ phản hồi cũ khi đổi
+  filter/refresh. Regression đỏ trước sửa, xanh sau sửa đã có trong suite hiện tại.
+- Full frontend 218/218 đạt; browser/API thật hơn 100 thông báo và quyền đổi giữa
+  các lô vẫn là acceptance F16, không phải lỗi thiếu implementation.
+
+### [x] [Frontend implementation] Thanh tìm kiếm đã nối station theo role
+
+- Tìm trong hierarchy được cấp quyền, điều hướng đúng role và ẩn ô với Developer;
+  ba regression đã có trong full suite 218/218 đạt.
+- Browser tìm kiếm toàn role/empty/denied giữ ở F16; không mở quyền backend.
 
 ### [x] [Cao, F10/Backend, 2026-10-05] Snapshot backfill bị đánh giá như latest mới — Sheet 46
 
