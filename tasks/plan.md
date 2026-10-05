@@ -1,7 +1,7 @@
 # Implementation Plan: Final portable soil monitoring
 
 Updated: 2026-10-05
-Status: D app/local complete; detailed F-data contract approved, F execution held after F1.
+Status: D app/local and local Checkpoint F-data complete on 2026-10-05.
 No Pi database change, deployment or push is authorized in this iteration.
 
 > For agentic workers: use superpowers:executing-plans for coordination, one approved
@@ -42,9 +42,10 @@ Do not infer permission to access or change a server from this plan.
   Existing in-app History & Report/CSV remains supported and gets regression checks;
   no new reporting subsystem or report deliverable is included.
 - Technical specs, tests and release evidence remain in scope, not deferred manuals.
-- Current priority (owner update 2026-10-05): complete safely verifiable D work;
-  F1 contract approval is enough for now. Preserve verified F implementation as
-  progress without closing F2-F6 or expanding further. F7 onward remains planned.
+- Current slice (latest owner update 2026-10-05): local F2-F6 and Checkpoint F-data
+  are complete against the approved section 16 contract, including the separately
+  approved internal fetch-generation columns. This supersedes the earlier F1 hold.
+  F7 onward remains planned, not authorized by the current data-foundation slice.
   Formal reports/manuals and Pi database changes remain excluded.
 - MFA/SSO is excluded by the owner/team decision on 2026-10-05. Keep existing
   authentication, authorization, secret protection, audit and recovery controls.
@@ -371,8 +372,10 @@ coverage, static/migration/secret gates, zero production advisories, isolated re
 recovery and patched non-root image smoke. Frontend 181/181 tests, lint/build/audit
 also pass. Evidence: docs/checkpoints/2026-10-05-d-local.md. This is local application
 acceptance, not receiving-team staging/production deployment acceptance.
-The owner accepts stopping the F checklist at F1 for now. Already verified local F
-code is retained as progress, not final F-data acceptance. Section 16 remains the
-approved local contract. Resume further F work only when the owner requests it.
+The owner subsequently resumed work through F-data. F2-F6 and local F-data are now
+fixture-verified with fresh full-suite, OpenAPI, migration and capacity evidence:
+[F-data checkpoint](../docs/checkpoints/2026-10-05-f-data-progress.md).
+Live-provider recovery, actual Pi/server capacity, frontend F7 onward and public
+deployment remain separate gates. Resume further F work only when requested.
 No Pi database change, remote push or receiving-team deployment in this iteration.
 Team-owned target gates cannot be checked off with local substitute evidence.

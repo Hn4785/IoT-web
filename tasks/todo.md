@@ -251,9 +251,10 @@ and must not duplicate the full contract.
 
 ## Immediate next action
 
-1. Prioritize D build/security/backup/restore revalidation. Owner accepts F1 as the
-   current F stopping point; preserve verified local F progress without closing
-   further F milestones. Team-owned deployment stays open.
+1. Local F2-F6 and Checkpoint F-data are complete with fresh regression and measured
+   fixture evidence. D app/local stays complete; team-owned deployment stays open.
+   The next planned slice is F7-F10/F-product, only after owner authorization.
+   Do not change the Pi database or deploy as part of the closed F-data slice.
 2. Close FE-2/FE-5/FE-6/QA-1/QA-2 through F16 with actual evidence, not blanket ticks.
 3. Preserve the no-device-write scope and B/C owner acceptance.
 4. Keep local/Pi acceptance distinct from website/public production acceptance.
@@ -278,15 +279,15 @@ Detailed acceptance, candidate files, dependencies and verification are in
       detailed section 16 schema/DTO/collection contract approved 2026-10-05.
       No Pi DB change.
 - [ ] F1-target: Receiving team approves its server deployment target contract.
-- [ ] F2: Persist normalized real readings and latest snapshots with deduplication.
-- [ ] F3: Serve authorized durable latest data through outage and backend restart.
-      Latest/raw storage and restart/outage history slices verified locally:
-      [progress evidence](../docs/checkpoints/2026-10-05-f-data-progress.md).
-      Final access/collection/retention gates are not yet closed.
-- [ ] F4: Collect without a browser; bound retries, concurrency and resume watermarks.
-- [ ] F5: Import bounded raw history and query local history with honest coverage.
-- [ ] F6: Enforce reading retention/storage limits and safe collection-health signals.
-- [ ] Checkpoint F-data: Restart/outage/history/scope acceptance with durable readings.
+- [x] F2: Persist normalized real readings and latest snapshots with deduplication.
+- [x] F3: Serve authorized durable latest data through outage and backend restart.
+- [x] F4: Collect without a browser; bound retries, concurrency and resume watermarks.
+- [x] F5: Import bounded raw history and query local history with honest coverage.
+- [x] F6: Enforce reading retention/storage limits and safe collection-health signals.
+- [x] Checkpoint F-data: Restart/outage/history/scope acceptance with durable readings.
+      Local fixture acceptance, not live-provider/Pi/server certification:
+      [checkpoint evidence](../docs/checkpoints/2026-10-05-f-data-progress.md).
+      Migration applied only to local `iot_test`; no Pi deployment or F7 UI changes.
 - [ ] F7: Show exact-station last-known latest data; isolate endpoint failures.
 - [ ] F8: Preserve exact-query history; isolate failed stations and stale responses.
 - [ ] F9: Invalidate retained data on account/session/grant/source changes.
