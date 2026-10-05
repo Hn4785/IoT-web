@@ -13,6 +13,29 @@ Với mỗi thay đổi:
 3. Ghi rõ kết quả test; không đánh dấu hoàn thành nếu chưa có bằng chứng kiểm tra.
 4. Không ghi secret, mật khẩu, access token, refresh token hoặc API key vào file này.
 
+## F-data Pi test — 2026-10-05 (lưu lịch sử 90 ngày)
+
+- Chủ dự án duyệt triển khai riêng logic F-data lên Pi để test: lưu số đo thật
+  trong 90 ngày, giữ snapshot cuối và thu thập nền khi không mở trình duyệt.
+- Chỉ chuyển code và migration cấu trúc. Giữ database/nguồn/quyền hiện có;
+  không seed, không nhập dữ liệu mẫu, không restore database test lên Pi.
+- Frontend giữ code `089a116`; F7 chưa triển khai. Các cập nhật D/F/FE còn lại
+  sẽ push chung sau khi hoàn tất kiểm thử, với commit và bằng chứng riêng.
+- Phát hành: BE `de466ea` (`feat: retain 90-day soil history`) đã push vào
+  nhánh `BE` và chạy trên Pi. Nhánh GitHub phát hành thử đã xoá theo yêu cầu;
+  code được giữ trên `BE`. FE vẫn `089a116`, không thay giao diện lần này.
+- Kiểm chứng: logic tương ứng qua 534/534 test (86 file), typecheck/lint/build
+  và secret scan; Pi ARM64 healthy/readiness, 13 migration đã áp dụng. Đã backup
+  database Pi trước migration; số lượng user/farm/plot/station/source/key không đổi.
+- Bộ thu thập nền đã ghi số đo `latest` thật; không nhập database local, seed,
+  fixture hay dữ liệu mẫu. Farm demo vẫn bằng 0. Backfill raw history ghi nhận
+  `invalid` do cửa sổ cũ trả `data: []`; checkpoint chưa đi tiếp và chưa có coverage
+  được xác nhận. Đã note lỗi backfill trong review F-data ngày 2026-10-05; không coi biểu đồ/cache hiện có
+  là bằng chứng đã lưu đầy đủ lịch sử 90 ngày.
+- Mọi đợt F/FE tiếp theo chỉ phát hành logic đã kiểm thử, không chuyển dữ liệu
+  mẫu/test database sang Pi hoặc server. D/F/FE còn lại push chung sau kiểm thử;
+  không đánh dấu F7 hay gate production đã hoàn tất.
+
 ## v2.5.6 — 2026-10-05 (API Sources tự kiểm tra)
 
 - API Sources tự kiểm tra kết nối khi vào trang và khi bấm Refresh, áp dụng cho
@@ -142,23 +165,23 @@ Với mỗi thay đổi:
 ### Phase B hoàn tất local — 2026-09-30
 
 - [x] Admin/Super Admin, Farmer và Client Developer dùng hierarchy, latest,
-  history, dashboard/report và API Explorer từ contract thật, không fallback dữ
-  liệu mẫu.
+      history, dashboard/report và API Explorer từ contract thật, không fallback dữ
+      liệu mẫu.
 - [x] API Sources -> Manage Access là giao diện duy nhất để cấp quyền station từ
-  nguồn API cho cả `FARMER` và `CLIENT_DEVELOPER`. User Management chỉ sửa role
-  và hiển thị Shared access dạng chỉ đọc.
+      nguồn API cho cả `FARMER` và `CLIENT_DEVELOPER`. User Management chỉ sửa role
+      và hiển thị Shared access dạng chỉ đọc.
 - [x] Admin và Farmer dùng chung Alert Center với canonical soil fields,
-  Automatic/Paused rules, lifecycle và in-app notifications. Rule chỉ tạo cảnh
-  báo, không ghi hay can thiệp thiết bị từ xa.
+      Automatic/Paused rules, lifecycle và in-app notifications. Rule chỉ tạo cảnh
+      báo, không ghi hay can thiệp thiết bị từ xa.
 - [x] Client giữ ba mục `Dashboard`, `API Access`, `API Tools`; không có sidebar
-  Settings riêng. Change Password và Log out vẫn nằm trong menu tài khoản dùng
-  chung cho cả ba role, bao gồm luồng bắt buộc đổi mật khẩu.
+      Settings riêng. Change Password và Log out vẫn nằm trong menu tài khoản dùng
+      chung cho cả ba role, bao gồm luồng bắt buộc đổi mật khẩu.
 - [x] Client API key giữ contract tạo/copy/rotate/revoke, station scope và secret
-  chỉ hiển thị một lần. API Explorer giữ key trong React memory và không điền sẵn
-  station giả.
+      chỉ hiển thị một lần. API Explorer giữ key trong React memory và không điền sẵn
+      station giả.
 - [x] Frontend đạt 152/152 test, lint sạch và production build thành công. Sau
-  khi Docker được khôi phục, PostgreSQL healthy và health/readiness qua backend
-  lẫn frontend proxy đều trả HTTP 200. Product owner đã nghiệm thu luồng local.
+      khi Docker được khôi phục, PostgreSQL healthy và health/readiness qua backend
+      lẫn frontend proxy đều trả HTTP 200. Product owner đã nghiệm thu luồng local.
 - Đây là bằng chứng nghiệm thu local; không xác nhận bản đã được deploy lên Pi.
   Ma trận tự động responsive/accessibility/failure-recovery rộng hơn vẫn là
   release-hardening gate, không phải phần triển khai Phase B còn thiếu.
@@ -343,7 +366,6 @@ Với mỗi thay đổi:
 - `package.json` frontend vẫn mang version `2.5.2` trong khi giao diện/image đã
   ghi `v2.5.3`; cần gom phiên bản về một nguồn trước bản tiếp theo.
 - Heartbeat/fencing evaluator khi upstream call kéo dài vẫn chưa hoàn tất.
-
 
 ## v2.5.2 — 2026-09-24 (Admin/Super Admin checkpoint)
 
