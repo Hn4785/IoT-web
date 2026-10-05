@@ -153,7 +153,7 @@ Evidence: [`2026-09-10-phase-b-core.md`](../docs/checkpoints/2026-09-10-phase-b-
 
 Evidence: [`2026-09-16-c1.md`](../docs/checkpoints/2026-09-16-c1.md).
 
-## D. Operations — local release candidate complete
+## D. Operations — app/local complete; receiving-team production acceptance open
 
 - [x] D0: Verify Phase C baseline and approve the operations design.
 - [x] OP-1: Persist and expose Super Admin-scoped audit events safely.
@@ -163,8 +163,22 @@ Evidence: [`2026-09-16-c1.md`](../docs/checkpoints/2026-09-16-c1.md).
 - [x] OP-4-local: Backup `iot_dev`, restore into an isolated database and run the
       application against the restore without overwrite/delete behavior.
 - [x] OP-5-local: Pass production-image smoke and frontend OpenAPI contract gates.
-- [x] Checkpoint D-local: Pass 58/58 test files, 371/371 tests, coverage, format,
-      typecheck, lint, build, migration status, secret scan and diff check.
+- [x] Checkpoint D-local baseline (2026-09-20): Pass 58/58 test files, 369/369 tests,
+      coverage, format, typecheck, lint, build, migration status, secret scan and
+      diff check. Historical evidence remains separate from fresh revalidation.
+- [x] D-backup-regression-local (2026-10-05): Native backup/restore failures stop
+      immediately; a target-creation race cannot proceed to restore. Cleanup
+      warnings cannot hide the original failure. Fourteen PowerShell regressions
+      and an isolated `iot_test -> new iot_restore_d_*` application acceptance pass
+      preserve readings, grants, ciphertext, lifecycle, notifications and audit.
+- [x] D-dependencies-local: Apply the owner-approved compatible security patches;
+      fresh production dependency audit has zero advisories. Immutable install
+      and backend/frontend regression gates pass without auth-flow changes.
+- [x] D-local-revalidation (2026-10-05): Fresh coverage/static gates and the patched
+      non-root Linux/amd64 production image pass against the isolated restore.
+      Stored reads retain timestamps; unauthenticated reads are denied; Swagger
+      stays hidden. Isolated image network loss gives health 200/readiness 503,
+      then readiness recovers after reconnect without stopping PostgreSQL.
 - [ ] OP-4-production: Assign RPO/RTO, encrypted off-machine backup destination,
       retention, restore owner and credential-rotation procedure.
       Owner accepted RPO 24h, RTO 4h and 7 daily/4 weekly copies on 2026-10-05;
@@ -177,8 +191,11 @@ Evidence: [`2026-09-16-c1.md`](../docs/checkpoints/2026-09-16-c1.md).
       future extensions outside the final Pi/server roadmap, not hidden blockers.
 - [x] D-security-MFA-scope: Owner/team excluded MFA/SSO from this delivery on
       2026-10-05; no MFA implementation or public-security certification is claimed.
-- [ ] D-security-recovery: Verify the existing Super Admin recovery and credential
-      rotation procedure for the selected target without weakening login/access/audit.
+- [x] D-security-recovery-local: Existing recovery changes the holder password,
+      revokes only its active sessions, preserves older revocation evidence and
+      unrelated sessions, and emits secret-free audit evidence. Two regressions pass.
+- [ ] D-security-recovery-target: Receiving team verifies Super Admin recovery and
+      credential rotation on its selected target without weakening login/access/audit.
 - [ ] Checkpoint D-production: Accept all staging, infrastructure, backup,
       security and live-device evidence. Only this checkpoint may claim
       `production-ready`.
@@ -186,8 +203,12 @@ Evidence: [`2026-09-16-c1.md`](../docs/checkpoints/2026-09-16-c1.md).
 Evidence:
 [`2026-09-20-d1.md`](../docs/checkpoints/2026-09-20-d1.md) and
 [`2026-09-20-d-local.md`](../docs/checkpoints/2026-09-20-d-local.md).
-Latest backend regression gate (2026-09-27): 59/59 files, 375/375 tests and
-`pnpm verify`; this does not replace the earlier coverage/image/restore evidence.
+Latest backend regression gate (2026-10-05): 85/85 files, 510/510 tests, coverage
+88.69% statements / 78.52% branches / 93.99% functions / 91.27% lines and
+`pnpm verify`. Test DB has all 12 migrations; post-update secret scan passed for 268 files.
+Frontend: 181/181 tests, lint, build and zero production dependency advisories.
+Fresh image/restore evidence: [D revalidation](../docs/checkpoints/2026-10-05-d-local.md).
+September checkpoints are retained historical evidence, not current counts.
 
 ## Frontend and tester integration order
 
@@ -248,10 +269,10 @@ Detailed acceptance, candidate files, dependencies and verification are in
 [tasks/plan.md](plan.md); only the short task index is maintained here.
 
 - [ ] F0: Reconcile old TODO/issue evidence and clear verified quality/config debt.
-      CI/config/format and capability-map debt reconciled locally. Fresh dependency
-      audit 2026-10-05 reports 14 production advisories (7 high, 7 moderate);
-      review/patch in a separate dependency slice before public release. No automatic
-      upgrade or exploitability claim. This gate stays open.
+      CI/config/format and capability-map debt reconciled locally. Owner-approved
+      dependency patches passed fresh production audit (zero advisories) and full
+      regression on 2026-10-05. Broader issue/browser/target reconciliation remains
+      open; dependency success alone does not close F0 or authorize public release.
 - [x] F1-data: Approve persistence/provenance/coverage and retention/capacity contracts.
       Owner approved 90-day real raw history plus separate last-known snapshots;
       detailed section 16 schema/DTO/collection contract approved 2026-10-05.

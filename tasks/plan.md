@@ -1,7 +1,7 @@
 # Implementation Plan: Final portable soil monitoring
 
 Updated: 2026-10-05
-Status: execution and detailed F-data contract approved on 2026-10-05.
+Status: D app/local complete; detailed F-data contract approved, F execution held after F1.
 No Pi database change, deployment or push is authorized in this iteration.
 
 > For agentic workers: use superpowers:executing-plans for coordination, one approved
@@ -97,11 +97,12 @@ disconnected.
 
 ## Global execution constraints
 
-Dependency audit update (2026-10-05): `pnpm audit --prod` fails with 14 advisories
-(7 high, 7 moderate), including direct Fastify/Nest adapter advisories. Review and
-patch compatible pinned versions in a separate regression-tested slice. Do not
-silently waive the gate or call this release production-ready. App/data work can
-continue locally; no public deployment is authorized by this observation.
+Dependency audit update (2026-10-05): owner-approved compatible security patches
+replace the earlier 14-advisory finding (7 high, 7 moderate). Nest runtime/testing
+is pinned to 12.0.3, Fastify to 5.12.5 and affected transitive ranges are constrained.
+Fresh root `pnpm audit --prod` passes with zero advisories; immutable install,
+`pnpm verify` and 510/510 backend tests pass. Supply-chain age/build policies are
+unchanged. Audit success is not public deployment or production acceptance.
 
 - Node >=24.17.0 <25, pnpm 11.19.0, existing lockfiles/stack; no unapproved dependency.
 - Same-origin /api/v1; no embedded Pi IP, secrets, provider keys or public DB.
@@ -365,8 +366,13 @@ No delivery-date promises before F0/F1 resolve the actual risks.
 
 ## Current execution
 
-Prioritize D delivery/recovery/security revalidation. The owner accepts stopping
-the F checklist at F1 for now. Already verified local F code is retained as progress,
-not final F-data acceptance. Section 16 remains the approved local contract.
+D app/local revalidation is complete on 2026-10-05: 510/510 backend tests with
+coverage, static/migration/secret gates, zero production advisories, isolated restore/
+recovery and patched non-root image smoke. Frontend 181/181 tests, lint/build/audit
+also pass. Evidence: docs/checkpoints/2026-10-05-d-local.md. This is local application
+acceptance, not receiving-team staging/production deployment acceptance.
+The owner accepts stopping the F checklist at F1 for now. Already verified local F
+code is retained as progress, not final F-data acceptance. Section 16 remains the
+approved local contract. Resume further F work only when the owner requests it.
 No Pi database change, remote push or receiving-team deployment in this iteration.
 Team-owned target gates cannot be checked off with local substitute evidence.

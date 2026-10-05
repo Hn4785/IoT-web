@@ -1,17 +1,19 @@
 # Sổ lỗi Backend
 
-Cập nhật gần nhất: 2026-09-28. Đây là file theo dõi lỗi chính của backend. Lỗi chưa hoàn thành luôn đặt ở trên; lỗi đã sửa được chuyển xuống cuối file sau khi có test hoặc bằng chứng kiểm chứng.
+Cập nhật gần nhất: 2026-10-05. Đây là file theo dõi lỗi chính của backend. Lỗi chưa hoàn thành luôn đặt ở trên; lỗi đã sửa được chuyển xuống cuối file sau khi có test hoặc bằng chứng kiểm chứng.
 
 ## Gate hiện tại
 
-- Gate local ngày 2026-09-27: 59/59 file, 375/375 test đạt; `pnpm verify`
-  đạt format, typecheck, lint và build. Kiểm thử đổi quyền giữa các lô
-  thông báo đỏ trước khi sửa và xanh sau migration snapshot trên `iot_test`.
-- Gate mới nhất ngày 2026-09-23: 59/59 file, 373/373 test đạt; `pnpm verify`
-  đạt toàn bộ format, typecheck, lint, Prisma generate và production build.
-- Checkpoint D-local ngày 2026-09-20 vẫn là baseline xanh gần nhất: 58/58 file,
-  369/369 test; coverage 88.48% statements, 77.60% branches, 93.24% functions,
-  90.29% lines; image, restore cô lập, secret scan và contract frontend đạt.
+- Gate local mới nhất ngày 2026-10-05: 85/85 file, 510/510 test đạt; `pnpm verify`
+  đạt format/typecheck/lint/Prisma generate/build; coverage 88.69% statements,
+  78.52% branches, 93.99% functions, 91.27% lines. Production audit không còn
+  advisory sau bản vá đã được duyệt; `iot_test` có đủ 12 migrations.
+  Frontend không đổi source: 181/181 tests, lint/build và production audit đạt.
+- Restore cô lập giữ dữ liệu/quyền/ciphertext/lifecycle và app đọc đúng scope;
+  kiểm tra image mới được ghi riêng tại
+  [D revalidation](../checkpoints/2026-10-05-d-local.md).
+- Các gate tháng 9 là bằng chứng lịch sử, không phải số liệu hiện tại. D-production
+  vẫn cần bên nhận dự án nghiệm thu trên hạ tầng của họ; không đổi DB Pi đợt này.
 - Phân quyền, transaction, idempotency, optimistic revision, upstream fail-closed
   và retention boundary chưa có lỗi logic mới với bằng chứng tái hiện.
 - B-device được đánh dấu `live-verified` ngày 2026-09-28: API lấy trực tiếp từ
@@ -20,10 +22,15 @@ Cập nhật gần nhất: 2026-09-28. Đây là file theo dõi lỗi chính c�
   nghiệm thu. Trạng thái này xác nhận nguồn dữ liệu; registry, browser role
   matrix và production vẫn là checkpoint riêng.
 
-## Checkpoint bắt buộc cho lần chạy tiếp theo
+## Checkpoint cũ — đã bị thay thế, không chạy lại seed/demo
 
-Không bắt đầu phần tài khoản hoặc giai đoạn tiếp theo trước khi hoàn thành và
-kiểm chứng đủ các mục sau:
+Các chỉ dẫn dưới đây ghi lại tình trạng 2026-09-25, không còn là lệnh thực thi.
+B/C đã được chủ dự án chấp nhận ngày 2026-09-30; Farm/Plot Demo đã được xoá theo
+thoả thuận. Nguồn và station thật được thêm qua API Sources, chia sẻ theo station.
+Không seed lại hoặc gán Farm Demo để thoả văn bản cũ. Browser QA mở rộng vẫn được
+theo dõi ở FE-2/FE-5/FE-6/QA-1 và F16, không mở lại B/C hoặc giả nhận đã chạy E2E.
+
+Nội dung lịch sử (chỉ để đối chiếu):
 
 1. Đồng bộ registry local/triển khai để database có đủ `NODE01` đến `NODE06`,
    sau đó xác nhận Admin và Super Admin nhận đủ sáu trạm qua API và trên browser.
@@ -44,9 +51,8 @@ kiểm chứng đủ các mục sau:
    phép thấy toàn bộ trạm thuộc farm; `NODE02`/`NODE03` chỉ là trạm chuẩn dùng để
    kiểm thử, không phải station grant riêng.
 
-Mỗi mục chỉ được đánh dấu hoàn thành sau khi có dữ liệu thật trong database,
-kết quả API đúng scope và kiểm tra browser tương ứng; test/build xanh một mình
-không đủ để đóng checkpoint này.
+Quy tắc bằng chứng vẫn áp dụng cho QA còn mở: test/build xanh không thay thế
+kiểm chứng browser/nguồn thật theo phạm vi nghiệm thu hiện tại.
 
 ## Chưa sửa
 
@@ -112,15 +118,20 @@ không đủ để đóng checkpoint này.
 
 ### [Vận hành] Các hardening trước production còn thiếu
 
-- Rate limit hiện là process-local; triển khai nhiều instance cần shared store hoặc limiter tầng hạ tầng.
+- Rate limit hiện là process-local; bên nhận dự án cần duyệt policy theo proxy của
+  server đơn instance. Shared limiter chỉ cần nếu mở rộng nhiều instance sau này.
 - Chưa tự thêm Redis hoặc bật `trustProxy`: cần chốt kiến trúc triển khai
   (gateway hay shared store và số proxy hop) để không tạo lỗ hổng giả mạo IP.
-- Chưa có MFA/SSO; Super Admin cần MFA trước khi public Internet.
+- Chủ dự án/team đã loại MFA/SSO khỏi đợt bàn giao ngày 2026-10-05, có thể tự thêm
+  sau. Không coi miễn trừ này là control đã triển khai; rủi ro lộ mật khẩu Super
+  Admin vẫn còn. Đăng nhập/phân quyền/audit/recovery hiện tại phải được giữ nguyên.
 - Audit append-only mới được bảo vệ theo convention ứng dụng, chưa có database role chặn update/delete.
 - Metrics mới là registry trong process và chưa có endpoint public. Cần chốt
-  ingress/TLS, scraper network và multi-instance aggregation trước khi expose.
-- Restore local đã được diễn tập thành công; production vẫn cần chốt RPO/RTO,
-  backup mã hóa ngoài máy, rotation secret và audit monitoring.
+  ingress/TLS và scraper network trước khi expose; aggregation nhiều instance là
+  mở rộng có điều kiện, không phải yêu cầu đã triển khai trong bản bàn giao này.
+- Restore local và recovery regression đã đạt. RPO 24h/RTO 4h, 7 bản ngày/4 bản tuần
+  đã được duyệt; destination mã hoá ngoài máy, người giữ key, người restore và
+  rotation/restore evidence trên target vẫn do bên nhận dự án hoàn thiện.
 - Dependency audit chỉ phát hiện advisory đã biết, không loại trừ supply-chain compromise.
 - GitHub Actions hiện khóa theo major tag (`v4`), chưa khóa theo commit SHA đã
   duyệt. Trước khi dùng CI bảo vệ production cần pin SHA và có lịch cập nhật.
@@ -148,6 +159,25 @@ không đủ để đóng checkpoint này.
   trong bộ nhớ frontend, kể cả request logout thất bại.
 
 ## Đã sửa
+
+### [Vận hành, 2026-10-05] Backup/restore bỏ qua lỗi native và race tạo target
+
+- Đã tái hiện việc `createdb` lỗi nhưng script vẫn chạy restore; các lỗi dump/copy/
+  lookup/restore cũng chưa được chặn ngay. Bản sửa kiểm tra exit code và kết quả
+  lookup/count, dùng dump name GUID và không để cleanup warning che lỗi chính.
+- 14 regressions PowerShell đạt; restore thật vào database cô lập mới giữ nguyên
+  ciphertext, số đo, grants/key scope, thông báo và audit; app đọc stored data đúng
+  timestamp và từ chối outsider. Backup/database được giữ lại để review, không
+  overwrite/delete DB người dùng. Xem [bằng chứng D](../checkpoints/2026-10-05-d-local.md).
+
+### [Dependency, 2026-10-05] Bản vá tương thích và hồi quy recovery
+
+- Nest 12.0.3/Fastify 5.12.5 cùng overrides transitive có phạm vi thay kết quả audit
+  14 advisories trước sửa bằng 0 advisory sau sửa; không thêm package chức năng,
+  không đổi authentication flow và không hạ supply-chain policy.
+- Recovery regressions xác nhận chỉ revoke session holder đang active, không sửa
+  evidence revoke cũ/session tài khoản khác và không đưa password/hash vào audit.
+- Full gate 510/510 tests và `pnpm verify` đạt; production target vẫn chưa nghiệm thu.
 
 ### [Trung bình, Phase C] Chốt người nhận ở lô phát đầu tiên
 

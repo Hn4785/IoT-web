@@ -171,5 +171,8 @@ Role 2 work can proceed without weakening backend sequencing:
 
 Checkpoint D-local is verified. Continue with frontend browser integration and
 live-device verification; then close D-production only after ingress/TLS/proxy,
-private metrics, backup ownership/RPO/RTO, MFA and staging acceptance are
-explicit. Do not treat the local in-process registry as production monitoring.
+private metrics, backup ownership/RPO/RTO, recovery/rotation and staging acceptance
+are explicit. The owner/team excluded MFA/SSO on 2026-10-05; that waiver does not
+remove password-compromise risk or close production acceptance. Current sequencing
+is in tasks/plan.md; the receiving team owns deployment. Do not treat the local
+in-process registry as production monitoring.

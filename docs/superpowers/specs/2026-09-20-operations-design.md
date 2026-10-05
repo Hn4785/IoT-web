@@ -1,7 +1,9 @@
 # Phase D Operations Design
 
-Date: 2026-09-20  
-Status: Checkpoint D1 verified locally; deployment decisions remain deferred  
+Date: 2026-09-20
+
+Status: D app/local revalidated 2026-10-05; receiving-team production gates remain open
+
 Module id: `operations`
 
 Scope decision (2026-10-05): the owner/team excludes MFA/SSO from this delivery.
@@ -209,8 +211,14 @@ rehearsal evidence; unit tests cannot substitute for restore or staging evidence
 
 ### D — release
 
-- Delivery, recovery and staging evidence exists and all remaining exceptions
-  have an owner, deadline and explicit acceptance.
+- D app/local: immutable build, static/regression/coverage/secret/dependency gates,
+  guarded isolated restored-app acceptance and production-image smoke are verified
+  in docs/checkpoints/2026-10-05-d-local.md. Local recovery keeps unrelated sessions
+  and previous revocation evidence; no auth policy change or Pi DB mutation.
+- D-production: the receiving team still supplies target staging, infrastructure,
+  recovery/rotation, encrypted off-host backup and live-provider evidence. Remaining
+  exceptions need named owners and explicit acceptance; local evidence is not a
+  substitute for that gate or a `production-ready` claim.
 
 ## 10. Deferred deployment decisions
 

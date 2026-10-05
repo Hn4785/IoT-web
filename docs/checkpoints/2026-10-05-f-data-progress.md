@@ -30,8 +30,11 @@ Secret scan passed for 265 files; diff check passed. Antigravity raw traversal w
 independently reviewed and verified after two correction rounds; no automatic merge.
 
 These tests use validated deterministic provider fixtures, not live provider recovery.
-Fresh production dependency audit failed with 14 advisories (7 high, 7 moderate).
-Current full packaging/backup/restore and large-scale capacity evidence are not claimed.
+The pre-patch production dependency audit found 14 advisories (7 high, 7 moderate).
+This is historical: the owner-approved D patch slice now passes audit with zero
+advisories and the fresh full suite passes 510/510 tests. See
+[D revalidation](2026-10-05-d-local.md) for the separate backup/restore/image gates.
+Full-app portable packaging and large-scale F-data capacity acceptance are not claimed.
 
 Owner priority update: stop expanding/closing F after F1 for now and complete D.
 Preserve the code above as verified local progress. F2-F6 and final F-data acceptance

@@ -85,12 +85,14 @@ browser cookie and request-handling memory.
 
 - Rate limiting is process-local. Multi-instance deployment needs a shared store
   or infrastructure limiter during operations work.
-- API-key rate metadata is enforced by the future station-data route; Phase A only
-  authenticates and attaches the bounded principal because no data route exists.
+- API-key limits are enforced on the current Client Developer station-data routes;
+  their process-local placement still requires receiving-team proxy/target approval.
 - PostgreSQL backup encryption, restore drills, production secret rotation and
   audit monitoring belong to operations.
-- No MFA or SSO is included. Compromise of the Super Admin password remains a high
-  impact risk; add MFA before an internet-facing production launch.
+- No MFA or SSO is included by the owner/team waiver on 2026-10-05. Compromise of
+  the Super Admin password remains a high-impact residual risk; the team may add
+  MFA later. The waiver is not an implemented control or production certification.
+  Existing server-side authorization, audit and recovery remain required.
 - Audit tables are append-only by application convention, not a database role that
   denies update/delete. Production database privileges should harden this boundary.
 - Dependency audit covers known advisories, not maintainer compromise or every
