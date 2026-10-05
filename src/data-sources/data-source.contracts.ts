@@ -68,6 +68,23 @@ export type DataSourceGrantDto = Readonly<{
   createdAt: string;
 }>;
 
+export type SourceConnectionStatusDto = Readonly<{
+  connectionStatus: 'CONNECTED' | 'FAILED';
+  lastCheckedAt: string;
+  isFromCache: boolean;
+}>;
+
+export const sourceConnectionStatusOpenApiSchema: SchemaObject = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['connectionStatus', 'lastCheckedAt', 'isFromCache'],
+  properties: {
+    connectionStatus: { type: 'string', enum: ['CONNECTED', 'FAILED'] },
+    lastCheckedAt: { type: 'string', format: 'date-time' },
+    isFromCache: { type: 'boolean' },
+  },
+};
+
 export type DataSourceGrantCandidateDto = Readonly<{
   id: string;
   displayName: string;

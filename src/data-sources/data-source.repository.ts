@@ -337,7 +337,11 @@ export class DataSourceRepository {
         throw new AppError('FORBIDDEN', 403, 'Only the source owner can manage access');
       }
       if (!['FARMER', 'CLIENT_DEVELOPER'].includes(target.role) || target.status !== 'ACTIVE') {
-        throw new AppError('CONFLICT', 409, 'Only active Farmer and Client Developer accounts can receive access');
+        throw new AppError(
+          'CONFLICT',
+          409,
+          'Only active Farmer and Client Developer accounts can receive access',
+        );
       }
       if (target.id === source.ownerUserId) {
         throw new AppError('CONFLICT', 409, 'The source owner already has access');
@@ -553,7 +557,11 @@ export class DataSourceRepository {
 
     const cursor = query.cursor
       ? await this.prisma.user.findFirst({
-          where: { id: query.cursor, role: { in: ['FARMER', 'CLIENT_DEVELOPER'] }, status: 'ACTIVE' },
+          where: {
+            id: query.cursor,
+            role: { in: ['FARMER', 'CLIENT_DEVELOPER'] },
+            status: 'ACTIVE',
+          },
           select: { id: true, createdAt: true },
         })
       : null;
@@ -618,7 +626,11 @@ export class DataSourceRepository {
       throw new AppError('FORBIDDEN', 403, 'Only the source owner can manage access');
     }
     if (!['FARMER', 'CLIENT_DEVELOPER'].includes(target.role) || target.status !== 'ACTIVE') {
-      throw new AppError('CONFLICT', 409, 'Only active Farmer and Client Developer accounts can receive access');
+      throw new AppError(
+        'CONFLICT',
+        409,
+        'Only active Farmer and Client Developer accounts can receive access',
+      );
     }
     if (target.id === source.ownerUserId) {
       throw new AppError('CONFLICT', 409, 'The source owner already has access');
@@ -679,6 +691,50 @@ export class DataSourceRepository {
         authTag: source.keyAuthTag,
       },
     };
+  }
+
+  async getVisibleConnection(principal: CurrentPrincipalValue, sourceId: string) {
+    const source = await this.prisma.dataSource.findFirst({
+      where: {
+        id: sourceId,
+        kind: 'MANAGED',
+        removedAt: null,
+        ...(principal.role === 'ADMIN'
+          ? {}
+          : {
+              OR: [
+                { ownerUserId: principal.userId },
+                { grants: { some: { userId: principal.userId } } },
+              ],
+            }),
+      },
+      select: { baseUrl: true, keyCiphertext: true, keyNonce: true, keyAuthTag: true },
+    });
+    if (!source) throw new AppError('NOT_FOUND', 404, 'Resource not found');
+    if (!source.keyCiphertext || !source.keyNonce || !source.keyAuthTag) {
+      throw new AppError('INTERNAL_ERROR', 500, 'Stored source credential is invalid');
+    }
+    return {
+      baseUrl: source.baseUrl,
+      encrypted: {
+        ciphertext: source.keyCiphertext,
+        nonce: source.keyNonce,
+        authTag: source.keyAuthTag,
+      },
+    };
+  }
+
+  async recordConnectionStatus(
+    sourceId: string,
+    connected: boolean,
+    checkedAt: Date,
+  ): Promise<void> {
+    // Health observations are not owner mutations. Never revive a removed source
+    // or overwrite a newer observation that completed while this probe ran.
+    await this.prisma.dataSource.updateMany({
+      where: { id: sourceId, kind: 'MANAGED', removedAt: null, lastCheckedAt: { lte: checkedAt } },
+      data: { connectionStatus: connected ? 'CONNECTED' : 'FAILED', lastCheckedAt: checkedAt },
+    });
   }
 
   async recordConnectionTest(input: {

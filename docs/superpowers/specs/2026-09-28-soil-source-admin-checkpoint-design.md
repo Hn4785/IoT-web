@@ -91,6 +91,30 @@ contract exists.
 
 ## Station-scoped sharing
 
+### Read-only connection status (approved 2026-10-05)
+
+`GET /api/v1/data-sources/:sourceId/connection-status` checks an already-visible
+managed source for its owner, an overseeing Admin or a shared Farmer. It uses
+the stored credential and fixed, allowlisted `/stations` path, with existing
+response validation, size and timeout limits. This is API reachability, not
+proof that measurements are recent. It does not import stations or grant
+Test/Manage/Reveal/Remove permissions to viewers.
+
+The success envelope contains only `connectionStatus` (`CONNECTED` or `FAILED`),
+`lastCheckedAt` (actual check time, UTC ISO 8601) and `isFromCache` (boolean).
+Provider/network/schema failures return `FAILED`; authorization, database and
+internal failures retain normal safe error envelopes. Persist the check result
+on active sources without changing grants, inventory or audit history.
+
+Recheck current visibility before serving cached/coalesced results, including
+after an in-flight probe. Reuse results for at most 30 seconds, coalesce by
+source, retain at most 500 results and allow at most four concurrent probes.
+Capacity exhaustion returns `REQUEST_IN_PROGRESS` (503), not a false outage.
+No stale-success fallback, arbitrary destination, credential or station detail
+is exposed. Source lists remain stored snapshots; the frontend checks on page
+entry and Refresh, labels checking/unverified states and keeps the actual check
+time visible. Existing owner-only soil-admission Test remains unchanged.
+
 `Manage Access` selects one active Farmer and either all eligible soil stations
 or a non-empty subset. Persistence records the account-to-source relationship
 and the exact station IDs. Authorization for hierarchy, station detail,

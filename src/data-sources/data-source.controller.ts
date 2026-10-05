@@ -36,15 +36,39 @@ import {
   parseSetDataSourceGrant,
   revealDataSourceOpenApiSchema,
   setDataSourceGrantOpenApiSchema,
+  sourceConnectionStatusOpenApiSchema,
 } from './data-source.contracts.js';
 import { DataSourceService } from './data-source.service.js';
+import { SourceConnectionStatusService } from './source-connection-status.service.js';
 
 @ApiTags('data-sources')
 @ApiBearerAuth()
 @UseGuards(AccessTokenGuard)
 @Controller('data-sources')
 export class DataSourceController {
-  constructor(private readonly sources: DataSourceService) {}
+  constructor(
+    private readonly sources: DataSourceService,
+    private readonly connectionStatus: SourceConnectionStatusService,
+  ) {}
+
+  @Get(':sourceId/connection-status')
+  @Header('Cache-Control', 'no-store')
+  @ApiOkResponse({
+    description:
+      'Bounded API reachability check for a currently visible source; not measurement freshness',
+    schema: {
+      properties: { success: { enum: [true] }, data: sourceConnectionStatusOpenApiSchema },
+    },
+  })
+  async getConnectionStatus(
+    @CurrentPrincipal() principal: CurrentPrincipalValue,
+    @Param('sourceId') sourceId: string,
+  ) {
+    return {
+      success: true,
+      data: await this.connectionStatus.check(principal, parseDataSourceId(sourceId)),
+    };
+  }
 
   @Post()
   @Header('Cache-Control', 'no-store')
