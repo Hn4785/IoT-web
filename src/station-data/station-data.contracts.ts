@@ -52,6 +52,7 @@ export type SoilFieldDto = Readonly<{
   depthCm: number | null;
 }>;
 export type LatestSoilDataDto = Readonly<{
+  dataOrigin?: 'upstream' | 'stored';
   station: Pick<StationDto, 'id' | 'name' | 'code'>;
   measurement: 'soil';
   fields: readonly SoilFieldDto[];
@@ -60,6 +61,7 @@ export type LatestSoilDataDto = Readonly<{
   isStale: boolean;
 }>;
 export type NormalizedLatestSoil = Readonly<{
+  dataOrigin?: 'upstream' | 'stored';
   station: Pick<StationDto, 'id' | 'name' | 'code'>;
   fields: readonly Readonly<{ field: SoilField; value: number; observedAt: string }>[];
   fetchedAt: string;

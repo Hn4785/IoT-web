@@ -3,6 +3,8 @@ import { Inject, Injectable, Optional } from '@nestjs/common';
 import { RUNTIME_CONFIG } from '../config/runtime-config.module.js';
 import type { RuntimeConfig } from '../config/runtime-config.js';
 import { WeatherClientService } from '../integrations/weather/weather-client.service.js';
+import { AppError } from '../common/errors/app-error.js';
+import { SoilReadingRepository } from './soil-reading.repository.js';
 import {
   BoundedAsyncCache,
   HISTORY_SOIL_CACHE,
@@ -43,6 +45,8 @@ export class StationDataService {
     historyCache?: BoundedAsyncCache<NormalizedHistoryPage>,
     @Optional()
     private readonly sourceClients?: StationSourceClientResolver,
+    @Optional()
+    private readonly readings?: SoilReadingRepository,
   ) {
     this.clock = clock ?? { now: () => new Date() };
     this.cache =
@@ -64,28 +68,58 @@ export class StationDataService {
   }
 
   async getLatest(station: AuthorizedStation, query: LatestSoilQuery): Promise<LatestSoilDataDto> {
+    await this.readings?.requireActive(station);
     const now = this.clock.now();
     const key = `latest:${station.dataSourceId}:${station.upstreamCode}:${[...query.fields].sort().join(',')}`;
 
-    const cacheResult = await this.cache.get(key, async () => {
-      const weather = this.sourceClients
-        ? await this.sourceClients.resolve(station.dataSourceId)
-        : this.weather;
-      const upstream = await weather.getLatest({
-        station: [station.upstreamCode],
-        type: ['soil'],
-        fields: [...query.fields],
+    try {
+      const cacheResult = await this.cache.get(key, async () => {
+        const weather = this.sourceClients
+          ? await this.sourceClients.resolve(station.dataSourceId)
+          : this.weather;
+        const upstream = await weather.getLatest({
+          station: [station.upstreamCode],
+          type: ['soil'],
+          fields: [...query.fields],
+        });
+        const value = mapLatestSoil({
+          station,
+          upstream,
+          fields: query.fields,
+          fetchedAt: now,
+        });
+        await this.readings?.ingestLatest(station, value);
+        await this.sourceClients?.markConnected(station.dataSourceId, now);
+        return value;
       });
-      await this.sourceClients?.markConnected(station.dataSourceId, now);
-      return mapLatestSoil({
-        station,
-        upstream,
-        fields: query.fields,
-        fetchedAt: now,
-      });
-    });
 
-    return toLatestSoilDto(cacheResult.value, now, this.config.soilStaleAfterMs, cacheResult);
+      const canonical = await this.readings?.getLatest(station, query.fields);
+      const value = canonical
+        ? {
+            ...canonical,
+            dataOrigin: cacheResult.isStale ? ('stored' as const) : ('upstream' as const),
+          }
+        : cacheResult.value;
+      return toLatestSoilDto(value, now, this.config.soilStaleAfterMs, cacheResult);
+    } catch (error) {
+      if (
+        !this.readings ||
+        !(error instanceof AppError) ||
+        ![
+          'UPSTREAM_TIMEOUT',
+          'UPSTREAM_UNAVAILABLE',
+          'RATE_LIMITED',
+          'UPSTREAM_INVALID_RESPONSE',
+        ].includes(error.code)
+      )
+        throw error;
+      const stored = await this.readings.getLatest(station, query.fields);
+      if (!stored) throw error;
+      return toLatestSoilDto(stored, now, this.config.soilStaleAfterMs, {
+        isFromCache: true,
+        isStale: true,
+      });
+    }
   }
 
   async getHistory(station: AuthorizedStation, query: SoilHistoryQuery): Promise<SoilHistoryDto> {

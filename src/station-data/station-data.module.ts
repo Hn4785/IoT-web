@@ -24,6 +24,7 @@ import {
 } from './soil-metadata.provider.js';
 import type { NormalizedHistoryPage, NormalizedLatestSoil } from './station-data.contracts.js';
 import { StationDataService } from './station-data.service.js';
+import { SoilReadingRepository } from './soil-reading.repository.js';
 import { StationRepository } from './station.repository.js';
 import { StationSourceClientResolver } from './station-source-client.resolver.js';
 
@@ -34,6 +35,7 @@ import { StationSourceClientResolver } from './station-source-client.resolver.js
     StationRepository,
     HierarchyService,
     StationDataService,
+    SoilReadingRepository,
     StationSourceClientResolver,
     ClientRateLimitStore,
     ClientRateLimitGuard,

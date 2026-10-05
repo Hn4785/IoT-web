@@ -224,6 +224,7 @@ export class BrowserStationController {
               },
             },
             measurement: { type: 'string', enum: ['soil'] },
+            dataOrigin: { type: 'string', enum: ['upstream', 'stored'] },
             fields: {
               type: 'array',
               items: {
