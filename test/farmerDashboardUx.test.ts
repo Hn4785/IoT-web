@@ -56,7 +56,7 @@ test("History Report uses request-keyed composite state to isolate queries witho
 });
 
 test("History Report disables Apply button when station is not selected", () => {
-  assert.match(history, /disabled=\{!hierarchy\.selectedStationId\}/);
+  assert.match(history, /disabled=\{!hierarchy\.selectedStationId \|\| hierarchy\.loading\}/);
 });
 
 test("History Report disables Export when no results are available", () => {

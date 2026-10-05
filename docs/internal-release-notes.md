@@ -21,10 +21,18 @@ Với mỗi thay đổi:
 - F9: scope gắn account/session/role/environment; refresh lại cả Farm/Plot/Station
   dù ID cha không đổi. Chặn pagination/request cũ, sai parent, và giữ lựa chọn
   hợp lệ khi refresh chồng nhau. Không đổi luồng đăng nhập hay quyền backend.
-- Frontend local: 205/205 tests, lint và TypeScript/production build đạt.
+- F8: giữ lịch sử theo đúng trạm và toàn bộ query, kể cả begin/end thực tế;
+  tải/retry từng trạm, không làm mất chuỗi thành công khi trạm khác lỗi hoặc mất quyền.
+  Phân biệt Upstream/Cache/Stored/Last known và coverage đủ/thiếu/chưa xác nhận;
+  giữ thời điểm fetch gốc, khoảng trống biểu đồ và metadata nguồn trong CSV.
+- Frontend local: 218/218 tests, lint và TypeScript/production build đạt.
   Browser fixture cách ly xác nhận online/stored/empty/denied, endpoint phụ lỗi,
   đổi trạm với metadata chậm, phiên mới không dùng fallback cũ và refresh bỏ trạm
   bị thu hồi quyền; StrictMode không mắc kẹt loading. Không gọi provider/DB/Pi.
+  Analysis giữ chuỗi A khi B lỗi/bị thu hồi; đổi khoảng/metric không giữ kết quả
+  query cũ. Report giữ cùng-query khi Apply gặp lỗi tạm thời; rỗng/mất quyền xoá
+  fallback. Admin/Super Admin/Farmer/Developer đã kiểm tra trạng thái dữ liệu
+  theo trang trong phạm vi F-product; không thay thế E2E đăng nhập/quản lý quyền.
 - Backend F10: 89 file/557 tests và `pnpm verify` đạt; commit local `236aa4e`.
   Stored/backfill không đánh giá như live; rule binding được kiểm lại trong lock;
   restart/overlap/correction không nhân đôi lifecycle/notification.
@@ -32,8 +40,10 @@ Với mỗi thay đổi:
   `brace-expansion 5.0.12`, Nest Fastify `12.0.3`, Fastify `5.12.5`.
   Chạy lại `pnpm audit --prod --audit-level=high` không còn advisory.
   CI GitHub còn dùng bản chưa nhận commit này; không bỏ/hạ gate audit để làm xanh.
-- F8 và Checkpoint F-product đang kiểm chứng tiếp. FE-2/FE-5/FE-6/QA-1/F16 và
-  target production giữ riêng; test fixture không phải E2E đăng nhập hay API thật.
+- F7-F10 và Checkpoint F-product hoàn thành local theo phạm vi trên.
+  FE-2/FE-5/FE-6/QA-1/F16 và target production giữ riêng; test fixture không phải
+  E2E đăng nhập hay API thật. Nội dung CSV đã test; tải file qua browser thật còn
+  thuộc F16, không coi lần thử download không xác nhận được là bằng chứng đạt.
   Chỉ commit local. Không chuyển fixture, database test, seed hay dữ liệu mẫu.
 
 ## F-data Pi test — 2026-10-05 (lưu lịch sử 90 ngày)

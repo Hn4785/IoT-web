@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Download, RefreshCw } from "lucide-react";
 
 import { Button } from "../../components/common/Button.tsx";
@@ -6,10 +6,21 @@ import Loading from "../../components/common/Loading.tsx";
 import LineChart, { type LineChartPoint } from "../../components/charts/LineChart.tsx";
 import PageHeader from "../../components/layout/PageHeader.tsx";
 import { useStationHierarchy } from "../../hooks/useStationHierarchy.ts";
-import { stationBrowserService, type SoilHistoryData } from "../../services/stationBrowserService.ts";
+import { stationBrowserService } from "../../services/stationBrowserService.ts";
 import type { ApiSoilField } from "../../types/soil.ts";
-import { normalizeApiError } from "../../utils/apiError.ts";
+import {
+  buildHistoryQueryKey,
+  handleStationHistorySuccess,
+  handleStationHistoryError,
+  insertChartGaps,
+  getHonestProvenanceAndCoverage,
+  formatHistoryReportCsv,
+  createRequestFence,
+  type StationHistoryRecord,
+  type HistoryQueryParams,
+} from "../../utils/retainedHistoryData.ts";
 import styles from "./ConnectedSoil.module.css";
+import { formatVietnamDateTime } from "../../utils/formatDateTime.ts";
 
 const fields: Array<{ value: ApiSoilField; label: string }> = [
   { value: "moisture", label: "Soil Moisture" },
@@ -27,13 +38,13 @@ const defaultEnd = inputDate(new Date());
 const defaultBegin = inputDate(new Date(new Date(defaultEnd).getTime() - 7 * 86_400_000));
 
 interface HistoryReportDataState {
+  queryKey: string;
   stationId: string;
   field: ApiSoilField;
   begin: string;
   end: string;
   reloadKey: number;
-  data: SoilHistoryData | null;
-  error: string;
+  record: StationHistoryRecord | null;
 }
 
 export default function HistoryReport() {
@@ -43,80 +54,113 @@ export default function HistoryReport() {
   const [end, setEnd] = useState(defaultEnd);
   const [dataState, setDataState] = useState<HistoryReportDataState | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
+  const fenceRef = useRef(createRequestFence());
+
+  if (!hierarchy.loading && !hierarchy.selectedStationId && dataState !== null) {
+    setDataState(null);
+  }
+
+  const queryParams: HistoryQueryParams = useMemo(() => ({
+    stationId: hierarchy.selectedStationId,
+    fields: [field],
+    begin: `${begin}T00:00:00.000Z`,
+    end: `${end}T23:59:59.999Z`,
+    interval: "1h",
+    aggregate: "mean",
+    limit: 500,
+  }), [hierarchy.selectedStationId, field, begin, end]);
+
+  const queryKey = useMemo(() => buildHistoryQueryKey(queryParams), [queryParams]);
 
   useEffect(() => {
+    const fence = fenceRef.current;
     let active = true;
     const currentStationId = hierarchy.selectedStationId;
     if (!currentStationId) return () => { active = false; };
-    const currentField = field;
-    const currentBegin = begin;
-    const currentEnd = end;
     const currentReloadKey = reloadKey;
+    const reqId = fence.nextRequestId();
 
     stationBrowserService.getHistory(currentStationId, {
-      fields: [currentField],
-      begin: `${currentBegin}T00:00:00.000Z`,
-      end: `${currentEnd}T23:59:59.999Z`,
+      fields: [field],
+      begin: `${begin}T00:00:00.000Z`,
+      end: `${end}T23:59:59.999Z`,
       interval: "1h",
       aggregate: "mean",
       limit: 500,
     }).then(
       (result) => {
-        if (!active) return;
-        setDataState({
-          stationId: currentStationId,
-          field: currentField,
-          begin: currentBegin,
-          end: currentEnd,
-          reloadKey: currentReloadKey,
-          data: result,
-          error: "",
+        if (!active || !fenceRef.current.isCurrent(reqId)) return;
+        setDataState((prev) => {
+          if (!fenceRef.current.isCurrent(reqId)) return prev;
+          const prior = prev?.queryKey === queryKey ? prev.record : undefined;
+          const updated = handleStationHistorySuccess(prior, queryKey, result, currentStationId);
+          return { queryKey, stationId: currentStationId, field, begin, end, reloadKey: currentReloadKey, record: updated };
         });
       },
       (reason) => {
-        if (!active) return;
-        setDataState({
-          stationId: currentStationId,
-          field: currentField,
-          begin: currentBegin,
-          end: currentEnd,
-          reloadKey: currentReloadKey,
-          data: null,
-          error: normalizeApiError(reason).message,
+        if (!active || !fenceRef.current.isCurrent(reqId)) return;
+        setDataState((prev) => {
+          if (!fenceRef.current.isCurrent(reqId)) return prev;
+          const prior = prev?.queryKey === queryKey ? prev.record : undefined;
+          const updated = handleStationHistoryError(prior, queryKey, reason, currentStationId);
+          return { queryKey, stationId: currentStationId, field, begin, end, reloadKey: currentReloadKey, record: updated };
         });
       },
     );
-    return () => { active = false; };
-  }, [begin, end, field, hierarchy.selectedStationId, reloadKey]);
+    return () => {
+      active = false;
+      fence.nextRequestId();
+    };
+  }, [begin, end, field, hierarchy.selectedStationId, queryKey, reloadKey]);
 
   const currentData = (dataState?.stationId === hierarchy.selectedStationId
     && dataState?.field === field
     && dataState?.begin === begin
     && dataState?.end === end
-    && dataState?.reloadKey === reloadKey)
+    && dataState?.reloadKey === reloadKey
+    && dataState?.queryKey === queryKey)
     ? dataState
     : null;
-  const data = currentData?.data ?? null;
-  const error = currentData?.error ?? "";
+  const record = currentData?.record ?? null;
+  const data = record?.data ?? null;
+  const error = record?.error ?? "";
+  const isRetained = record?.isRetained ?? false;
 
   const isLoading = hierarchy.loading || Boolean(hierarchy.selectedStationId && !currentData && !error && !hierarchy.error);
 
   const series = data?.series.find((item) => item.field === field);
-  const points = useMemo<LineChartPoint[]>(() => (series?.points ?? []).map((point) => ({
+  const rawPoints = useMemo(() => series?.points ?? [], [series]);
+  const points = rawPoints;
+  const chartPoints = useMemo<LineChartPoint[]>(() => insertChartGaps(rawPoints, "1h").map((point) => ({
     value: point.value,
     timestamp: point.observedAt,
     quality: point.quality,
-  })), [series]);
+  })), [rawPoints]);
 
   const timeDomain = useMemo(() => ({
     begin: `${begin}T00:00:00.000Z`,
     end: `${end}T23:59:59.999Z`,
   }), [begin, end]);
 
+  const provenance = getHonestProvenanceAndCoverage(data, isRetained, Boolean(error));
+
   function exportCsv() {
-    if (!series) return;
-    const rows = ["observedAt,value,unit,quality", ...series.points.map((point) => `${point.observedAt},${point.value},${series.unit ?? ""},${point.quality}`)];
-    const url = URL.createObjectURL(new Blob([rows.join("\n")], { type: "text/csv" }));
+    if (!series || !series.points.length) return;
+    const st = hierarchy.stations.find((s) => s.id === hierarchy.selectedStationId);
+    const content = formatHistoryReportCsv({
+      stationCode: st?.code ?? hierarchy.selectedStationId,
+      field,
+      begin,
+      end,
+      origin: provenance.origin,
+      coverageStatus: provenance.coverageLabel,
+      isRetained,
+      fetchedAt: data?.fetchedAt,
+      points: series.points,
+      unit: series.unit ?? "",
+      queryKey,
+    });
+    const url = URL.createObjectURL(new Blob([content], { type: "text/csv;charset=utf-8" }));
     const anchor = document.createElement("a");
     anchor.href = url;
     anchor.download = `${field}-${begin}-${end}.csv`;
@@ -138,32 +182,44 @@ export default function HistoryReport() {
         <label>Metric<select value={field} onChange={(event) => setField(event.target.value as ApiSoilField)}>{fields.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label>
         <label>From<input type="date" value={begin} max={end} onChange={(event) => setBegin(event.target.value)} /></label>
         <label>To<input type="date" value={end} min={begin} onChange={(event) => setEnd(event.target.value)} /></label>
-        <Button variant="outline" icon={<RefreshCw size={16} />} disabled={!hierarchy.selectedStationId} onClick={() => setReloadKey((value) => value + 1)}>Apply</Button>
+        <Button variant="outline" icon={<RefreshCw size={16} />} disabled={!hierarchy.selectedStationId || hierarchy.loading} onClick={() => { hierarchy.reload(); setReloadKey((value) => value + 1); }}>Apply</Button>
       </section>
-      {(error || hierarchy.error) && <p className={styles.error} role="alert">{error || hierarchy.error}</p>}
+      {(error || hierarchy.error) && (
+        <p className={styles.error} role="alert">
+          {error || hierarchy.error}
+          {" "}
+          <button
+            type="button"
+            style={{ marginLeft: 8, cursor: "pointer", textDecoration: "underline", background: "none", border: "none", color: "inherit", font: "inherit" }}
+            onClick={() => { if (hierarchy.error) hierarchy.reload(); setReloadKey((value) => value + 1); }}
+          >
+            Retry
+          </button>
+        </p>
+      )}
       <section className={styles.card}>
         <h2>{fields.find((item) => item.value === field)?.label}</h2>
         {isLoading ? (
           <Loading label="Loading history report..." />
-        ) : error || hierarchy.error ? (
-          <p className={styles.empty}>Unable to load measurements.</p>
         ) : !hierarchy.selectedStationId ? (
           <p className={styles.empty}>Select a station to view history report.</p>
-        ) : points.length ? (
+        ) : chartPoints.length && points.length ? (
           <LineChart
-            data={points}
+            data={chartPoints}
             unit={series?.unit ?? ""}
             showDots={false}
             height={280}
             timeDomain={timeDomain}
             ariaLabel={`${fields.find((item) => item.value === field)?.label} history report`}
           />
+        ) : error || hierarchy.error ? (
+          <p className={styles.empty}>Unable to load measurements.</p>
         ) : (
           <p className={styles.empty}>No historical measurements for the selected range.</p>
         )}
-        {currentData && !isLoading && !error && !hierarchy.error && (
+        {currentData && !isLoading && !hierarchy.error && (points.length > 0 || !error) && (
           <footer className={styles.reportFooter}>
-            {points.length} hourly mean data points · {data?.isFromCache ? "cache" : "upstream"}{data?.isStale ? " · stale" : ""}
+            {points.length} hourly mean data points · {provenance.provenanceLabel}{record?.isStale ? " · Stale" : ""} · Coverage: {provenance.coverageLabel}{data?.fetchedAt ? ` · Last fetch: ${formatVietnamDateTime(data.fetchedAt)}` : ""}
           </footer>
         )}
       </section>

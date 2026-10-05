@@ -35,6 +35,21 @@ export interface SoilHistorySeries {
   points: SoilHistoryPoint[];
 }
 
+export interface SoilHistoryCoverageRange {
+  begin: string;
+  end: string;
+}
+
+export interface SoilHistoryCoverageField {
+  field: ApiSoilField;
+  ranges: SoilHistoryCoverageRange[];
+}
+
+export interface SoilHistoryCoverage {
+  status: "complete" | "partial" | "unknown";
+  fields?: SoilHistoryCoverageField[];
+}
+
 export interface SoilHistoryData {
   stationId: string;
   measurement: "soil";
@@ -43,6 +58,8 @@ export interface SoilHistoryData {
   fetchedAt: string;
   isFromCache: boolean;
   isStale: boolean;
+  dataOrigin?: "upstream" | "stored";
+  coverage?: SoilHistoryCoverage;
 }
 
 interface BrowserHttpClient {
@@ -101,14 +118,19 @@ export function createStationBrowserService(client: BrowserHttpClient) {
         interval?: "raw" | "5m" | "30m" | "1h" | "1d";
         aggregate?: "mean" | "min" | "max" | "first" | "last";
         limit?: number;
+        order?: "asc" | "desc";
+        cursor?: string;
       },
     ): Promise<SoilHistoryData> {
+      const { fields, order, cursor, ...rest } = options;
       return dataOf(await client.get<ApiSuccessEnvelope<SoilHistoryData>>(
         API_ENDPOINTS.stations.history(stationId),
         {
           params: {
-            ...options,
-            fields: options.fields.join(","),
+            ...rest,
+            fields: fields.join(","),
+            ...(order ? { order } : {}),
+            ...(cursor ? { cursor } : {}),
           },
         },
       ));
