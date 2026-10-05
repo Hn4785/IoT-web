@@ -24,10 +24,14 @@ Với mỗi thay đổi:
 - Rút gọn mô tả History & Report, bỏ ký tự Z trên mô tả; bộ lọc vẫn dùng UTC.
 - Kiểm chứng: frontend 181/181, backend 427/427; lint, typecheck, build và secret
   scan đạt. Browser fixture cách ly xác nhận Refresh, offline/phục hồi, lỗi kiểm
-  tra và viewport 520px không tràn ngang. Không thay dữ liệu ứng dụng/Pi.
+  tra và viewport 520px không tràn ngang. Fixture không ghi dữ liệu giả vào ứng dụng/Pi.
 - Format của các file backend đã sửa đạt; `pnpm verify` toàn repo còn bị chặn bởi
   4 file cũ chưa đúng Prettier, đã xác nhận lỗi tồn tại trong HEAD trước thay đổi.
-- Đang chuẩn bị push và triển khai Pi nội bộ; không có migration/dependency mới.
+- Đã push GitHub: BE `6262e80`, FE `089a116`; Pi chạy đúng hai image này và
+  web/API/readiness healthy, checksum artifact/index/assets khớp. Endpoint mới
+  vẫn trả 401 khi chưa đăng nhập. Không có migration/dependency mới.
+- Backup database/Compose và image cũ `agrisense-api:d152337`,
+  `agrisense-web:e03b23f` được giữ để rollback; PostgreSQL/ngrok không restart.
 
 ## v2.5.6 — 2026-10-04 (biểu đồ và Notifications)
 
