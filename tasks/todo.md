@@ -253,7 +253,7 @@ and must not duplicate the full contract.
 
 1. Local F2-F6 and Checkpoint F-data are complete with fresh regression and measured
    fixture evidence. D app/local stays complete; team-owned deployment stays open.
-   The owner paused F7 and authorized a separate scoped F-data Git/Pi test rollout:
+   The earlier scoped F-data Git/Pi test rollout is historical:
    only real-reading storage/collection logic, backup and additive migrations;
    preserve existing data and never seed/import fixtures or restore local test DB.
    Remaining D/F/FE updates will be published together after verification.
@@ -263,11 +263,13 @@ and must not duplicate the full contract.
    latest readings persist. Raw-history backfill remains `invalid`/unverified;
    this rollout does not close F-product, F7 or production gates. All future F/FE
    releases transfer verified logic only, never sample/test databases.
+   Latest owner instruction resumes F7-F10/F-product locally only. Do not push
+   GitHub or update Pi during this iteration; verified commits remain local.
 2. Close FE-2/FE-5/FE-6/QA-1/QA-2 through F16 with actual evidence, not blanket ticks.
 3. Preserve the no-device-write scope and B/C owner acceptance.
 4. Keep local/Pi acceptance distinct from website/public production acceptance.
 
-## F. Final portable monitoring — execution approved through F-data
+## F. Final portable monitoring — local execution approved through F-product
 
 The receiving team deploys the server website using verified handoff assets.
 Pi/local supports development/team testing; data transfer is explicit and never
@@ -302,7 +304,13 @@ Detailed acceptance, candidate files, dependencies and verification are in
       only; no GitHub push or Pi update until the F publishing gate is met.
 - [ ] F8: Preserve exact-query history; isolate failed stations and stale responses.
 - [ ] F9: Invalidate retained data on account/session/grant/source changes.
-- [ ] F10: Verify fresh-only automatic alerts and notification recovery without duplicates.
+- [x] F10: Verify fresh-only automatic alerts and notification recovery without duplicates.
+      Backend local: canonical backfill is not relabeled as fresh upstream; stored
+      snapshots cannot advance automatic rules. Positive evaluation rechecks READY,
+      revision/unit/metadata under lock. Seven new regressions plus existing
+      lifecycle/recipient/restart/lease tests pass; full gate 89 files/557 tests and
+      `pnpm verify`. Browser F-product and live-provider/target gates remain separate.
+      [evidence](../docs/checkpoints/2026-10-05-f-product-progress.md).
 - [ ] Checkpoint F-product: Role/browser acceptance for online/stored/empty/denied states.
 - [ ] F11: Reproducible full-app packaging, migration runner and ARM64/server gates.
 - [ ] F12-team: Validate deployment profile/target prerequisites for receiving-team handoff.

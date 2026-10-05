@@ -140,4 +140,40 @@ describe('durable latest outage and restart', () => {
     expect((await oldRequest).fields[0]?.value).toBe(44);
     expect((await live.getLatest(station, { fields: ['moisture'] })).fields[0]?.value).toBe(44);
   });
+
+  it('labels a newer history snapshot as stored rather than a fresh latest observation', async () => {
+    now = new Date('2026-10-05T00:05:00.000Z');
+    await repository.ingestHistory(
+      station,
+      {
+        readings: [{ field: 'moisture', value: 12, observedAt: '2026-10-05T00:04:00.000Z' }],
+        completeFields: ['moisture'],
+        rawCount: 1,
+        lastTimestamp: Date.parse('2026-10-05T00:04:00.000Z'),
+      },
+      now,
+    );
+    getLatest.mockResolvedValueOnce(
+      parseWeatherLatestResponse({
+        success: true,
+        data: [
+          {
+            station: 'DURABLE01',
+            latest: {
+              soil: {
+                ts: now.getTime(),
+                time: now.toISOString(),
+                moisture: 15,
+                _fieldTs: { moisture: Date.parse('2026-10-05T00:03:00.000Z') },
+              },
+            },
+          },
+        ],
+      }).data,
+    );
+
+    const result = await service().getLatest(station, { fields: ['moisture'] });
+    expect(result.fields[0]).toMatchObject({ value: 12, observedAt: '2026-10-05T00:04:00.000Z' });
+    expect(result).toMatchObject({ dataOrigin: 'stored', isStale: true, isFromCache: true });
+  });
 });

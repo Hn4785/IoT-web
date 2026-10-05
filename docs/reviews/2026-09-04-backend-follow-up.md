@@ -4,7 +4,7 @@ Cập nhật gần nhất: 2026-10-05. Đây là file theo dõi lỗi chính c�
 
 ## Gate hiện tại
 
-- Gate local mới nhất ngày 2026-10-05: 85/85 file, 510/510 test đạt; `pnpm verify`
+- Gate D local ngày 2026-10-05: 85/85 file, 510/510 test đạt; `pnpm verify`
   đạt format/typecheck/lint/Prisma generate/build; coverage 88.69% statements,
   78.52% branches, 93.99% functions, 91.27% lines. Production audit không còn
   advisory sau bản vá đã được duyệt; `iot_test` có đủ 12 migrations.
@@ -14,8 +14,15 @@ Cập nhật gần nhất: 2026-10-05. Đây là file theo dõi lỗi chính c�
   [D revalidation](../checkpoints/2026-10-05-d-local.md).
 - Các gate tháng 9 là bằng chứng lịch sử, không phải số liệu hiện tại. D-production
   vẫn cần bên nhận dự án nghiệm thu trên hạ tầng của họ; không đổi DB Pi đợt này.
-- Phân quyền, transaction, idempotency, optimistic revision, upstream fail-closed
-  và retention boundary chưa có lỗi logic mới với bằng chứng tái hiện.
+- Baseline trước F-product ngày 2026-10-05: 88/88 file, 550/550 backend tests và
+  `pnpm verify` đạt; frontend 181/181 tests đạt. Đây là baseline, không chứng minh
+  các lỗi mới dưới đây đã được sửa hoặc đã qua browser acceptance.
+- Sau sửa F10 local: 89/89 file, 557/557 backend tests và `pnpm verify` đạt.
+  Hai lỗi Sheet 46–47 đã có RED/GREEN và chuyển xuống Đã sửa;
+  [bằng chứng F-product](../checkpoints/2026-10-05-f-product-progress.md).
+- Chủ dự án yêu cầu chỉ sửa/test/commit local đến khi hoàn tất F; không push
+  GitHub hoặc cập nhật Pi trong đợt này. Lỗi F-product đã ghi riêng vào tab Trung,
+  STT 40–47; không đưa lỗi hạ tầng/DB Pi vào các dòng mới.
 - B-device được đánh dấu `live-verified` ngày 2026-09-28: API lấy trực tiếp từ
   các trạm quan trắc đang hoạt động, số liệu cập nhật và bên cung cấp xác nhận
   toàn bộ dữ liệu CENTER/NODE là dữ liệu cảm biến thật, đầu vào cuối cùng để
@@ -55,6 +62,50 @@ Quy tắc bằng chứng vẫn áp dụng cho QA còn mở: test/build xanh khô
 kiểm chứng browser/nguồn thật theo phạm vi nghiệm thu hiện tại.
 
 ## Chưa sửa
+
+### [ ] [Cao, F7/Frontend] Lỗi endpoint phụ làm mất latest hợp lệ — Sheet 40
+
+- `RealtimeSoilMonitoring.tsx` và `FarmDashboard.tsx` dùng `Promise.all` cho
+  latest cùng history/alerts; một rejection đặt cả latest thành null.
+- Cần tải độc lập và giữ đúng-trạm last-known khi lỗi tạm thời, với nhãn cũ và
+  timestamp gốc. Test latest thành công/endpoint phụ lỗi và chiều ngược lại.
+
+### [ ] [Cao, F7/Frontend] Chi tiết trạm giữ số đo của route cũ — Sheet 41
+
+- `StationDetail.tsx` giữ station/latest không gắn ID. A → B, metadata B thành
+  công/latest B thất bại có thể render readings A dưới station B.
+- Phải gắn identity, chặn phản hồi trễ, xoá bản giữ lại khi 401/403/404 hoặc
+  response rỗng thành công. Regression đổi route và mất quyền trước khi đóng.
+
+### [ ] [Trung bình, F8/Frontend] Một trạm lỗi xoá mọi chuỗi lịch sử — Sheet 42
+
+- `HistoricalAnalysis.tsx` dùng `Promise.all`, nhánh lỗi thay history bằng `{}`.
+- Cần giữ từng trạm tải thành công, báo/retry riêng trạm lỗi và không xuất CSV
+  như thể toàn bộ dữ liệu đã đầy đủ. Test ít nhất hai trạm, một trạm lỗi.
+
+### [ ] [Trung bình, F8/Frontend] Khóa lịch sử thiếu khoảng thời gian thật — Sheet 43
+
+- `HistoricalAnalysis.tsx` tạo key từ metric/days/station IDs, nhưng begin/end
+  được tạo động sau đó. Hai request khác khoảng có thể có cùng key.
+- Cần key gồm actual begin/end, trạm, fields, interval/aggregate/cursor/order/limit;
+  giữ fencing phản hồi cũ đang có. Test thay bộ lọc và response đảo thứ tự.
+
+### [ ] [Cao, F9/Frontend] Refresh không tải lại quyền trạm khi ID cha giữ nguyên — Sheet 44
+
+- `useStationHierarchy.ts` chỉ cho effect farms phụ thuộc reloadKey; effect
+  plots/stations chỉ theo ID cha. Lỗi/parent rỗng cũng giữ danh sách cũ.
+- Cần reload cả descendants, ràng buộc state với account/role/session/environment
+  và purge khi quan sát mất quyền. Không thay luồng authentication.
+
+### [ ] [Trung bình, F7-F8/Frontend] Bỏ provenance và coverage từ DTO — Sheet 45
+
+- `types/soil.ts`/adapter bỏ dataOrigin; `stationBrowserService.ts` bỏ history
+  dataOrigin/coverage. Footer report phân loại cache thay vì nguồn bản lưu bền.
+- Cần tiêu thụ trường đã duyệt ở station-data section 16; không suy luận stored
+  nghĩa là provider Connected, không suy luận ít sample nghĩa là đủ coverage.
+
+Các mục trên vẫn đang sửa/kiểm chứng. Mỗi mục được chuyển
+xuống phần Đã sửa sau regression độc lập; F-product/FE browser gate vẫn riêng.
 
 ### [Trung bình, Frontend/Farmer] Historical Analysis còn điều khiển giả
 
@@ -159,6 +210,28 @@ kiểm chứng browser/nguồn thật theo phạm vi nghiệm thu hiện tại.
   trong bộ nhớ frontend, kể cả request logout thất bại.
 
 ## Đã sửa
+
+### [x] [Cao, F10/Backend, 2026-10-05] Snapshot backfill bị đánh giá như latest mới — Sheet 46
+
+- Test PostgreSQL tái hiện upstream latest 00:03/canonical rawHistory 00:04:
+  trước sửa bị gắn upstream/fresh; sau sửa giữ giá trị/thời gian canonical nhưng
+  trả stored/stale. Chỉ mẫu khớp field/value/observedAt của latest đã xác nhận
+  mới được coi là upstream. Không đổi schema hoặc contract công khai.
+- Evaluator bỏ qua stored kể cả DTO có quality good/isStale false. Regression
+  kiểm tra breach/recovery không tăng, không mở/đóng alert từ bản lưu; correction
+  cùng timestamp, evaluator restart và recovery chỉ tạo lifecycle một lần.
+- Nhóm F10/C1/delivery đạt 24/24; full backend 89/89 file, 557/557 tests,
+  `pnpm verify` đạt. Chưa push GitHub/Pi hoặc xác nhận provider/target thật.
+
+### [x] [Cao, F10/Backend, 2026-10-05] Thiếu fencing binding ở nhánh đánh giá thành công — Sheet 47
+
+- Bốn test RED xác nhận rule đổi revision, unit, metadataRevision hoặc chuyển
+  BLOCKED_METADATA trong lúc latest đang chờ vẫn ghi breach theo binding cũ.
+- Scheduled evaluator mang binding đã kiểm tra vào transaction; sau row lock,
+  recheck enabled/READY/state và revision/unit/metadataRevision trước ghi.
+  GREEN xác nhận không tăng counter/observedAt hoặc tạo alert với binding cũ.
+- Review độc lập không còn finding trong phạm vi bản sửa. Full gate và giới hạn
+  triển khai như Sheet 46; browser acceptance vẫn là checkpoint riêng.
 
 ### [Vận hành, 2026-10-05] Backup/restore bỏ qua lỗi native và race tạo target
 

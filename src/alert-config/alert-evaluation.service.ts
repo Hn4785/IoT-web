@@ -27,6 +27,12 @@ interface EvaluatorLeaseFence {
   asOf: Date | undefined;
 }
 
+interface CheckedRuleBinding {
+  revision: number;
+  unit: string;
+  metadataRevision: string;
+}
+
 @Injectable()
 export class AlertEvaluationService implements OnApplicationBootstrap, OnModuleDestroy {
   private readonly logger = new Logger(AlertEvaluationService.name);
@@ -175,7 +181,7 @@ export class AlertEvaluationService implements OnApplicationBootstrap, OnModuleD
             const field = latest.fields.find((candidate) => candidate.field === fieldName);
             if (!field) {
               await this.recordSafeResult(rule.id, 'MISSING', now ?? new Date(), leaseFence);
-            } else if (latest.isStale) {
+            } else if (latest.isStale || latest.dataOrigin === 'stored') {
               await this.recordSafeResult(rule.id, 'STALE', now ?? new Date(), leaseFence);
             } else if (field.quality !== 'good' || !Number.isFinite(field.value)) {
               await this.recordSafeResult(rule.id, 'INVALID', now ?? new Date(), leaseFence);
@@ -190,6 +196,11 @@ export class AlertEvaluationService implements OnApplicationBootstrap, OnModuleD
                 `evaluator:${this.holderId}:${field.observedAt}`,
                 now ?? new Date(),
                 leaseFence,
+                {
+                  revision: rule.revision,
+                  unit: rule.unit,
+                  metadataRevision: rule.metadataRevision,
+                },
               );
             }
             evaluated += 1;
@@ -221,6 +232,7 @@ export class AlertEvaluationService implements OnApplicationBootstrap, OnModuleD
     requestId: string,
     evaluatedAt = new Date(),
     leaseFence?: EvaluatorLeaseFence,
+    expectedBinding?: CheckedRuleBinding,
   ): Promise<void> {
     await this.prisma.$transaction(
       async (tx) => {
@@ -233,7 +245,14 @@ export class AlertEvaluationService implements OnApplicationBootstrap, OnModuleD
             station: { select: { plot: { select: { farmId: true } } } },
           },
         });
-        if (!rule.isEnabled || !rule.evaluationState) return;
+        if (!rule.isEnabled || rule.evaluationStatus !== 'READY' || !rule.evaluationState) return;
+        if (
+          expectedBinding &&
+          (rule.revision !== expectedBinding.revision ||
+            rule.unit !== expectedBinding.unit ||
+            rule.metadataRevision !== expectedBinding.metadataRevision)
+        )
+          return;
         const unresolved = await tx.alert.findUnique({ where: { unresolvedRuleId: rule.id } });
         const decision = evaluateAlertSample(
           alertConditionSchema.parse(rule.condition),

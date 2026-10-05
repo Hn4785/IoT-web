@@ -98,13 +98,30 @@ export class StationDataService {
       });
 
       const canonical = await this.readings?.getLatest(station, query.fields);
+      // A history import or a newer overlapping request may advance the durable snapshot.
+      // Only observations actually confirmed by this latest response may be called upstream.
+      const confirmedLatest =
+        !canonical ||
+        (canonical.fields.length === cacheResult.value.fields.length &&
+          canonical.fields.every((field) =>
+            cacheResult.value.fields.some(
+              (candidate) =>
+                candidate.field === field.field &&
+                candidate.observedAt === field.observedAt &&
+                candidate.value === field.value,
+            ),
+          ));
+      const isStored = cacheResult.isStale || !confirmedLatest;
       const value = canonical
         ? {
             ...canonical,
-            dataOrigin: cacheResult.isStale ? ('stored' as const) : ('upstream' as const),
+            dataOrigin: isStored ? ('stored' as const) : ('upstream' as const),
           }
         : cacheResult.value;
-      const result = toLatestSoilDto(value, now, this.config.soilStaleAfterMs, cacheResult);
+      const result = toLatestSoilDto(value, now, this.config.soilStaleAfterMs, {
+        isFromCache: isStored || cacheResult.isFromCache,
+        isStale: isStored,
+      });
       if (!cacheResult.isFromCache)
         await this.sourceClients?.markConnected(station.dataSourceId, now);
       return result;
