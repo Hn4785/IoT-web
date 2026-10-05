@@ -4,6 +4,16 @@ import { OperationsMetrics, requestCompletionLog } from './operations-signals.js
 import { ReadinessService } from './readiness.service.js';
 
 describe('operations signals', () => {
+  it('records bounded collection outcomes without source, station or credential labels', () => {
+    const metrics = new OperationsMetrics();
+    metrics.recordSoilCollection('storage_limit');
+    metrics.recordSoilCollection('storage_limit');
+    metrics.recordSoilCollection('lease_lost');
+    expect(metrics.snapshot()).toEqual([
+      { name: 'soil_collection_runs_total', labels: { outcome: 'storage_limit' }, value: 2 },
+      { name: 'soil_collection_runs_total', labels: { outcome: 'lease_lost' }, value: 1 },
+    ]);
+  });
   it('bounds a stalled database readiness probe', async () => {
     const query = vi.fn(() => new Promise<never>(() => undefined));
     const prisma = { $queryRaw: query };

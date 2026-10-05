@@ -192,7 +192,12 @@ export class StationRepository {
   ): Promise<CursorPage<StationDto>> {
     const cursor = query.cursor ? decodeCursor(query.cursor, 'client-station') : undefined;
     const scope: Prisma.StationWhereInput = {
-      clientGrants: { some: { userId: principal.ownerUserId } },
+      dataSource: { removedAt: null },
+      upstreamCode: { not: 'CENTER' },
+      OR: [
+        { clientGrants: { some: { userId: principal.ownerUserId } } },
+        { sourceGrants: { some: { userId: principal.ownerUserId } } },
+      ],
       apiKeyScopes: { some: { apiKeyId: principal.apiKeyId } },
     };
     const rows = await this.prisma.station.findMany({
@@ -226,7 +231,12 @@ export class StationRepository {
     const station = await this.prisma.station.findFirst({
       where: {
         upstreamCode: code,
-        clientGrants: { some: { userId: principal.ownerUserId } },
+        dataSource: { removedAt: null },
+        NOT: { upstreamCode: 'CENTER' },
+        OR: [
+          { clientGrants: { some: { userId: principal.ownerUserId } } },
+          { sourceGrants: { some: { userId: principal.ownerUserId } } },
+        ],
         apiKeyScopes: { some: { apiKeyId: principal.apiKeyId } },
       },
       select: {

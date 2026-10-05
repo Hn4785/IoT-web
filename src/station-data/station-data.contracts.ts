@@ -52,6 +52,7 @@ export type SoilFieldDto = Readonly<{
   depthCm: number | null;
 }>;
 export type LatestSoilDataDto = Readonly<{
+  dataOrigin?: 'upstream' | 'stored';
   station: Pick<StationDto, 'id' | 'name' | 'code'>;
   measurement: 'soil';
   fields: readonly SoilFieldDto[];
@@ -60,6 +61,7 @@ export type LatestSoilDataDto = Readonly<{
   isStale: boolean;
 }>;
 export type NormalizedLatestSoil = Readonly<{
+  dataOrigin?: 'upstream' | 'stored';
   station: Pick<StationDto, 'id' | 'name' | 'code'>;
   fields: readonly Readonly<{ field: SoilField; value: number; observedAt: string }>[];
   fetchedAt: string;
@@ -95,6 +97,8 @@ export type NormalizedHistoryPage = Readonly<{
   nextCursor: string | null;
 }>;
 export type SoilHistoryDto = Readonly<{
+  dataOrigin?: 'upstream' | 'stored';
+  coverage?: SoilHistoryCoverageDto;
   stationId: string;
   measurement: 'soil';
   series: readonly SoilHistorySeriesDto[];
@@ -102,6 +106,13 @@ export type SoilHistoryDto = Readonly<{
   fetchedAt: string;
   isFromCache: boolean;
   isStale: boolean;
+}>;
+export type SoilHistoryCoverageDto = Readonly<{
+  status: 'complete' | 'partial' | 'unknown';
+  fields: readonly Readonly<{
+    field: SoilField;
+    ranges: readonly Readonly<{ begin: string; end: string }>[];
+  }>[];
 }>;
 export type CursorPage<T> = Readonly<{ items: readonly T[]; nextCursor: string | null }>;
 export type FarmDto = Readonly<{ id: string; name: string }>;
@@ -215,6 +226,159 @@ export const cursorPageOpenApiSchema = (item: SchemaObject): SchemaObject => ({
     nextCursor: { type: 'string', nullable: true, maxLength: 2048 },
   },
 });
+
+export const latestSoilResponseOpenApiSchema: SchemaObject = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['success', 'data'],
+  properties: {
+    success: { type: 'boolean', enum: [true] },
+    data: {
+      type: 'object',
+      additionalProperties: false,
+      required: [
+        'station',
+        'measurement',
+        'dataOrigin',
+        'fields',
+        'fetchedAt',
+        'isFromCache',
+        'isStale',
+      ],
+      properties: {
+        station: {
+          type: 'object',
+          additionalProperties: false,
+          required: ['id', 'name', 'code'],
+          properties: {
+            id: { type: 'string', format: 'uuid' },
+            name: { type: 'string' },
+            code: { type: 'string' },
+          },
+        },
+        measurement: { type: 'string', enum: ['soil'] },
+        dataOrigin: { type: 'string', enum: ['upstream', 'stored'] },
+        fields: {
+          type: 'array',
+          items: {
+            type: 'object',
+            additionalProperties: false,
+            required: ['field', 'value', 'unit', 'observedAt', 'quality', 'sensorId', 'depthCm'],
+            properties: {
+              field: { type: 'string', enum: [...SOIL_FIELDS] },
+              value: { type: 'number' },
+              unit: { type: 'string', nullable: true },
+              observedAt: { type: 'string', format: 'date-time' },
+              quality: { type: 'string', enum: ['good', 'stale', 'unknown'] },
+              sensorId: { type: 'string', nullable: true },
+              depthCm: { type: 'number', nullable: true },
+            },
+          },
+        },
+        fetchedAt: { type: 'string', format: 'date-time' },
+        isFromCache: { type: 'boolean' },
+        isStale: { type: 'boolean' },
+      },
+    },
+  },
+};
+
+export const soilHistoryResponseOpenApiSchema: SchemaObject = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['success', 'data'],
+  properties: {
+    success: { type: 'boolean', enum: [true] },
+    data: {
+      type: 'object',
+      additionalProperties: false,
+      required: [
+        'stationId',
+        'measurement',
+        'dataOrigin',
+        'series',
+        'page',
+        'fetchedAt',
+        'isFromCache',
+        'isStale',
+      ],
+      properties: {
+        stationId: { type: 'string', format: 'uuid' },
+        measurement: { type: 'string', enum: ['soil'] },
+        dataOrigin: { type: 'string', enum: ['upstream', 'stored'] },
+        coverage: {
+          type: 'object',
+          additionalProperties: false,
+          required: ['status', 'fields'],
+          properties: {
+            status: { type: 'string', enum: ['complete', 'partial', 'unknown'] },
+            fields: {
+              type: 'array',
+              items: {
+                type: 'object',
+                additionalProperties: false,
+                required: ['field', 'ranges'],
+                properties: {
+                  field: { type: 'string', enum: [...SOIL_FIELDS] },
+                  ranges: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      additionalProperties: false,
+                      required: ['begin', 'end'],
+                      properties: {
+                        begin: { type: 'string', format: 'date-time' },
+                        end: { type: 'string', format: 'date-time' },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        series: {
+          type: 'array',
+          items: {
+            type: 'object',
+            additionalProperties: false,
+            required: ['field', 'unit', 'sensorId', 'depthCm', 'points'],
+            properties: {
+              field: { type: 'string', enum: [...SOIL_FIELDS] },
+              unit: { type: 'string', nullable: true },
+              sensorId: { type: 'string', nullable: true },
+              depthCm: { type: 'number', nullable: true },
+              points: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  additionalProperties: false,
+                  required: ['observedAt', 'value', 'quality'],
+                  properties: {
+                    observedAt: { type: 'string', format: 'date-time' },
+                    value: { type: 'number' },
+                    quality: { type: 'string', enum: ['good', 'stale', 'unknown'] },
+                  },
+                },
+              },
+            },
+          },
+        },
+        page: {
+          type: 'object',
+          additionalProperties: false,
+          required: ['nextCursor'],
+          properties: {
+            nextCursor: { type: 'string', nullable: true, maxLength: 2048 },
+          },
+        },
+        fetchedAt: { type: 'string', format: 'date-time' },
+        isFromCache: { type: 'boolean' },
+        isStale: { type: 'boolean' },
+      },
+    },
+  },
+};
 
 function invalidRequest(message: string): AppError {
   return new AppError('VALIDATION_ERROR', 400, message);

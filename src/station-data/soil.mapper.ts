@@ -67,6 +67,7 @@ export function toLatestSoilDto(
   });
   return {
     station: value.station,
+    dataOrigin: value.dataOrigin ?? 'upstream',
     measurement: 'soil',
     fields,
     fetchedAt: value.fetchedAt,

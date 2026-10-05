@@ -30,6 +30,15 @@ const completeEnvironment = {
 } as const;
 
 describe('parseRuntimeConfig', () => {
+  it.each([
+    { SOIL_COLLECTION_CONCURRENCY: '3' },
+    { SOIL_COLLECTION_PAGE_LIMIT: '11' },
+    { SOIL_COLLECTION_BATCH_SIZE: '21' },
+    { SOIL_COLLECTION_LEASE_MS: '120000' },
+    { SOIL_RAW_GLOBAL_LIMIT: '0' },
+  ])('rejects collection settings outside the approved bounds %o', (overrides) => {
+    expect(() => parseRuntimeConfig({ ...completeEnvironment, ...overrides })).toThrow();
+  });
   it('normalizes a complete development configuration', () => {
     expect(parseRuntimeConfig(completeEnvironment)).toEqual({
       nodeEnv: 'development',
@@ -56,6 +65,14 @@ describe('parseRuntimeConfig', () => {
       alertIdempotencyRetentionHours: 168,
       alertDemoMetadataEnabled: false,
       alertDemoStationCodes: [],
+      soilCollectionEnabled: true,
+      soilCollectionIntervalMs: 120_000,
+      soilCollectionConcurrency: 2,
+      soilCollectionBatchSize: 20,
+      soilCollectionPageLimit: 10,
+      soilCollectionLeaseMs: 115_000,
+      soilRawStationLimit: 2_000_000,
+      soilRawGlobalLimit: 10_000_000,
     });
   });
 

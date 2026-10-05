@@ -120,7 +120,7 @@ model User {
   alertEvents         AlertLifecycleEvent[]           @relation("AlertEventActor")
   notifications       InAppNotification[]             @relation("NotificationRecipient")
   deliveryRecipients  NotificationDeliveryRecipient[]
-  ownedDataSources    DataSource[]                     @relation("DataSourceOwner")
+  ownedDataSources    DataSource[]                    @relation("DataSourceOwner")
   dataSourceGrants    DataSourceGrant[]
 
   @@index([role, status])
@@ -189,16 +189,79 @@ model Station {
   createdAt    DateTime @default(now()) @db.Timestamptz(3)
   updatedAt    DateTime @updatedAt @db.Timestamptz(3)
 
-  plot         Plot                 @relation(fields: [plotId], references: [id], onDelete: Restrict)
-  dataSource   DataSource           @relation(fields: [dataSourceId], references: [id], onDelete: Restrict)
-  clientGrants ClientStationGrant[]
-  apiKeyScopes ApiKeyStationScope[]
-  alertRules   AlertRule[]
-  sourceGrants DataSourceGrantStation[]
+  plot                 Plot                      @relation(fields: [plotId], references: [id], onDelete: Restrict)
+  dataSource           DataSource                @relation(fields: [dataSourceId], references: [id], onDelete: Restrict)
+  clientGrants         ClientStationGrant[]
+  apiKeyScopes         ApiKeyStationScope[]
+  alertRules           AlertRule[]
+  sourceGrants         DataSourceGrantStation[]
+  readings             SoilReading[]
+  latestReadings       SoilLatestReading[]
+  historyCoverage      SoilHistoryCoverage[]
+  collectionCheckpoint SoilCollectionCheckpoint?
 
+  @@unique([dataSourceId, upstreamCode])
+  @@unique([id, dataSourceId])
   @@index([plotId])
   @@index([dataSourceId])
-  @@unique([dataSourceId, upstreamCode])
+}
+
+model SoilReading {
+  dataSourceId  String   @db.Uuid
+  stationId     String   @db.Uuid
+  field         String   @db.VarChar(16)
+  observedAt    DateTime @db.Timestamptz(3)
+  value         Float    @db.DoublePrecision
+  fetchedAt     DateTime @db.Timestamptz(3)
+  lastFetchedAt DateTime @db.Timestamptz(3)
+  origin        String   @db.VarChar(16)
+  revision      Int      @default(1)
+  station       Station  @relation(fields: [stationId, dataSourceId], references: [id, dataSourceId], onDelete: Cascade)
+
+  @@id([dataSourceId, stationId, field, observedAt])
+  @@index([observedAt])
+}
+
+model SoilLatestReading {
+  dataSourceId  String   @db.Uuid
+  stationId     String   @db.Uuid
+  field         String   @db.VarChar(16)
+  observedAt    DateTime @db.Timestamptz(3)
+  value         Float    @db.DoublePrecision
+  fetchedAt     DateTime @db.Timestamptz(3)
+  lastFetchedAt DateTime @db.Timestamptz(3)
+  origin        String   @db.VarChar(16)
+  revision      Int      @default(1)
+  station       Station  @relation(fields: [stationId, dataSourceId], references: [id, dataSourceId], onDelete: Cascade)
+
+  @@id([dataSourceId, stationId, field])
+}
+
+model SoilHistoryCoverage {
+  dataSourceId String   @db.Uuid
+  stationId    String   @db.Uuid
+  field        String   @db.VarChar(16)
+  begin        DateTime @db.Timestamptz(3)
+  end          DateTime @db.Timestamptz(3)
+  fetchedAt    DateTime @db.Timestamptz(3)
+  station      Station  @relation(fields: [stationId, dataSourceId], references: [id, dataSourceId], onDelete: Cascade)
+
+  @@id([dataSourceId, stationId, field, begin])
+  @@index([end])
+}
+
+model SoilCollectionCheckpoint {
+  dataSourceId   String    @db.Uuid
+  stationId      String    @id @db.Uuid
+  historyThrough DateTime? @db.Timestamptz(3)
+  nextAttemptAt  DateTime  @default(now()) @db.Timestamptz(3)
+  failureCount   Int       @default(0)
+  lastResult     String    @default("pending") @db.VarChar(32)
+  lastSuccessAt  DateTime? @db.Timestamptz(3)
+  station        Station   @relation(fields: [stationId, dataSourceId], references: [id, dataSourceId], onDelete: Cascade)
+
+  @@unique([stationId, dataSourceId])
+  @@index([nextAttemptAt, stationId])
 }
 
 model DataSource {
@@ -231,8 +294,8 @@ model DataSourceGrant {
   userId       String   @db.Uuid
   createdAt    DateTime @default(now()) @db.Timestamptz(3)
 
-  dataSource DataSource @relation(fields: [dataSourceId], references: [id], onDelete: Cascade)
-  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dataSource DataSource               @relation(fields: [dataSourceId], references: [id], onDelete: Cascade)
+  user       User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
   stations   DataSourceGrantStation[]
 
   @@id([dataSourceId, userId])

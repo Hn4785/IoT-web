@@ -15,10 +15,12 @@ import { HierarchyService } from './hierarchy.service.js';
 import {
   cursorPageOpenApiSchema,
   hierarchyLimitOpenApiSchema,
+  latestSoilResponseOpenApiSchema,
   parseHierarchyQuery,
   parseLatestSoilQuery,
   parseSoilHistoryQuery,
   parseStationCode,
+  soilHistoryResponseOpenApiSchema,
   stationOpenApiSchema,
 } from './station-data.contracts.js';
 import { StationDataService } from './station-data.service.js';
@@ -68,7 +70,10 @@ export class ClientController {
   @ApiHeader({ name: 'X-API-Key', required: true })
   @ApiQuery({ name: 'station', required: true, schema: { type: 'string' } })
   @ApiQuery({ name: 'fields', required: false, schema: { type: 'string' } })
-  @ApiOkResponse({ description: 'Latest soil sensor readings' })
+  @ApiOkResponse({
+    description: 'Latest soil sensor readings',
+    schema: latestSoilResponseOpenApiSchema,
+  })
   async getLatestSoil(@Req() req: ApiKeyRequest, @Query() query: Record<string, unknown>) {
     const principal = req.apiKeyPrincipal;
     if (!principal) {
@@ -101,7 +106,10 @@ export class ClientController {
     schema: { type: 'integer', minimum: 1, maximum: 500 },
   })
   @ApiQuery({ name: 'cursor', required: false, schema: { type: 'string', maxLength: 2048 } })
-  @ApiOkResponse({ description: 'Bounded soil history grouped into per-field series' })
+  @ApiOkResponse({
+    description: 'Bounded soil history grouped into per-field series',
+    schema: soilHistoryResponseOpenApiSchema,
+  })
   async getSoilHistory(@Req() req: ApiKeyRequest, @Query() query: Record<string, unknown>) {
     const principal = req.apiKeyPrincipal;
     if (!principal) {

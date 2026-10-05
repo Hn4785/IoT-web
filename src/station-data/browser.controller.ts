@@ -13,12 +13,14 @@ import {
   farmOpenApiSchema,
   hierarchyCursorOpenApiSchema,
   hierarchyLimitOpenApiSchema,
+  latestSoilResponseOpenApiSchema,
   parseHierarchyQuery,
   parseLatestSoilQuery,
   parseSoilHistoryQuery,
   parseUuid,
   plotOpenApiSchema,
   SOIL_FIELDS,
+  soilHistoryResponseOpenApiSchema,
   stationOpenApiSchema,
 } from './station-data.contracts.js';
 import { StationDataService } from './station-data.service.js';
@@ -201,62 +203,7 @@ export class BrowserStationController {
       example: 'temperature,moisture',
     },
   })
-  @ApiOkResponse({
-    schema: {
-      type: 'object',
-      additionalProperties: false,
-      required: ['success', 'data'],
-      properties: {
-        success: { type: 'boolean', enum: [true] },
-        data: {
-          type: 'object',
-          additionalProperties: false,
-          required: ['station', 'measurement', 'fields', 'fetchedAt', 'isFromCache', 'isStale'],
-          properties: {
-            station: {
-              type: 'object',
-              additionalProperties: false,
-              required: ['id', 'name', 'code'],
-              properties: {
-                id: { type: 'string', format: 'uuid' },
-                name: { type: 'string' },
-                code: { type: 'string' },
-              },
-            },
-            measurement: { type: 'string', enum: ['soil'] },
-            fields: {
-              type: 'array',
-              items: {
-                type: 'object',
-                additionalProperties: false,
-                required: [
-                  'field',
-                  'value',
-                  'unit',
-                  'observedAt',
-                  'quality',
-                  'sensorId',
-                  'depthCm',
-                ],
-                properties: {
-                  field: { type: 'string', enum: [...SOIL_FIELDS] },
-                  value: { type: 'number' },
-                  unit: { type: 'string', nullable: true },
-                  observedAt: { type: 'string', format: 'date-time' },
-                  quality: { type: 'string', enum: ['good', 'stale', 'unknown'] },
-                  sensorId: { type: 'string', nullable: true },
-                  depthCm: { type: 'number', nullable: true },
-                },
-              },
-            },
-            fetchedAt: { type: 'string', format: 'date-time' },
-            isFromCache: { type: 'boolean' },
-            isStale: { type: 'boolean' },
-          },
-        },
-      },
-    },
-  })
+  @ApiOkResponse({ schema: latestSoilResponseOpenApiSchema })
   async getLatestSoil(
     @CurrentPrincipal() principal: CurrentPrincipalValue,
     @Param('stationId') stationId: string,
@@ -292,7 +239,10 @@ export class BrowserStationController {
     schema: { type: 'integer', minimum: 1, maximum: 500 },
   })
   @ApiQuery({ name: 'cursor', required: false, schema: { type: 'string', maxLength: 2048 } })
-  @ApiOkResponse({ description: 'Bounded soil history grouped into per-field series' })
+  @ApiOkResponse({
+    description: 'Bounded soil history grouped into per-field series',
+    schema: soilHistoryResponseOpenApiSchema,
+  })
   async getSoilHistory(
     @CurrentPrincipal() principal: CurrentPrincipalValue,
     @Param('stationId') stationId: string,

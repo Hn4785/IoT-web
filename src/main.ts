@@ -6,5 +6,6 @@ import { parseRuntimeConfig } from './config/runtime-config.js';
 
 const config = parseRuntimeConfig(process.env);
 const app = await createApp(config);
+app.enableShutdownHooks();
 
 await app.listen(config.port, '0.0.0.0');
