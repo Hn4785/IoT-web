@@ -109,7 +109,12 @@ describe('Client Developer API-key lifecycle', () => {
         data: { plotId: plot.id, upstreamCode: 'ungranted', name: 'Ungranted' },
       }),
       prisma.station.create({
-        data: { plotId: plot.id, dataSourceId: source.id, upstreamCode: 'sourced', name: 'Sourced' },
+        data: {
+          plotId: plot.id,
+          dataSourceId: source.id,
+          upstreamCode: 'sourced',
+          name: 'Sourced',
+        },
       }),
     ]);
     await prisma.clientStationGrant.create({

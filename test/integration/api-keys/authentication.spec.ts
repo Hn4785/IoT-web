@@ -167,7 +167,12 @@ describe('API-key authentication', () => {
     });
     const plot = await prisma.plot.findFirstOrThrow();
     const sourceStation = await prisma.station.create({
-      data: { plotId: plot.id, dataSourceId: source.id, upstreamCode: 'src-auth', name: 'Src Auth' },
+      data: {
+        plotId: plot.id,
+        dataSourceId: source.id,
+        upstreamCode: 'src-auth',
+        name: 'Src Auth',
+      },
     });
     const sourceKey = 'iot_live_Src12345_abcdefghijklmnopqrstuvwxyzABCDEFGH123456789';
     await prisma.dataSourceGrant.create({
