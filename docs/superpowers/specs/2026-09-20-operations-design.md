@@ -218,8 +218,10 @@ These do not block D0 or local OP-1/OP-2 implementation, but block the named gat
 
 - selected single-instance ingress/TLS/proxy topology and limiter policy — before
   that target's release; shared limiting is conditional on future multi-instance use;
-- production metrics exposure and scraper network — before D1 acceptance;
-- RPO, RTO, off-machine encrypted backup target and retention — before OP-4;
+- production metrics exposure and scraper network — before production target acceptance;
+- RPO 24h, RTO 4h and 7 daily/4 weekly backups are accepted objectives; encrypted
+  off-machine destination, key custodian, restore owner and target restore evidence
+  remain required before production target acceptance;
 - Super Admin recovery and credential-rotation evidence — before target release;
   MFA/SSO is excluded by the owner/team decision above;
 - live CENTER/NODE hardware verification — before Phase B/C device claims.

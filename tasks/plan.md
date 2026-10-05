@@ -57,20 +57,21 @@ operations owns deployment/recovery.
 Read the relevant existing specs before each slice:
 docs/superpowers/specs/2026-09-02-station-data-design.md and
 docs/superpowers/specs/2026-09-20-operations-design.md.
-Station-data currently excludes persistent time series. F1 must approve and update
-that design BEFORE changing schema, DTOs or production code; this roadmap does not
-silently override it.
+Station-data section 16 is the approved local F-data storage/API/collection contract
+(owner acceptance 2026-10-05). Earlier persistent-storage exclusions are superseded
+only within that approved scope; receiving-team deployment gates remain separate.
 
 B/C owner acceptance on 2026-09-30 stays closed. The single release record,
 D:/IoT-web/docs/internal-release-notes.md (2026-10-05), records BE 6262e80/FE 089a116
 on Pi and FE 181/BE 427 passing tests. These are prior evidence, not fresh live checks.
-Four pre-existing BE Prettier failures still block pnpm verify. Fixture browser QA
-and container health do not prove complete role E2E.
+The four pre-existing formatting failures were cleared in 74aa0c3. Root verification
+after durable latest implementation passed pnpm verify and 436/436 tests (72 files).
+Fixture browser QA and container health do not prove complete role E2E.
 
 Old issue-ledger seed/Farm Demo instructions predate accepted B/C and demo removal.
 Reconcile them with newer evidence; never rerun old seeds to satisfy stale text.
 
-## Proposed architecture, not yet an approved storage contract
+## Approved F-data contract
 
 Reuse PostgreSQL/Prisma without a new time-series engine. Persist validated readings
 and serve stored results under current server-side source/station authorization.
@@ -105,8 +106,9 @@ disconnected.
 - Every code handoff uses both delegation skills and budget policy: 20% reserve,
   exact paths/commands/limits/timeouts, <=4 mandatory skills, worker no commit/push/merge,
   <=2 correction rounds. Candidate paths below are not permission grants.
-- Exact release/target approval may authorize ordinary automated deploy steps;
-  target changes, destructive restore and new security policy require fresh approval.
+- This iteration authorizes local application/data work and handoff assets only.
+  Receiving-team deployment/acceptance remains separate; destructive restore and
+  new security policy require explicit approval.
 
 ## Ordered tasks with acceptance
 

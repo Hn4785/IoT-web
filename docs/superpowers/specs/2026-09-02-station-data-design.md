@@ -557,6 +557,8 @@ immutable timestamp keyset, paginating complete timestamp groups. Aggregate comp
 UTC buckets before pagination using raw values (`mean/min/max/first/last`), never
 upstream aggregates as raw or averages of averages. Upstream and local cursor
 chains cannot silently switch origin; require a new query without cursor if needed.
+Local aggregation returns only whole UTC buckets contained within the requested
+interval; incomplete boundary fragments are withheld, not published as full buckets.
 
 ### Collection, backfill and capacity
 

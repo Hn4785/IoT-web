@@ -230,29 +230,33 @@ and must not duplicate the full contract.
 
 ## Immediate next action
 
-1. Review the final roadmap, reconcile old evidence (F0), then approve the
-   durable-data/deployment contracts (F1) before schema or API implementation.
+1. Execute the approved local F-data slices (station-data section 16), reconcile
+   F0 evidence and independently verify each slice. Team-owned deployment stays open.
 2. Close FE-2/FE-5/FE-6/QA-1/QA-2 through F16 with actual evidence, not blanket ticks.
 3. Preserve the no-device-write scope and B/C owner acceptance.
 4. Keep local/Pi acceptance distinct from website/public production acceptance.
 
 ## F. Final portable monitoring — execution approved through F-data
 
-Owner confirmed: the same app may run on Pi/local OR server; transfer data when
-needed. No bidirectional sync. Automation resolves explicit operating intent and
-the authorized target, detects capabilities, selects a profile, then runs a safe
-deployment workflow. Missing/ambiguous targets or secrets stop before writes.
+The receiving team deploys the server website using verified handoff assets.
+Pi/local supports development/team testing; data transfer is explicit and never
+bidirectional. Codex does not provision or deploy their host. The formal deployment
+guide is a separate deliverable.
 
 Detailed acceptance, candidate files, dependencies and verification are in
 [tasks/plan.md](plan.md); only the short task index is maintained here.
 
 - [ ] F0: Reconcile old TODO/issue evidence and clear verified quality/config debt.
-- [ ] F1: Approve persistence/provenance/coverage, retention/capacity and target contracts.
+- [x] F1-data: Approve persistence/provenance/coverage and retention/capacity contracts.
       Owner approved 90-day real raw history plus separate last-known snapshots;
       detailed section 16 schema/DTO/collection contract approved 2026-10-05.
-      No Pi DB change. Deployment target contracts remain separately open.
+      No Pi DB change.
+- [ ] F1-target: Receiving team approves its server deployment target contract.
 - [ ] F2: Persist normalized real readings and latest snapshots with deduplication.
 - [ ] F3: Serve authorized durable latest data through outage and backend restart.
+      Latest/raw storage and restart/outage history slices verified locally:
+      [progress evidence](../docs/checkpoints/2026-10-05-f-data-progress.md).
+      Final access/collection/retention gates are not yet closed.
 - [ ] F4: Collect without a browser; bound retries, concurrency and resume watermarks.
 - [ ] F5: Import bounded raw history and query local history with honest coverage.
 - [ ] F6: Enforce reading retention/storage limits and safe collection-health signals.
