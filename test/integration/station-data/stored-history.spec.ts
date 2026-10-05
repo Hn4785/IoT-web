@@ -124,4 +124,41 @@ describe('stored history pagination and coverage', () => {
     );
     expect(result?.series).toEqual([]);
   });
+  it.each([
+    ['mean', 40, 22],
+    ['min', 10, 20],
+    ['max', 100, 24],
+    ['first', 10, 20],
+    ['last', 100, 24],
+  ] as const)(
+    'computes raw %s across complete buckets before cursor pagination',
+    async (aggregate, firstValue, nextValue) => {
+      await readings.ingestHistory(
+        station,
+        {
+          readings: [
+            { field: 'moisture', value: 20, observedAt: '2026-10-01T01:00:00.000Z' },
+            { field: 'moisture', value: 24, observedAt: '2026-10-01T01:01:00.000Z' },
+          ],
+          completeFields: ['moisture'],
+          rawCount: 2,
+          lastTimestamp: Date.parse('2026-10-01T01:01:00.000Z'),
+        },
+        end,
+      );
+      const params = { fields: 'moisture', interval: '1h', aggregate };
+      const first = await repository.getHistory(station, query(params));
+      expect(first?.series[0]?.points).toEqual([
+        { observedAt: begin.toISOString(), value: firstValue, quality: 'good' },
+      ]);
+      expect(first?.page.nextCursor).toBeTruthy();
+      const next = await repository.getHistory(
+        station,
+        query({ ...params, cursor: first?.page.nextCursor }),
+      );
+      expect(next?.series[0]?.points).toEqual([
+        { observedAt: '2026-10-01T01:00:00.000Z', value: nextValue, quality: 'good' },
+      ]);
+    },
+  );
 });

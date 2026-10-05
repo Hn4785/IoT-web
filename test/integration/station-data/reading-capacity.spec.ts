@@ -87,4 +87,51 @@ describe('raw capacity preserves snapshots and existing data', () => {
     expect(await prisma.soilHistoryCoverage.count()).toBe(0);
     expect(await prisma.soilReading.count()).toBe(3);
   });
+  it('serializes concurrent near-ceiling writes without overshoot or rejected watermark advancement', async () => {
+    const bounded = new SoilReadingRepository(
+      prisma as PrismaService,
+      makeTestRuntimeConfig({ soilRawStationLimit: 10, soilRawGlobalLimit: 4 }),
+    );
+    await prisma.evaluatorLease.create({
+      data: {
+        name: 'soil-collector',
+        holderId: 'capacity-race',
+        expiresAt: new Date(Date.now() + 60_000),
+      },
+    });
+    const results = await Promise.all(
+      stations.map((station) =>
+        bounded.ingestHistory(
+          station,
+          {
+            readings: reading(station, 6).fields,
+            completeFields: ['moisture'],
+            rawCount: 1,
+            lastTimestamp: now.getTime() + 6,
+          },
+          now,
+          undefined,
+          {
+            holderId: 'capacity-race',
+            checkpoint: {
+              resumeAt: new Date(now.getTime() + 6),
+              nextAttemptAt: now,
+              outcome: 'success',
+            },
+          },
+        ),
+      ),
+    );
+    expect(results.filter((result) => result.storageLimited)).toHaveLength(1);
+    expect(await prisma.soilReading.count()).toBe(4);
+    for (const [index, station] of stations.entries()) {
+      expect((await repository.getLatest(station, ['moisture']))?.fields[0]?.value).toBe(6);
+      expect(
+        await prisma.soilCollectionCheckpoint.findUnique({ where: { stationId: station.id } }),
+      ).toMatchObject({
+        historyThrough: results[index]?.storageLimited ? null : new Date(now.getTime() + 6),
+        lastResult: results[index]?.storageLimited ? 'storage_limit' : 'success',
+      });
+    }
+  });
 });
