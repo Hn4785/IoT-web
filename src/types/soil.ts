@@ -102,6 +102,8 @@ export interface LatestSoilFieldDto {
   readonly depthCm: number | null;
 }
 
+export type SoilDataOrigin = "upstream" | "stored";
+
 export interface LatestSoilDataDto {
   readonly station: Readonly<{ id: string; name: string; code: string }>;
   readonly measurement: "soil";
@@ -109,6 +111,7 @@ export interface LatestSoilDataDto {
   readonly fetchedAt: string;
   readonly isFromCache: boolean;
   readonly isStale: boolean;
+  readonly dataOrigin?: SoilDataOrigin;
 }
 
 export interface LatestSoilView {
@@ -117,9 +120,14 @@ export interface LatestSoilView {
   readonly fetchedAt: string;
   readonly isFromCache: boolean;
   readonly isStale: boolean;
+  readonly dataOrigin?: SoilDataOrigin;
+  readonly isRetained?: boolean;
 }
 
-export function adaptLatestSoilData(data: LatestSoilDataDto): LatestSoilView {
+export function adaptLatestSoilData(
+  data: LatestSoilDataDto,
+  options?: { isRetained?: boolean },
+): LatestSoilView {
   const fields: Partial<Record<ApiSoilField, LatestSoilFieldDto>> = {};
   for (const reading of data.fields) fields[reading.field] = reading;
   return {
@@ -127,6 +135,8 @@ export function adaptLatestSoilData(data: LatestSoilDataDto): LatestSoilView {
     fields,
     fetchedAt: data.fetchedAt,
     isFromCache: data.isFromCache,
-    isStale: data.isStale,
+    isStale: options?.isRetained ? true : data.isStale,
+    ...(data.dataOrigin ? { dataOrigin: data.dataOrigin } : {}),
+    ...(options?.isRetained ? { isRetained: true } : {}),
   };
 }

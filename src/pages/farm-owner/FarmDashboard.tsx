@@ -7,26 +7,28 @@ import { useStationHierarchy } from "../../hooks/useStationHierarchy.ts";
 import { alertService } from "../../services/alertService.ts";
 import { stationBrowserService } from "../../services/stationBrowserService.ts";
 import type { AlertDto } from "../../types/alertApi.ts";
-import type { LatestSoilDataDto } from "../../types/soil.ts";
-import { normalizeApiError } from "../../utils/apiError.ts";
+import {
+  formatLatestSummaryState,
+  createInitialFarmerState,
+  mergeFarmerLatest,
+  mergeFarmerSibling,
+  type FarmerStationState,
+} from "../../utils/retainedStationData.ts";
 import styles from "./ConnectedSoil.module.css";
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("vi-VN", { dateStyle: "short", timeStyle: "short" }).format(new Date(value));
 }
 
-interface FarmDashboardState {
-  stationId: string;
-  reloadKey: number;
-  latest: LatestSoilDataDto | null;
-  alerts: AlertDto[];
-  error: string;
-}
-
 export default function FarmDashboard() {
   const hierarchy = useStationHierarchy();
-  const [dataState, setDataState] = useState<FarmDashboardState | null>(null);
+  const [dataState, setDataState] = useState<FarmerStationState<AlertDto[]> | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
+
+  if (!hierarchy.selectedStationId && !hierarchy.loading && dataState) setDataState(null);
+  else if (hierarchy.selectedStationId && (dataState?.stationId !== hierarchy.selectedStationId || dataState?.reloadKey !== reloadKey)) {
+    setDataState(createInitialFarmerState(hierarchy.selectedStationId, reloadKey, dataState));
+  }
 
   useEffect(() => {
     let active = true;
@@ -34,31 +36,17 @@ export default function FarmDashboard() {
     if (!stationId) {
       return () => { active = false; };
     }
-    Promise.all([
-      stationBrowserService.getLatest(stationId),
-      alertService.listAlerts({ stationId, limit: 20 }),
-    ]).then(
-      ([soil, alertPage]) => {
-        if (!active) return;
-        setDataState({
-          stationId,
-          reloadKey,
-          latest: soil,
-          alerts: alertPage.items.filter((item) => item.status !== "RESOLVED"),
-          error: "",
-        });
-      },
-      (reason) => {
-        if (!active) return;
-        setDataState({
-          stationId,
-          reloadKey,
-          latest: null,
-          alerts: [],
-          error: normalizeApiError(reason).message,
-        });
-      },
+    stationBrowserService.getLatest(stationId).then(
+      data => { if (active) setDataState(prev => prev && active ? mergeFarmerLatest(prev, stationId, reloadKey, { ok: true, data }) : prev); },
+      error => { if (active) setDataState(prev => prev && active ? mergeFarmerLatest(prev, stationId, reloadKey, { ok: false, error }) : prev); },
     );
+    alertService.listAlerts({ stationId, limit: 20 }).then(
+      page => { if (active) setDataState(prev => prev && active ? mergeFarmerSibling(prev, stationId, reloadKey,
+        { ok: true, data: page.items.filter(item => item.status !== "RESOLVED") }) : prev); },
+      error => { if (active) setDataState(prev => prev && active ? mergeFarmerSibling(prev, stationId, reloadKey,
+        { ok: false, error, label: "active alerts" }) : prev); },
+    );
+
     return () => { active = false; };
   }, [hierarchy.selectedStationId, reloadKey]);
 
@@ -66,24 +54,34 @@ export default function FarmDashboard() {
     ? dataState
     : null;
   const latest = currentData?.latest ?? null;
-  const alerts = currentData?.alerts ?? [];
-  const error = currentData?.error ?? "";
+  const isRetained = currentData?.isRetained ?? false;
+  const alerts = currentData?.sibling ?? [];
+  const latestError = currentData?.latestError ?? "";
+  const alertsError = currentData?.siblingError ?? "";
 
   return (
     <div className={styles.page}>
       <PageHeader title="Farm Dashboard" description="Live soil measurements from the current backend scope." actions={
-        <Button variant="outline" icon={<RefreshCw size={16} />} onClick={() => setReloadKey((value) => value + 1)}>Refresh</Button>
+        <Button variant="outline" disabled={hierarchy.loading || currentData?.latestPending} icon={<RefreshCw size={16} />} onClick={() => { hierarchy.reload(); setReloadKey((value) => value + 1); }}>Refresh</Button>
       } />
       <section className={styles.filters}>
         <label>Farm<select value={hierarchy.selectedFarmId} onChange={(event) => hierarchy.setSelectedFarmId(event.target.value)}><option value="">Select a farm</option>{hierarchy.farms.map((farm) => <option key={farm.id} value={farm.id}>{farm.name}</option>)}</select></label>
         <label>Plot<select value={hierarchy.selectedPlotId} onChange={(event) => hierarchy.setSelectedPlotId(event.target.value)} disabled={!hierarchy.selectedFarmId}><option value="">Select a plot</option>{hierarchy.plots.map((plot) => <option key={plot.id} value={plot.id}>{plot.name}</option>)}</select></label>
         <label>Station<select value={hierarchy.selectedStationId} onChange={(event) => hierarchy.setSelectedStationId(event.target.value)} disabled={!hierarchy.selectedPlotId}><option value="">Select a station</option>{hierarchy.stations.map((station) => <option key={station.id} value={station.id}>{station.code} — {station.name}</option>)}</select></label>
       </section>
-      {(error || hierarchy.error) && <p className={styles.error} role="alert">{error || hierarchy.error}</p>}
+      {hierarchy.error && <p className={styles.error} role="alert">{hierarchy.error}</p>}
+      {latestError && (
+        <p className={styles.error} role="alert">
+          {isRetained && latest
+            ? `Failed to refresh live data: ${latestError}. Showing last-known reading from ${formatDate(latest.fetchedAt)}.`
+            : latestError}
+        </p>
+      )}
+      {alertsError && <p className={styles.error} role="alert">{alertsError}</p>}
       <section className={styles.summary}>
-        <article><Activity size={20} /><div><span>Data state</span><strong>{latest ? latest.isStale ? "Stale" : "Live" : "Unavailable"}</strong></div></article>
-        <article><AlertTriangle size={20} /><div><span>Active alerts</span><strong>{alerts.length}</strong></div></article>
-        <article><div><span>Fetched at</span><strong>{latest ? formatDate(latest.fetchedAt) : "—"}</strong></div></article>
+        <article><Activity size={20} /><div><span>Data state{latest?.dataOrigin === "stored" ? " · Stored" : ""}{isRetained ? " · Last known" : ""}</span><strong>{currentData?.latestPending ? "Refreshing..." : formatLatestSummaryState(latest, isRetained)}</strong></div></article>
+        <article><AlertTriangle size={20} /><div><span>Active alerts</span><strong>{currentData?.siblingPending ? "Loading..." : alertsError ? "Unavailable" : alerts.length}</strong></div></article>
+        <article><div><span>{isRetained ? "Last known fetch" : "Fetched at"}</span><strong>{latest ? formatDate(latest.fetchedAt) : "—"}</strong></div></article>
       </section>
       <section className={styles.metrics}>
         {latest?.fields.length ? latest.fields.map((field) => (

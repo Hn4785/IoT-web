@@ -1,132 +1,95 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { useAuth } from "./useAuth.ts";
+import { env } from "../config/env.ts";
+import { stationBrowserService } from "../services/stationBrowserService.ts";
 import {
-  stationBrowserService,
-  type BrowserFarm,
-  type BrowserPlot,
-  type BrowserStation,
-} from "../services/stationBrowserService.ts";
-import { normalizeApiError } from "../utils/apiError.ts";
+  buildHierarchyScopeKey,
+  createInitialHierarchyState,
+  StationHierarchyCoordinator,
+  type HierarchyState,
+} from "../utils/stationHierarchyState.ts";
 
 export function useStationHierarchy() {
-  const [farms, setFarms] = useState<BrowserFarm[]>([]);
-  const [plots, setPlots] = useState<BrowserPlot[]>([]);
-  const [stations, setStations] = useState<BrowserStation[]>([]);
-  const [selectedFarmId, setSelectedFarmId] = useState("");
-  const [selectedPlotId, setSelectedPlotId] = useState("");
-  const [selectedStationId, setSelectedStationId] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [reloadKey, setReloadKey] = useState(0);
+  const { user, isLoading: authLoading } = useAuth();
+  const scopeKey = useMemo(
+    () => buildHierarchyScopeKey(user, env.apiBaseUrl),
+    [user],
+  );
 
-  const reload = useCallback(() => {
-    setLoading(true);
-    setError("");
-    setReloadKey((value) => value + 1);
-  }, []);
+  const [state, setState] = useState<HierarchyState>(() =>
+    createInitialHierarchyState(scopeKey, true),
+  );
+
+  const coordinatorRef = useRef<StationHierarchyCoordinator | null>(null);
+
+  useEffect(() => {
+    if (authLoading || !user?.id) {
+      coordinatorRef.current = null;
+      return;
+    }
+    const coordinator = new StationHierarchyCoordinator({
+      service: stationBrowserService,
+      scopeKey,
+      onStateChange: (next) => {
+        if (coordinatorRef.current === coordinator) setState(next);
+      },
+    });
+    coordinatorRef.current = coordinator;
+    void coordinator.initialize();
+
+    return () => {
+      coordinator.dispose();
+      if (coordinatorRef.current === coordinator) coordinatorRef.current = null;
+    };
+  }, [scopeKey, authLoading, user?.id]);
 
   const selectFarm = useCallback((farmId: string) => {
-    setSelectedFarmId(farmId);
-    setPlots([]);
-    setStations([]);
-    setSelectedPlotId("");
-    setSelectedStationId("");
-    setLoading(true);
-    setError("");
+    void coordinatorRef.current?.selectFarm(farmId);
   }, []);
 
   const selectPlot = useCallback((plotId: string) => {
-    setSelectedPlotId(plotId);
-    setStations([]);
-    setSelectedStationId("");
-    setLoading(true);
-    setError("");
+    void coordinatorRef.current?.selectPlot(plotId);
   }, []);
 
-  useEffect(() => {
-    let active = true;
-    stationBrowserService.listFarms().then(
-      (page) => {
-        if (!active) return;
-        setFarms(page.items);
-        setSelectedFarmId((current) =>
-          page.items.some((farm) => farm.id === current) ? current : (page.items[0]?.id ?? ""),
-        );
-        setLoading(false);
-      },
-      (reason) => {
-        if (!active) return;
-        setError(normalizeApiError(reason).message);
-        setLoading(false);
-      },
-    );
-    return () => { active = false; };
-  }, [reloadKey]);
+  const selectStation = useCallback((stationId: string) => {
+    coordinatorRef.current?.selectStation(stationId);
+  }, []);
 
-  useEffect(() => {
-    let active = true;
-    if (!selectedFarmId) return () => { active = false; };
+  const reload = useCallback(() => {
+    void coordinatorRef.current?.reload();
+  }, []);
 
-    stationBrowserService.listPlots(selectedFarmId).then(
-      (page) => {
-        if (!active) return;
-        setPlots(page.items);
-        setSelectedPlotId(page.items[0]?.id ?? "");
-        setLoading(false);
-      },
-      (reason) => {
-        if (!active) return;
-        setError(normalizeApiError(reason).message);
-        setLoading(false);
-      },
-    );
-    return () => { active = false; };
-  }, [selectedFarmId]);
-
-  useEffect(() => {
-    let active = true;
-    if (!selectedPlotId) return () => { active = false; };
-
-    stationBrowserService.listStations(selectedPlotId).then(
-      (page) => {
-        if (!active) return;
-        setStations(page.items);
-        setSelectedStationId(page.items[0]?.id ?? "");
-        setLoading(false);
-      },
-      (reason) => {
-        if (!active) return;
-        setError(normalizeApiError(reason).message);
-        setLoading(false);
-      },
-    );
-    return () => { active = false; };
-  }, [selectedPlotId]);
+  const isCurrentScope = !authLoading && Boolean(user?.id) && state.scopeKey === scopeKey;
+  const activeState = isCurrentScope
+    ? state
+    : createInitialHierarchyState(scopeKey, Boolean(user?.id) && authLoading);
 
   return {
-    farms,
-    plots,
-    stations,
-    selectedFarmId,
-    selectedPlotId,
-    selectedStationId,
+    farms: activeState.farms,
+    plots: activeState.plots,
+    stations: activeState.stations,
+    selectedFarmId: activeState.selectedFarmId,
+    selectedPlotId: activeState.selectedPlotId,
+    selectedStationId: activeState.selectedStationId,
     selectedFarm: useMemo(
-      () => farms.find((farm) => farm.id === selectedFarmId),
-      [farms, selectedFarmId],
+      () => activeState.farms.find((farm) => farm.id === activeState.selectedFarmId),
+      [activeState.farms, activeState.selectedFarmId],
     ),
     selectedPlot: useMemo(
-      () => plots.find((plot) => plot.id === selectedPlotId),
-      [plots, selectedPlotId],
+      () => activeState.plots.find((plot) => plot.id === activeState.selectedPlotId),
+      [activeState.plots, activeState.selectedPlotId],
     ),
     selectedStation: useMemo(
-      () => stations.find((station) => station.id === selectedStationId),
-      [stations, selectedStationId],
+      () => activeState.stations.find((station) => station.id === activeState.selectedStationId),
+      [activeState.stations, activeState.selectedStationId],
     ),
     setSelectedFarmId: selectFarm,
     setSelectedPlotId: selectPlot,
-    setSelectedStationId,
-    loading,
-    error,
+    setSelectedStationId: selectStation,
+    loading: authLoading || activeState.loading,
+    error: isCurrentScope ? activeState.error : "",
     reload,
+    scopeKey,
   };
 }

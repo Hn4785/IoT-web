@@ -1,4 +1,7 @@
-import type { ReactNode } from 'react';
+import { Fragment, type ReactNode } from 'react';
+import { useAuth } from '@/hooks/useAuth';
+import { env } from '@/config/env';
+import { retainedViewKey } from '@/utils/retainedScope';
 import Sidebar from './Sidebar';
 import Topbar from './Topbar';
 import styles from './MainLayout.module.css';
@@ -18,6 +21,7 @@ interface MainLayoutProps {
  *   theo cách bạn tổ chức `AppRoutes.tsx`.
  */
 export default function MainLayout({ children }: MainLayoutProps) {
+  const { user } = useAuth();
   return (
     <div className={styles.layout}>
       <Sidebar />
@@ -26,7 +30,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
         <Topbar />
 
         <main className={styles.content}>
-          {children}
+          <Fragment key={retainedViewKey(user, env.apiBaseUrl)}>{children}</Fragment>
         </main>
       </div>
     </div>

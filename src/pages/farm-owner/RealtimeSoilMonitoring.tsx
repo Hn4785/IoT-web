@@ -21,10 +21,15 @@ import {
   stationBrowserService,
   type SoilHistoryData,
 } from "@/services/stationBrowserService";
-import { normalizeApiError } from "@/utils/apiError";
+import {
+  formatLatestConnectionStatus,
+  createInitialFarmerState,
+  mergeFarmerLatest,
+  mergeFarmerSibling,
+  type FarmerStationState,
+} from "@/utils/retainedStationData";
 import {
   adaptLatestSoilData,
-  type LatestSoilDataDto,
   type SoilField,
   type SoilValue,
 } from "@/types/soil";
@@ -122,13 +127,12 @@ function buildChartData(history: SoilHistoryData | null, field: SoilField) {
 export default function RealtimeSoilMonitoring() {
   const hierarchy = useStationHierarchy();
   const [reloadKey, setReloadKey] = useState(0);
-  const [dataState, setDataState] = useState<{
-    stationId: string;
-    reloadKey: number;
-    latest: LatestSoilDataDto | null;
-    history: SoilHistoryData | null;
-    error: string;
-  } | null>(null);
+  const [dataState, setDataState] = useState<FarmerStationState<SoilHistoryData> | null>(null);
+
+  if (!hierarchy.selectedStationId && !hierarchy.loading && dataState) setDataState(null);
+  else if (hierarchy.selectedStationId && (dataState?.stationId !== hierarchy.selectedStationId || dataState?.reloadKey !== reloadKey)) {
+    setDataState(createInitialFarmerState(hierarchy.selectedStationId, reloadKey, dataState));
+  }
 
   useEffect(() => {
     let active = true;
@@ -138,38 +142,23 @@ export default function RealtimeSoilMonitoring() {
 
     const end = new Date();
     const begin = new Date(end.getTime() - 24 * 60 * 60 * 1000);
-    Promise.all([
-      stationBrowserService.getLatest(currentStationId),
-      stationBrowserService.getHistory(currentStationId, {
-        fields: METRICS.map((metric) => metric.field),
-        begin: begin.toISOString(),
-        end: end.toISOString(),
-        interval: "1h",
-        aggregate: "mean",
-        limit: 500,
-      }),
-    ]).then(
-      ([nextLatest, nextHistory]) => {
-        if (!active) return;
-        setDataState({
-          stationId: currentStationId,
-          reloadKey: currentReloadKey,
-          latest: nextLatest,
-          history: nextHistory,
-          error: "",
-        });
-      },
-      (reason) => {
-        if (!active) return;
-        setDataState({
-          stationId: currentStationId,
-          reloadKey: currentReloadKey,
-          latest: null,
-          history: null,
-          error: normalizeApiError(reason).message,
-        });
-      },
+
+    stationBrowserService.getLatest(currentStationId).then(
+      data => { if (active) setDataState(prev => prev && active ? mergeFarmerLatest(prev, currentStationId, currentReloadKey,
+        { ok: true, data }) : prev); },
+      error => { if (active) setDataState(prev => prev && active ? mergeFarmerLatest(prev, currentStationId, currentReloadKey,
+        { ok: false, error }) : prev); },
     );
+    stationBrowserService.getHistory(currentStationId, {
+      fields: METRICS.map(metric => metric.field), begin: begin.toISOString(), end: end.toISOString(),
+      interval: "1h", aggregate: "mean", limit: 500,
+    }).then(
+      data => { if (active) setDataState(prev => prev && active ? mergeFarmerSibling(prev, currentStationId, currentReloadKey,
+        { ok: true, data }) : prev); },
+      error => { if (active) setDataState(prev => prev && active ? mergeFarmerSibling(prev, currentStationId, currentReloadKey,
+        { ok: false, error, label: "24-hour historical trends" }) : prev); },
+    );
+
     return () => { active = false; };
   }, [hierarchy.selectedStationId, reloadKey]);
 
@@ -177,10 +166,12 @@ export default function RealtimeSoilMonitoring() {
     ? dataState
     : null;
   const latest = currentData?.latest ?? null;
-  const history = currentData?.history ?? null;
-  const dataError = currentData?.error ?? "";
-  const dataLoading = Boolean(hierarchy.selectedStationId && !currentData);
-  const latestView = useMemo(() => latest ? adaptLatestSoilData(latest) : null, [latest]);
+  const isRetained = currentData?.isRetained ?? false;
+  const history = currentData?.sibling ?? null;
+  const latestError = currentData?.latestError ?? "";
+  const historyError = currentData?.siblingError ?? "";
+  const dataLoading = Boolean(hierarchy.selectedStationId && (!currentData || currentData.latestPending));
+  const latestView = useMemo(() => latest ? adaptLatestSoilData(latest, { isRetained }) : null, [latest, isRetained]);
   const getMetricValue = (field: SoilField): SoilValue | undefined => {
     const reading = latestView?.fields[field];
     const metric = METRICS.find((m) => m.field === field);
@@ -251,7 +242,7 @@ export default function RealtimeSoilMonitoring() {
             size="sm"
             icon={<RefreshCw size={14} className={dataLoading ? styles.spin : undefined} />}
             disabled={!hierarchy.selectedStationId || dataLoading}
-            onClick={() => setReloadKey((k) => k + 1)}
+            onClick={() => { hierarchy.reload(); setReloadKey((k) => k + 1); }}
           >
             Refresh
           </Button>
@@ -262,28 +253,42 @@ export default function RealtimeSoilMonitoring() {
       {hierarchy.error && (
         <ErrorState description={hierarchy.error} onRetry={hierarchy.reload} />
       )}
-      {dataError && <ErrorState description={dataError} />}
+      {latestError && (
+        <ErrorState
+          description={
+            isRetained && latest
+              ? `Failed to refresh live soil data: ${latestError}. Showing last-known reading from ${formatUpdatedAt(latest.fetchedAt)}.`
+              : latestError
+          }
+          onRetry={() => setReloadKey((k) => k + 1)}
+          retryLabel="Retry"
+        />
+      )}
+      {historyError && (
+        <ErrorState
+          description={historyError}
+          onRetry={() => setReloadKey((k) => k + 1)}
+          retryLabel="Retry history"
+        />
+      )}
 
       <div className={styles.liveBar}>
         <div className={styles.liveStatus}>
           <span className={styles.liveDot} />
-          <strong>{latest ? "Snapshot" : "Waiting"}</strong>
-          <span>{latest ? `Fetched ${formatUpdatedAt(latest.fetchedAt)}` : "No snapshot loaded"}</span>
+          <strong>{isRetained ? "Last Known" : latest ? "Snapshot" : "Waiting"}</strong>
+          <span>
+            {latest
+              ? `${isRetained ? "Last known · " : ""}Fetched ${formatUpdatedAt(latest.fetchedAt)}`
+              : "No snapshot loaded"}
+          </span>
         </div>
 
         <div className={styles.connectionStatus}>
           <Wifi size={13} />
           <span>
-            {dataLoading
-              ? "Refreshing..."
-              : latest?.isStale
-                ? "Stale"
-                : latest?.isFromCache
-                  ? "Cached"
-                  : latest
-                    ? "Connected"
-                    : "Unavailable"}
+            {formatLatestConnectionStatus(latest, isRetained, dataLoading)}
           </span>
+          {latest?.dataOrigin === "stored" && <span className={styles.cacheBadge}>Stored</span>}
           {history?.isFromCache && <span className={styles.cacheBadge}>Cache</span>}
         </div>
       </div>

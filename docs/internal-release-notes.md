@@ -13,6 +13,29 @@ Với mỗi thay đổi:
 3. Ghi rõ kết quả test; không đánh dấu hoàn thành nếu chưa có bằng chứng kiểm tra.
 4. Không ghi secret, mật khẩu, access token, refresh token hoặc API key vào file này.
 
+## F-product local — 2026-10-05 (chưa push GitHub/Pi)
+
+- F7: latest/history/alerts tải độc lập; giữ last-known đúng trạm khi lỗi tạm thời,
+  giữ timestamp gốc, phân biệt Stored/Last known/Empty. Chặn dữ liệu route cũ,
+  phản hồi trễ và tái hiển thị sau khi quan sát 401/403/404 hoặc response sai trạm.
+- F9: scope gắn account/session/role/environment; refresh lại cả Farm/Plot/Station
+  dù ID cha không đổi. Chặn pagination/request cũ, sai parent, và giữ lựa chọn
+  hợp lệ khi refresh chồng nhau. Không đổi luồng đăng nhập hay quyền backend.
+- Frontend local: 205/205 tests, lint và TypeScript/production build đạt.
+  Browser fixture cách ly xác nhận online/stored/empty/denied, endpoint phụ lỗi,
+  đổi trạm với metadata chậm, phiên mới không dùng fallback cũ và refresh bỏ trạm
+  bị thu hồi quyền; StrictMode không mắc kẹt loading. Không gọi provider/DB/Pi.
+- Backend F10: 89 file/557 tests và `pnpm verify` đạt; commit local `236aa4e`.
+  Stored/backfill không đánh giá như live; rule binding được kiểm lại trong lock;
+  restart/overlap/correction không nhân đôi lifecycle/notification.
+- Bản vá dependency local `6f5a9e2` phải đi cùng đợt push cuối:
+  `brace-expansion 5.0.12`, Nest Fastify `12.0.3`, Fastify `5.12.5`.
+  Chạy lại `pnpm audit --prod --audit-level=high` không còn advisory.
+  CI GitHub còn dùng bản chưa nhận commit này; không bỏ/hạ gate audit để làm xanh.
+- F8 và Checkpoint F-product đang kiểm chứng tiếp. FE-2/FE-5/FE-6/QA-1/F16 và
+  target production giữ riêng; test fixture không phải E2E đăng nhập hay API thật.
+  Chỉ commit local. Không chuyển fixture, database test, seed hay dữ liệu mẫu.
+
 ## F-data Pi test — 2026-10-05 (lưu lịch sử 90 ngày)
 
 - Chủ dự án duyệt triển khai riêng logic F-data lên Pi để test: lưu số đo thật
@@ -21,6 +44,7 @@ Với mỗi thay đổi:
   không seed, không nhập dữ liệu mẫu, không restore database test lên Pi.
 - Frontend giữ code `089a116`; F7 chưa triển khai. Các cập nhật D/F/FE còn lại
   sẽ push chung sau khi hoàn tất kiểm thử, với commit và bằng chứng riêng.
+  Đây là trạng thái triển khai Pi lúc phát hành, không phủ định kết quả F7 local ở trên.
 - Phát hành: BE `de466ea` (`feat: retain 90-day soil history`) đã push vào
   nhánh `BE` và chạy trên Pi. Nhánh GitHub phát hành thử đã xoá theo yêu cầu;
   code được giữ trên `BE`. FE vẫn `089a116`, không thay giao diện lần này.
@@ -34,7 +58,7 @@ Với mỗi thay đổi:
   là bằng chứng đã lưu đầy đủ lịch sử 90 ngày.
 - Mọi đợt F/FE tiếp theo chỉ phát hành logic đã kiểm thử, không chuyển dữ liệu
   mẫu/test database sang Pi hoặc server. D/F/FE còn lại push chung sau kiểm thử;
-  không đánh dấu F7 hay gate production đã hoàn tất.
+  không đánh dấu F7 đã triển khai Pi hoặc gate production đã hoàn tất.
 
 ## v2.5.6 — 2026-10-05 (API Sources tự kiểm tra)
 
