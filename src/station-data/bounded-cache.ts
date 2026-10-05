@@ -70,7 +70,7 @@ export class BoundedAsyncCache<T> {
     }
   }
 
-  async get(key: string, loader: () => Promise<T>): Promise<CacheResult<T>> {
+  async get(key: string, loader: () => Promise<T>, allowStale = true): Promise<CacheResult<T>> {
     const existing = this.entries.get(key);
     const now = this.now();
     if (existing && now < existing.freshUntil) {
@@ -100,7 +100,7 @@ export class BoundedAsyncCache<T> {
         if (this.gen === g) {
           const errTime = this.now();
           const fallback = this.entries.get(key) ?? existing;
-          if (fallback && errTime <= fallback.staleUntil && this.canServeStale(err)) {
+          if (allowStale && fallback && errTime <= fallback.staleUntil && this.canServeStale(err)) {
             this.touch(key, fallback);
             return { value: fallback.value, isFromCache: true, isStale: true };
           }

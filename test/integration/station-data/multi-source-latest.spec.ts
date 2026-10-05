@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { createApp } from '../../../src/app/create-app.js';
 import { SourceSecretService } from '../../../src/data-sources/source-secret.service.js';
+import type { LatestSoilDataDto } from '../../../src/station-data/station-data.contracts.js';
 import { issueAccessToken } from '../../helpers/access-token.js';
 import { createTestPrismaClient, prepareTestDatabase } from '../../helpers/database.js';
 import { makeTestRuntimeConfig } from '../../helpers/runtime-config.js';
@@ -145,5 +146,30 @@ describe('multi-source latest routing', () => {
     await expect(
       prisma.dataSource.findUniqueOrThrow({ where: { id: firstSourceId } }),
     ).resolves.toMatchObject({ connectionStatus: 'CONNECTED' });
+  });
+  it('keeps matching station codes source-isolated after application restart during outage', async () => {
+    await app.close();
+    app = await createApp(
+      makeTestRuntimeConfig({
+        dataSourceAllowedOrigins: [firstUpstream.baseUrl, secondUpstream.baseUrl],
+      }),
+    );
+    for (const [stationId, value] of [
+      [firstStationId, 31],
+      [secondStationId, 72],
+    ] as const) {
+      const result = await app.inject({
+        method: 'GET',
+        url: `/api/v1/stations/${stationId}/data/latest?fields=moisture`,
+        headers: { authorization: `Bearer ${token}` },
+      });
+      expect(result.statusCode).toBe(200);
+      expect(result.json<{ data: LatestSoilDataDto }>().data).toMatchObject({
+        station: { id: stationId },
+        dataOrigin: 'stored',
+        isStale: true,
+        fields: [{ value }],
+      });
+    }
   });
 });

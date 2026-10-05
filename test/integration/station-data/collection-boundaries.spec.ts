@@ -1,5 +1,6 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AppError } from '../../../src/common/errors/app-error.js';
+import { OperationsMetrics } from '../../../src/operations/operations-signals.js';
 import type { PrismaService } from '../../../src/database/prisma.service.js';
 import type { WeatherClientService } from '../../../src/integrations/weather/weather-client.service.js';
 import {
@@ -16,6 +17,7 @@ describe('collection safety and fairness', () => {
   const prisma = createTestPrismaClient();
   const now = new Date();
   const config = makeTestRuntimeConfig();
+  let metrics = new OperationsMetrics();
   const readings = new SoilReadingRepository(prisma as PrismaService, config);
   const latest = (station: string) =>
     parseWeatherLatestResponse({
@@ -50,7 +52,7 @@ describe('collection safety and fairness', () => {
     markConnected: () => Promise.resolve(),
   } as unknown as StationSourceClientResolver;
   const collector = () =>
-    new SoilCollectionService(prisma as PrismaService, readings, sources, config);
+    new SoilCollectionService(prisma as PrismaService, readings, sources, config, metrics);
   const add = async (count: number) => {
     const farm = await prisma.farm.create({ data: { name: 'Fairness' } });
     const plot = await prisma.plot.create({ data: { name: 'Plot', farmId: farm.id } });
@@ -81,6 +83,8 @@ describe('collection safety and fairness', () => {
     };
   };
   beforeEach(async () => {
+    vi.restoreAllMocks();
+    metrics = new OperationsMetrics();
     await prepareTestDatabase();
     getLatest.mockReset().mockImplementation((q) => Promise.resolve(latest(q.station?.[0] ?? '')));
     getHistory.mockReset().mockImplementation((q) =>
@@ -128,6 +132,68 @@ describe('collection safety and fairness', () => {
     });
     expect(await prisma.soilLatestReading.count()).toBe(1);
   });
+
+  it.each(['history', 'checkpoint'] as const)(
+    'does not mark a failed source connected when the %s database write fails',
+    async (failure) => {
+      await add(1);
+      const owner = await prisma.user.create({
+        data: {
+          email: 'failed-collection@example.test',
+          displayName: 'Owner',
+          passwordHash: 'fixture',
+          role: 'FARMER',
+        },
+      });
+      const source = await prisma.dataSource.create({
+        data: {
+          ownerUserId: owner.id,
+          name: 'Failed source',
+          baseUrl: 'https://example.invalid',
+          keyCiphertext: 'fixture',
+          keyNonce: 'fixture',
+          keyAuthTag: 'fixture',
+          keyPreview: 'test',
+          connectionStatus: 'FAILED',
+          lastCheckedAt: now,
+        },
+      });
+      await prisma.station.updateMany({ data: { dataSourceId: source.id } });
+      const markConnected = vi.fn(async () => {
+        await prisma.dataSource.update({
+          where: { id: source.id },
+          data: { connectionStatus: 'CONNECTED' },
+        });
+      });
+      if (failure === 'history')
+        vi.spyOn(readings, 'ingestHistory').mockRejectedValueOnce(
+          new Error('Database unavailable'),
+        );
+      else
+        vi.spyOn(readings, 'updateCollectionCheckpoint').mockRejectedValueOnce(
+          new Error('Database unavailable'),
+        );
+      await new SoilCollectionService(
+        prisma as PrismaService,
+        readings,
+        {
+          resolve: sources.resolve.bind(sources),
+          markConnected,
+        } as unknown as StationSourceClientResolver,
+        config,
+        metrics,
+      ).runOnce(now);
+      expect(markConnected).not.toHaveBeenCalled();
+      expect(await prisma.dataSource.findUniqueOrThrow({ where: { id: source.id } })).toMatchObject(
+        { connectionStatus: 'FAILED', lastCheckedAt: now },
+      );
+      expect(metrics.snapshot()).toContainEqual({
+        name: 'soil_collection_runs_total',
+        labels: { outcome: 'database_error' },
+        value: 1,
+      });
+    },
+  );
 
   it('rejects a source removed while its response was in flight', async () => {
     await add(1);
@@ -229,6 +295,7 @@ describe('collection safety and fairness', () => {
       bounded,
       sources,
       boundedConfig,
+      metrics,
     ).runOnce(now);
     expect(await prisma.soilReading.count()).toBe(1);
     expect(await prisma.soilLatestReading.findFirst()).toMatchObject({ value: 44 });
@@ -237,6 +304,158 @@ describe('collection safety and fairness', () => {
       lastResult: 'storage_limit',
     });
     expect(getHistory).not.toHaveBeenCalled();
+    expect(metrics.snapshot()).toContainEqual({
+      name: 'soil_collection_runs_total',
+      labels: { outcome: 'storage_limit' },
+      value: 1,
+    });
+  });
+
+  it('reports database failure as well as provider outage when retry checkpoint cannot be saved', async () => {
+    await add(1);
+    getLatest.mockRejectedValue(new AppError('UPSTREAM_TIMEOUT', 504, 'Timed out'));
+    vi.spyOn(readings, 'updateCollectionCheckpoint').mockRejectedValueOnce(
+      new Error('Injected write failure'),
+    );
+    await collector().runOnce(now);
+    expect(metrics.snapshot()).toEqual(
+      expect.arrayContaining([
+        { name: 'soil_collection_runs_total', labels: { outcome: 'upstream_error' }, value: 1 },
+        { name: 'soil_collection_runs_total', labels: { outcome: 'database_error' }, value: 1 },
+      ]),
+    );
+    expect(await prisma.soilCollectionCheckpoint.count()).toBe(0);
+    await new SoilCollectionService(
+      prisma as PrismaService,
+      readings,
+      sources,
+      config,
+      metrics,
+    ).runOnce(now);
+    expect(await prisma.soilCollectionCheckpoint.findFirst()).toMatchObject({
+      lastResult: 'upstream_error',
+      failureCount: 1,
+    });
+  });
+
+  it('resumes a persisted full-page prefix inclusively after a new collector starts', async () => {
+    await add(1);
+    const start = now.getTime() - 86_400_000;
+    const station = await prisma.station.findFirstOrThrow();
+    await prisma.soilCollectionCheckpoint.create({
+      data: {
+        stationId: station.id,
+        dataSourceId: station.dataSourceId,
+        historyThrough: new Date(start),
+        nextAttemptAt: now,
+      },
+    });
+    const tail = start + 4999;
+    getHistory.mockResolvedValueOnce(
+      parseWeatherHistoryResponse({
+        success: true,
+        data: [
+          {
+            station: 'SAFE0',
+            history: {
+              soil: Array.from({ length: 5000 }, (_, i) => ({
+                ts: start + i,
+                time: new Date(start + i).toISOString(),
+                moisture: i,
+              })),
+            },
+          },
+        ],
+      }).data,
+    );
+    await new SoilCollectionService(
+      prisma as PrismaService,
+      readings,
+      sources,
+      { ...config, soilCollectionPageLimit: 1 },
+      metrics,
+    ).runOnce(now);
+    expect(await prisma.soilCollectionCheckpoint.findFirst()).toMatchObject({
+      historyThrough: new Date(tail),
+      lastResult: 'budget',
+    });
+    expect(await prisma.soilHistoryCoverage.findFirst()).toMatchObject({
+      begin: new Date(start),
+      end: new Date(tail - 1),
+    });
+    expect(metrics.snapshot()).toContainEqual({
+      name: 'soil_collection_runs_total',
+      labels: { outcome: 'budget' },
+      value: 1,
+    });
+    getHistory.mockClear().mockResolvedValueOnce(
+      parseWeatherHistoryResponse({
+        success: true,
+        data: [
+          {
+            station: 'SAFE0',
+            history: {
+              soil: [
+                { ts: tail, time: new Date(tail).toISOString(), moisture: 4999 },
+                { ts: tail + 1, time: new Date(tail + 1).toISOString(), moisture: 5000 },
+              ],
+            },
+          },
+        ],
+      }).data,
+    );
+    const next = new Date(now.getTime() + 120_000);
+    await collector().runOnce(next);
+    expect(getHistory).toHaveBeenCalledWith(
+      expect.objectContaining({ begin: new Date(tail).toISOString() }),
+    );
+    expect(await prisma.soilReading.count()).toBe(5002);
+    expect(await prisma.soilCollectionCheckpoint.findFirst()).toMatchObject({
+      historyThrough: new Date(tail + 86_400_000),
+      lastResult: 'success',
+    });
+  });
+
+  it('signals saturated equal-time pages without advancing or claiming coverage', async () => {
+    await add(1);
+    const start = now.getTime() - 86_400_000;
+    const station = await prisma.station.findFirstOrThrow();
+    await prisma.soilCollectionCheckpoint.create({
+      data: {
+        stationId: station.id,
+        dataSourceId: station.dataSourceId,
+        historyThrough: new Date(start),
+        nextAttemptAt: now,
+      },
+    });
+    getHistory.mockResolvedValueOnce(
+      parseWeatherHistoryResponse({
+        success: true,
+        data: [
+          {
+            station: 'SAFE0',
+            history: {
+              soil: Array.from({ length: 5000 }, () => ({
+                ts: start,
+                time: new Date(start).toISOString(),
+                moisture: 40,
+              })),
+            },
+          },
+        ],
+      }).data,
+    );
+    await collector().runOnce(now);
+    expect(await prisma.soilCollectionCheckpoint.findFirst()).toMatchObject({
+      historyThrough: new Date(start),
+      lastResult: 'saturated',
+    });
+    expect(await prisma.soilHistoryCoverage.count()).toBe(0);
+    expect(metrics.snapshot()).toContainEqual({
+      name: 'soil_collection_runs_total',
+      labels: { outcome: 'saturated' },
+      value: 1,
+    });
   });
 
   it('persists retry for a broken source resolver rather than permanently starving later stations', async () => {

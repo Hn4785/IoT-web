@@ -109,6 +109,7 @@ export class SoilCollectionService implements OnApplicationBootstrap, OnModuleDe
           })
           .catch(() => {
             fence.valid = false;
+            this.signal('database_error');
           })
           .finally(() => {
             renewing = false;
@@ -186,7 +187,6 @@ export class SoilCollectionService implements OnApplicationBootstrap, OnModuleDe
         return;
       }
       if (!canCommit()) throw new CollectionLeaseLostError();
-      await this.sources.markConnected(station.dataSourceId, new Date(latest.fetchedAt));
       const begin = new Date(
         Math.max(now.getTime() - 90 * DAY_MS, station.historyThrough?.getTime() ?? 0),
       );
@@ -238,6 +238,8 @@ export class SoilCollectionService implements OnApplicationBootstrap, OnModuleDe
         ...options,
         checkpoint: { nextAttemptAt, outcome },
       });
+      if (!canCommit()) throw new CollectionLeaseLostError();
+      await this.sources.markConnected(station.dataSourceId, new Date(latest.fetchedAt));
       this.signal(outcome);
     } catch (error) {
       if (error instanceof CollectionLeaseLostError || !canCommit()) {
@@ -263,8 +265,10 @@ export class SoilCollectionService implements OnApplicationBootstrap, OnModuleDe
           ...options,
           checkpoint: { nextAttemptAt: new Date(now.getTime() + delay), outcome, failed: true },
         })
-        .catch(() => {
+        .catch((checkpointError: unknown) => {
           fence.valid = false;
+          if (checkpointError instanceof CollectionLeaseLostError) this.signal('lease_lost');
+          else if (outcome !== 'database_error') this.signal('database_error');
         });
       this.signal(outcome);
     }

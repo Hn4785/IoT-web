@@ -75,7 +75,7 @@ export class StationDataService {
   async getLatest(station: AuthorizedStation, query: LatestSoilQuery): Promise<LatestSoilDataDto> {
     await this.readings?.requireActive(station);
     const now = this.clock.now();
-    const key = `latest:${station.dataSourceId}:${station.upstreamCode}:${[...query.fields].sort().join(',')}`;
+    const key = `latest:${station.dataSourceId}:${station.id}:${station.upstreamCode}:${[...query.fields].sort().join(',')}`;
 
     try {
       const cacheResult = await this.cache.get(key, async () => {
@@ -94,7 +94,6 @@ export class StationDataService {
           fetchedAt: now,
         });
         await this.readings?.ingestLatest(station, value);
-        await this.sourceClients?.markConnected(station.dataSourceId, now);
         return value;
       });
 
@@ -105,7 +104,10 @@ export class StationDataService {
             dataOrigin: cacheResult.isStale ? ('stored' as const) : ('upstream' as const),
           }
         : cacheResult.value;
-      return toLatestSoilDto(value, now, this.config.soilStaleAfterMs, cacheResult);
+      const result = toLatestSoilDto(value, now, this.config.soilStaleAfterMs, cacheResult);
+      if (!cacheResult.isFromCache)
+        await this.sourceClients?.markConnected(station.dataSourceId, now);
+      return result;
     } catch (error) {
       if (
         !this.readings ||
@@ -151,7 +153,7 @@ export class StationDataService {
       limit: query.limit,
     };
     const queryFingerprint = historyQueryFingerprint({
-      stationCode: `${station.dataSourceId}:${station.upstreamCode}`,
+      stationCode: `${station.dataSourceId}:${station.id}:${station.upstreamCode}`,
       query: queryWithoutCursor,
     });
     const continuation = query.cursor
@@ -159,74 +161,85 @@ export class StationDataService {
       : undefined;
     const key = `history:${station.dataSourceId}:${station.upstreamCode}:${queryFingerprint}:${query.cursor ?? 'start'}`;
     try {
-      const cacheResult = await this.historyCache.get(key, async () => {
-        const weather = this.sourceClients
-          ? await this.sourceClients.resolve(station.dataSourceId)
-          : this.weather;
-        const requestBegin =
-          query.order === 'asc' && continuation ? continuation.boundaryTime : query.begin;
-        const requestEnd =
-          query.order === 'desc' && continuation ? continuation.boundaryTime : query.end;
-        const requestLimit = Math.min(5000, query.limit * 2 + 1);
-        const upstream = await weather.getHistory({
-          station: [station.upstreamCode],
-          type: ['soil'],
-          fields: [...query.fields],
-          begin: requestBegin,
-          end: requestEnd,
-          interval: query.interval,
-          ...(query.aggregate ? { aggregate: query.aggregate } : {}),
-          order: query.order,
-          limit: requestLimit,
-        });
-        const batch =
-          query.interval === 'raw'
-            ? normalizeRawHistory({
-                upstream,
-                stationCode: station.upstreamCode,
-                fields: query.fields,
-                begin: new Date(requestBegin),
-                end: new Date(requestEnd),
-                order: query.order,
-              })
-            : undefined;
-        const value =
-          batch?.rawCount === 0
-            ? { stationId: station.id, series: [], fetchedAt: now.toISOString(), nextCursor: null }
-            : mapHistoryPage({
-                stationId: station.id,
-                stationCode: station.upstreamCode,
-                upstream,
-                fields: query.fields,
-                order: query.order,
-                limit: query.limit,
-                queryFingerprint,
-                ...(continuation
-                  ? {
-                      boundaryFingerprint: continuation.boundaryFingerprint,
-                      boundaryOccurrence: continuation.boundaryOccurrence,
-                    }
-                  : {}),
-                fetchedAt: now,
-              });
-        if (batch)
-          await this.readings?.ingestHistory(
-            station,
-            batch,
-            now,
-            batch.rawCount < requestLimit
-              ? { begin: new Date(requestBegin), end: new Date(requestEnd) }
-              : undefined,
-          );
+      const cacheResult = await this.historyCache.get(
+        key,
+        async () => {
+          const weather = this.sourceClients
+            ? await this.sourceClients.resolve(station.dataSourceId)
+            : this.weather;
+          const requestBegin =
+            query.order === 'asc' && continuation ? continuation.boundaryTime : query.begin;
+          const requestEnd =
+            query.order === 'desc' && continuation ? continuation.boundaryTime : query.end;
+          const requestLimit = Math.min(5000, query.limit * 2 + 1);
+          const upstream = await weather.getHistory({
+            station: [station.upstreamCode],
+            type: ['soil'],
+            fields: [...query.fields],
+            begin: requestBegin,
+            end: requestEnd,
+            interval: query.interval,
+            ...(query.aggregate ? { aggregate: query.aggregate } : {}),
+            order: query.order,
+            limit: requestLimit,
+          });
+          const batch =
+            query.interval === 'raw'
+              ? normalizeRawHistory({
+                  upstream,
+                  stationCode: station.upstreamCode,
+                  fields: query.fields,
+                  begin: new Date(requestBegin),
+                  end: new Date(requestEnd),
+                  order: query.order,
+                })
+              : undefined;
+          const value =
+            batch?.rawCount === 0
+              ? {
+                  stationId: station.id,
+                  series: [],
+                  fetchedAt: now.toISOString(),
+                  nextCursor: null,
+                }
+              : mapHistoryPage({
+                  stationId: station.id,
+                  stationCode: station.upstreamCode,
+                  upstream,
+                  fields: query.fields,
+                  order: query.order,
+                  limit: query.limit,
+                  queryFingerprint,
+                  ...(continuation
+                    ? {
+                        boundaryFingerprint: continuation.boundaryFingerprint,
+                        boundaryOccurrence: continuation.boundaryOccurrence,
+                      }
+                    : {}),
+                  fetchedAt: now,
+                });
+          if (batch)
+            await this.readings?.ingestHistory(
+              station,
+              batch,
+              now,
+              batch.rawCount < requestLimit
+                ? { begin: new Date(requestBegin), end: new Date(requestEnd) }
+                : undefined,
+            );
+          return value;
+        },
+        !this.storedHistory,
+      );
+      const coverage = this.storedHistory
+        ? await this.storedHistory.getCoverage(station, query)
+        : undefined;
+      if (!cacheResult.isFromCache)
         await this.sourceClients?.markConnected(station.dataSourceId, now);
-        return value;
-      });
       return {
         stationId: cacheResult.value.stationId,
-        dataOrigin: cacheResult.isStale ? 'stored' : 'upstream',
-        ...(this.storedHistory
-          ? { coverage: await this.storedHistory.getCoverage(station, query) }
-          : {}),
+        dataOrigin: 'upstream',
+        ...(coverage ? { coverage } : {}),
         measurement: 'soil',
         series: cacheResult.value.series,
         page: { nextCursor: cacheResult.value.nextCursor },
