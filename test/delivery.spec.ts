@@ -3,6 +3,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { describe, expect, it } from 'vitest';
+import { parseRuntimeConfig } from '../src/config/runtime-config.js';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -57,5 +58,30 @@ describe('delivery assets', () => {
     expect(backup).toContain('pg_restore');
     expect(release).toContain('/api/v1/readiness');
     expect(release).toContain('/docs-json');
+  });
+  it('satisfies parseRuntimeConfig for CI job env and smoke docker env', async () => {
+    const workflow = await projectFile('.github/workflows/backend-ci.yml');
+    const verifyEnvMatch = workflow.match(/verify:\s*\n[\s\S]*?\s+env:\s*\n([\s\S]*?)\s+steps:/);
+    const envBlock = verifyEnvMatch?.[1] ?? '';
+    const jobEnv: Record<string, string> = {};
+    for (const line of envBlock.split('\n')) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith('#')) continue;
+      const idx = trimmed.indexOf(':');
+      if (idx === -1) continue;
+      const key = trimmed.slice(0, idx).trim();
+      let val = trimmed.slice(idx + 1).trim();
+      if ((val.startsWith("'") && val.endsWith("'")) || (val.startsWith('"') && val.endsWith('"')))
+        val = val.slice(1, -1);
+      jobEnv[key] = val;
+    }
+    const smokeMatch = workflow.match(/run:\s*\|\s*\n([\s\S]*?)(?:pnpm release:check|$)/);
+    const smokeScript = smokeMatch?.[1] ?? '';
+    const smokeEnv: Record<string, string> = {};
+    for (const match of smokeScript.matchAll(/-e\s+([A-Z_]+)=([^\s\\]*)/g)) {
+      if (match[1] && match[2] !== undefined) smokeEnv[match[1]] = match[2];
+    }
+    expect(parseRuntimeConfig(jobEnv).nodeEnv).toBe('test');
+    expect(parseRuntimeConfig(smokeEnv).nodeEnv).toBe('production');
   });
 });

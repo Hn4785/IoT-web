@@ -50,6 +50,8 @@ jobs:
       ALERT_IDEMPOTENCY_RETENTION_HOURS: 168
       ALERT_DEMO_METADATA_ENABLED: false
       ALERT_DEMO_STATION_CODES: ''
+      DATA_SOURCE_ENCRYPTION_KEY: MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDE=
+      DATA_SOURCE_ALLOWED_ORIGINS: https://example.invalid
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -86,6 +88,8 @@ jobs:
             -e ALERT_EVALUATION_INTERVAL_MS=60000 -e ALERT_EVALUATION_BATCH_SIZE=50 \
             -e ALERT_EVALUATOR_LEASE_MS=55000 -e ALERT_IDEMPOTENCY_RETENTION_HOURS=168 \
             -e ALERT_DEMO_METADATA_ENABLED=false -e ALERT_DEMO_STATION_CODES= \
+            -e DATA_SOURCE_ENCRYPTION_KEY=MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDE= \
+            -e DATA_SOURCE_ALLOWED_ORIGINS=https://example.invalid \
             iot-api:ci
           for attempt in {1..30}; do
             curl --fail --silent http://127.0.0.1:3000/api/v1/health && break
