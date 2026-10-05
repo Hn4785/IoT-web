@@ -138,6 +138,7 @@ describe.skipIf(process.platform !== 'win32')('isolated PostgreSQL restore accep
       field: 'moisture',
       observedAt: now,
       fetchedAt: now,
+      lastFetchedAt: now,
       value: 42,
     };
     await source.soilReading.create({ data: { ...reading, origin: 'rawHistory' } });

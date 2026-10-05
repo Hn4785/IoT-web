@@ -207,30 +207,32 @@ model Station {
 }
 
 model SoilReading {
-  dataSourceId String   @db.Uuid
-  stationId    String   @db.Uuid
-  field        String   @db.VarChar(16)
-  observedAt   DateTime @db.Timestamptz(3)
-  value        Float    @db.DoublePrecision
-  fetchedAt    DateTime @db.Timestamptz(3)
-  origin       String   @db.VarChar(16)
-  revision     Int      @default(1)
-  station      Station  @relation(fields: [stationId, dataSourceId], references: [id, dataSourceId], onDelete: Cascade)
+  dataSourceId  String   @db.Uuid
+  stationId     String   @db.Uuid
+  field         String   @db.VarChar(16)
+  observedAt    DateTime @db.Timestamptz(3)
+  value         Float    @db.DoublePrecision
+  fetchedAt     DateTime @db.Timestamptz(3)
+  lastFetchedAt DateTime @db.Timestamptz(3)
+  origin        String   @db.VarChar(16)
+  revision      Int      @default(1)
+  station       Station  @relation(fields: [stationId, dataSourceId], references: [id, dataSourceId], onDelete: Cascade)
 
   @@id([dataSourceId, stationId, field, observedAt])
   @@index([observedAt])
 }
 
 model SoilLatestReading {
-  dataSourceId String   @db.Uuid
-  stationId    String   @db.Uuid
-  field        String   @db.VarChar(16)
-  observedAt   DateTime @db.Timestamptz(3)
-  value        Float    @db.DoublePrecision
-  fetchedAt    DateTime @db.Timestamptz(3)
-  origin       String   @db.VarChar(16)
-  revision     Int      @default(1)
-  station      Station  @relation(fields: [stationId, dataSourceId], references: [id, dataSourceId], onDelete: Cascade)
+  dataSourceId  String   @db.Uuid
+  stationId     String   @db.Uuid
+  field         String   @db.VarChar(16)
+  observedAt    DateTime @db.Timestamptz(3)
+  value         Float    @db.DoublePrecision
+  fetchedAt     DateTime @db.Timestamptz(3)
+  lastFetchedAt DateTime @db.Timestamptz(3)
+  origin        String   @db.VarChar(16)
+  revision      Int      @default(1)
+  station       Station  @relation(fields: [stationId, dataSourceId], references: [id, dataSourceId], onDelete: Cascade)
 
   @@id([dataSourceId, stationId, field])
 }

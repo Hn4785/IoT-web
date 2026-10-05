@@ -68,6 +68,140 @@ describe('normalized durable ingest', () => {
     expect(await prisma.soilReading.count()).toBe(2);
   });
 
+  it('preserves original capture time and revision when identical latest/history is fetched later', async () => {
+    const field = { field: 'temperature' as const, value: 25, observedAt: sampleTime };
+    const original = '2026-10-04T00:01:00.000Z';
+    await repository.ingestLatest(station, { station, fetchedAt: original, fields: [field] });
+    await repository.ingestLatest(station, {
+      station,
+      fetchedAt: '2026-10-04T00:06:00.000Z',
+      fields: [field],
+    });
+    await repository.ingestHistory(
+      station,
+      { readings: [field], completeFields: [], rawCount: 1, lastTimestamp: Date.parse(sampleTime) },
+      new Date('2026-10-04T00:07:00.000Z'),
+    );
+    const expected = {
+      value: 25,
+      fetchedAt: new Date(original),
+      lastFetchedAt: new Date('2026-10-04T00:07:00.000Z'),
+      revision: 1,
+      origin: 'latest',
+    };
+    expect(
+      await prisma.soilReading.findFirst({
+        where: { stationId: station.id, field: 'temperature' },
+      }),
+    ).toMatchObject(expected);
+    expect(
+      await prisma.soilLatestReading.findFirst({
+        where: { stationId: station.id, field: 'temperature' },
+      }),
+    ).toMatchObject(expected);
+    await repository.ingestLatest(station, {
+      station,
+      fetchedAt: '2026-10-04T00:05:00.000Z',
+      fields: [{ ...field, value: 24 }],
+    });
+    await repository.ingestHistory(
+      station,
+      {
+        readings: [{ ...field, value: 23 }],
+        completeFields: [],
+        rawCount: 1,
+        lastTimestamp: Date.parse(sampleTime),
+      },
+      new Date('2026-10-04T00:06:30.000Z'),
+    );
+    expect(
+      await prisma.soilReading.findFirst({
+        where: { stationId: station.id, field: 'temperature' },
+      }),
+    ).toMatchObject(expected);
+    expect(
+      await prisma.soilLatestReading.findFirst({
+        where: { stationId: station.id, field: 'temperature' },
+      }),
+    ).toMatchObject(expected);
+    await repository.ingestHistory(
+      station,
+      {
+        readings: [{ ...field, value: 26 }],
+        completeFields: [],
+        rawCount: 1,
+        lastTimestamp: Date.parse(sampleTime),
+      },
+      new Date('2026-10-04T00:08:00.000Z'),
+    );
+    expect(
+      await prisma.soilReading.findFirst({
+        where: { stationId: station.id, field: 'temperature' },
+      }),
+    ).toMatchObject({
+      value: 26,
+      revision: 2,
+      origin: 'rawHistory',
+      fetchedAt: new Date('2026-10-04T00:08:00.000Z'),
+      lastFetchedAt: new Date('2026-10-04T00:08:00.000Z'),
+    });
+    await repository.ingestLatest(station, {
+      station,
+      fetchedAt: '2026-10-04T00:10:00.000Z',
+      fields: [{ ...field, value: 26 }],
+    });
+    await repository.ingestHistory(
+      station,
+      {
+        readings: [{ ...field, value: 22 }],
+        completeFields: [],
+        rawCount: 1,
+        lastTimestamp: Date.parse(sampleTime),
+      },
+      new Date('2026-10-04T00:09:00.000Z'),
+    );
+    const confirmed = await Promise.all([
+      prisma.soilReading.findFirst({ where: { stationId: station.id, field: 'temperature' } }),
+      prisma.soilLatestReading.findFirst({
+        where: { stationId: station.id, field: 'temperature' },
+      }),
+    ]);
+    for (const row of confirmed) {
+      expect(row).toMatchObject({
+        value: 26,
+        revision: 2,
+        origin: 'rawHistory',
+        fetchedAt: new Date('2026-10-04T00:08:00.000Z'),
+        lastFetchedAt: new Date('2026-10-04T00:10:00.000Z'),
+      });
+    }
+  });
+  it('starts a new observation fence even when its value is unchanged', async () => {
+    const first = { field: 'light' as const, value: 19, observedAt: sampleTime };
+    const next = { ...first, observedAt: '2026-10-04T00:00:01.000Z' };
+    await repository.ingestLatest(station, {
+      station,
+      fetchedAt: '2026-10-04T00:12:00.000Z',
+      fields: [first],
+    });
+    await repository.ingestLatest(station, {
+      station,
+      fetchedAt: '2026-10-04T00:11:00.000Z',
+      fields: [next],
+    });
+    await repository.ingestLatest(station, {
+      station,
+      fetchedAt: '2026-10-04T00:20:00.000Z',
+      fields: [{ ...first, value: 22 }],
+    });
+    expect(await prisma.soilLatestReading.findFirst({ where: { field: 'light' } })).toMatchObject({
+      value: 19,
+      observedAt: new Date(next.observedAt),
+      fetchedAt: new Date('2026-10-04T00:11:00.000Z'),
+      lastFetchedAt: new Date('2026-10-04T00:11:00.000Z'),
+      revision: 1,
+    });
+  });
   it('fences late responses when their source has been removed', async () => {
     await prisma.dataSource.update({
       where: { id: station.dataSourceId },
@@ -82,6 +216,8 @@ describe('normalized durable ingest', () => {
     await expect(ingest(55, '2026-10-04T00:05:00.000Z')).rejects.toMatchObject({
       code: 'NOT_FOUND',
     });
-    expect((await prisma.soilLatestReading.findFirst())?.value).toBe(44);
+    expect(
+      (await prisma.soilLatestReading.findFirst({ where: { field: 'moisture' } }))?.value,
+    ).toBe(44);
   });
 });

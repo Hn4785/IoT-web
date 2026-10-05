@@ -517,6 +517,15 @@ push, deployment, frontend F7 work, MFA, SMS or device writes are included here.
 - Repeated identity/value is idempotent. Changed value at the same timestamp is
   a correction: only a newer fetch generation may win. Serialize/fence writes
   to prevent late responses replacing a newer correction.
+- Local amendment approved by the owner on 2026-10-05: add internal
+  `lastFetchedAt` to both reading tables. `fetchedAt`/origin describe the first
+  capture of the current value revision; identical newer responses preserve them
+  and the revision, but advance `lastFetchedAt`. Same-observation corrections
+  must exceed that generation fence, including across latest/history ingestion.
+  A newer observation replaces the snapshot without inheriting the old
+  observation's fence. No public DTO field or route changes. Backfill existing
+  rows from their recorded `fetchedAt`; older capture times cannot be reconstructed.
+  Apply only to local `iot_test` in this slice, never the Pi database.
 - Latest is one row per source/station/field, independent of retained raw rows.
   Older backfill cannot roll it backwards; a newer accepted same-time correction
   may replace its value. Metadata remains revision-aware and unknown when unverified.

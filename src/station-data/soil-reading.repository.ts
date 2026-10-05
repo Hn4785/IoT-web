@@ -99,27 +99,34 @@ export class SoilReadingRepository {
       if (batch.readings.length) {
         const payload = JSON.stringify(batch.readings);
         await tx.$executeRaw`
-          INSERT INTO "SoilReading" ("dataSourceId", "stationId", field, "observedAt", value, "fetchedAt", origin)
-          SELECT ${station.dataSourceId}::uuid, ${station.id}::uuid, field, "observedAt", value, ${fetchedAt.toISOString()}::timestamptz, 'rawHistory'
+          INSERT INTO "SoilReading" ("dataSourceId", "stationId", field, "observedAt", value, "fetchedAt", "lastFetchedAt", origin)
+          SELECT ${station.dataSourceId}::uuid, ${station.id}::uuid, field, "observedAt", value,
+            ${fetchedAt.toISOString()}::timestamptz, ${fetchedAt.toISOString()}::timestamptz, 'rawHistory'
           FROM jsonb_to_recordset(${payload}::jsonb) AS incoming(field text, value double precision, "observedAt" timestamptz)
           WHERE ${allowNew} OR EXISTS (SELECT 1 FROM "SoilReading" r WHERE r."dataSourceId" = ${station.dataSourceId}::uuid
             AND r."stationId" = ${station.id}::uuid AND r.field = incoming.field AND r."observedAt" = incoming."observedAt")
           ON CONFLICT ("dataSourceId", "stationId", field, "observedAt") DO UPDATE
-          SET value = EXCLUDED.value, "fetchedAt" = EXCLUDED."fetchedAt", origin = EXCLUDED.origin,
+          SET value = EXCLUDED.value,
+            "fetchedAt" = CASE WHEN "SoilReading".value <> EXCLUDED.value THEN EXCLUDED."fetchedAt" ELSE "SoilReading"."fetchedAt" END,
+            origin = CASE WHEN "SoilReading".value <> EXCLUDED.value THEN EXCLUDED.origin ELSE "SoilReading".origin END,
+            "lastFetchedAt" = EXCLUDED."lastFetchedAt",
             revision = "SoilReading".revision + CASE WHEN "SoilReading".value <> EXCLUDED.value THEN 1 ELSE 0 END
-          WHERE EXCLUDED."fetchedAt" > "SoilReading"."fetchedAt"`;
+          WHERE EXCLUDED."lastFetchedAt" > "SoilReading"."lastFetchedAt"`;
         await tx.$executeRaw`
-          INSERT INTO "SoilLatestReading" ("dataSourceId", "stationId", field, "observedAt", value, "fetchedAt", origin)
-          SELECT DISTINCT ON (field) ${station.dataSourceId}::uuid, ${station.id}::uuid, field, "observedAt", value, ${fetchedAt.toISOString()}::timestamptz, 'rawHistory'
+          INSERT INTO "SoilLatestReading" ("dataSourceId", "stationId", field, "observedAt", value, "fetchedAt", "lastFetchedAt", origin)
+          SELECT DISTINCT ON (field) ${station.dataSourceId}::uuid, ${station.id}::uuid, field, "observedAt", value,
+            ${fetchedAt.toISOString()}::timestamptz, ${fetchedAt.toISOString()}::timestamptz, 'rawHistory'
           FROM jsonb_to_recordset(${payload}::jsonb) AS incoming(field text, value double precision, "observedAt" timestamptz)
           ORDER BY field, "observedAt" DESC
           ON CONFLICT ("dataSourceId", "stationId", field) DO UPDATE
           SET value = EXCLUDED.value, "observedAt" = EXCLUDED."observedAt",
-            "fetchedAt" = EXCLUDED."fetchedAt", origin = EXCLUDED.origin,
+            "fetchedAt" = CASE WHEN "SoilLatestReading"."observedAt" <> EXCLUDED."observedAt" OR "SoilLatestReading".value <> EXCLUDED.value THEN EXCLUDED."fetchedAt" ELSE "SoilLatestReading"."fetchedAt" END,
+            origin = CASE WHEN "SoilLatestReading"."observedAt" <> EXCLUDED."observedAt" OR "SoilLatestReading".value <> EXCLUDED.value THEN EXCLUDED.origin ELSE "SoilLatestReading".origin END,
+            "lastFetchedAt" = EXCLUDED."lastFetchedAt",
             revision = "SoilLatestReading".revision + CASE WHEN "SoilLatestReading".value <> EXCLUDED.value THEN 1 ELSE 0 END
           WHERE EXCLUDED."observedAt" > "SoilLatestReading"."observedAt"
             OR (EXCLUDED."observedAt" = "SoilLatestReading"."observedAt"
-              AND EXCLUDED."fetchedAt" > "SoilLatestReading"."fetchedAt")`;
+              AND EXCLUDED."lastFetchedAt" > "SoilLatestReading"."lastFetchedAt")`;
       }
       if (coverage && allowNew) {
         for (const field of batch.completeFields) {
@@ -274,25 +281,30 @@ export class SoilReadingRepository {
   ): Promise<void> {
     const observedAt = new Date(field.observedAt);
     await tx.$executeRaw`
-      INSERT INTO "SoilReading" ("dataSourceId", "stationId", field, "observedAt", value, "fetchedAt", origin)
+      INSERT INTO "SoilReading" ("dataSourceId", "stationId", field, "observedAt", value, "fetchedAt", "lastFetchedAt", origin)
       SELECT ${station.dataSourceId}::uuid, ${station.id}::uuid, ${field.field}, ${observedAt.toISOString()}::timestamptz,
-        ${field.value}, ${fetchedAt.toISOString()}::timestamptz, ${origin}
+        ${field.value}, ${fetchedAt.toISOString()}::timestamptz, ${fetchedAt.toISOString()}::timestamptz, ${origin}
       WHERE ${allowNew} OR EXISTS (SELECT 1 FROM "SoilReading" r WHERE r."dataSourceId" = ${station.dataSourceId}::uuid
         AND r."stationId" = ${station.id}::uuid AND r.field = ${field.field} AND r."observedAt" = ${observedAt.toISOString()}::timestamptz)
       ON CONFLICT ("dataSourceId", "stationId", field, "observedAt") DO UPDATE
-      SET value = EXCLUDED.value, "fetchedAt" = EXCLUDED."fetchedAt", origin = EXCLUDED.origin,
+      SET value = EXCLUDED.value,
+        "fetchedAt" = CASE WHEN "SoilReading".value <> EXCLUDED.value THEN EXCLUDED."fetchedAt" ELSE "SoilReading"."fetchedAt" END,
+        origin = CASE WHEN "SoilReading".value <> EXCLUDED.value THEN EXCLUDED.origin ELSE "SoilReading".origin END,
+        "lastFetchedAt" = EXCLUDED."lastFetchedAt",
         revision = "SoilReading".revision + CASE WHEN "SoilReading".value <> EXCLUDED.value THEN 1 ELSE 0 END
-      WHERE EXCLUDED."fetchedAt" > "SoilReading"."fetchedAt"`;
+      WHERE EXCLUDED."lastFetchedAt" > "SoilReading"."lastFetchedAt"`;
     await tx.$executeRaw`
-      INSERT INTO "SoilLatestReading" ("dataSourceId", "stationId", field, "observedAt", value, "fetchedAt", origin)
+      INSERT INTO "SoilLatestReading" ("dataSourceId", "stationId", field, "observedAt", value, "fetchedAt", "lastFetchedAt", origin)
       VALUES (${station.dataSourceId}::uuid, ${station.id}::uuid, ${field.field}, ${observedAt.toISOString()}::timestamptz,
-        ${field.value}, ${fetchedAt.toISOString()}::timestamptz, ${origin})
+        ${field.value}, ${fetchedAt.toISOString()}::timestamptz, ${fetchedAt.toISOString()}::timestamptz, ${origin})
       ON CONFLICT ("dataSourceId", "stationId", field) DO UPDATE
       SET value = EXCLUDED.value, "observedAt" = EXCLUDED."observedAt",
-        "fetchedAt" = EXCLUDED."fetchedAt", origin = EXCLUDED.origin,
+        "fetchedAt" = CASE WHEN "SoilLatestReading"."observedAt" <> EXCLUDED."observedAt" OR "SoilLatestReading".value <> EXCLUDED.value THEN EXCLUDED."fetchedAt" ELSE "SoilLatestReading"."fetchedAt" END,
+        origin = CASE WHEN "SoilLatestReading"."observedAt" <> EXCLUDED."observedAt" OR "SoilLatestReading".value <> EXCLUDED.value THEN EXCLUDED.origin ELSE "SoilLatestReading".origin END,
+        "lastFetchedAt" = EXCLUDED."lastFetchedAt",
         revision = "SoilLatestReading".revision + CASE WHEN "SoilLatestReading".value <> EXCLUDED.value THEN 1 ELSE 0 END
       WHERE EXCLUDED."observedAt" > "SoilLatestReading"."observedAt"
         OR (EXCLUDED."observedAt" = "SoilLatestReading"."observedAt"
-          AND EXCLUDED."fetchedAt" > "SoilLatestReading"."fetchedAt")`;
+          AND EXCLUDED."lastFetchedAt" > "SoilLatestReading"."lastFetchedAt")`;
   }
 }
