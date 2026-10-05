@@ -13,6 +13,11 @@ commands remain in the
 The current completion roadmap is [tasks/plan.md](plan.md). It adds durable
 measurements and portable Pi/server deployment without reopening accepted B/C.
 Execution through F-data is approved; formal reports/operator manuals are separate.
+Final target clarified 2026-10-05: server-hosted website; Pi/local remains development
+and team testing. Server/domain/ingress/backup gates must pass before website launch.
+The receiving team performs deployment. Codex owns app/data verification and handoff
+assets; deployment instructions are separate. Infrastructure gates are team-owned,
+not reasons to claim the app is already production-ready or auto-deploy a server.
 
 ## Status meaning
 
@@ -258,8 +263,8 @@ Detailed acceptance, candidate files, dependencies and verification are in
 - [ ] F10: Verify fresh-only automatic alerts and notification recovery without duplicates.
 - [ ] Checkpoint F-product: Role/browser acceptance for online/stored/empty/denied states.
 - [ ] F11: Reproducible full-app packaging, migration runner and ARM64/server gates.
-- [ ] F12: Validated intent/target resolution, capability detection and read-only dry-run.
-- [ ] F13: Authorized idempotent deploy, smoke checks and schema-safe application rollback.
+- [ ] F12-team: Validate deployment profile/target prerequisites for receiving-team handoff.
+- [ ] F13-team: Team deployment, smoke and schema-safe rollback acceptance.
 - [ ] F14: Rehearse Pi/server data and secret transfer with isolated restore/cutover.
 - [ ] F15: Pass the additional website security, backup and measured capacity gate.
 - [ ] F16: Close existing FE/QA gates and live-provider recovery with linked evidence.

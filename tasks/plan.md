@@ -12,17 +12,21 @@ No Pi database change, deployment or push is authorized in this iteration.
 
 Complete the existing monitoring app with durable real soil readings, honest
 last-known/latest/history presentation, outstanding QA, and reproducible deployment
-of the same application on Pi/local OR server/website.
+of the same application. Final delivery is a server-hosted website; Pi/local is
+the development/team-test option, not the required production topology.
+
+Clarification accepted 2026-10-05: the stakeholder expects a normal server-hosted
+website rather than an internal Pi-only service. Finish the data foundation locally,
+then prioritize the server website release gates. No server/domain is yet selected.
 
 The owner chose data transfer when needed, not bidirectional Pi/cloud sync.
 Two separately deployed copies are not automatically synchronized or one database.
 
-Deployment automation receives the intended operating mode, resolves an authorized
-target, detects its capabilities and selects the matching profile. It then performs
-preflight -> backup -> deployment -> smoke checks -> safe application rollback.
-The coordinator may translate natural-language intent into validated parameters;
-request text is never executed as a shell command. Unknown hosts, ambiguous intent,
-missing domain/secrets or existing-data conflicts stop before writes.
+Delivery ownership clarified 2026-10-05: the receiving team deploys the website.
+Codex completes/verifies the app and reproducible handoff assets, not their server,
+domain, TLS or infrastructure. The deployment guide is a separate deliverable.
+Earlier intent-driven automatic deployment is no longer required for this delivery.
+Do not infer permission to access or change a server from this plan.
 
 ## Scope and boundaries
 
@@ -30,6 +34,8 @@ missing domain/secrets or existing-data conflicts stop before writes.
 - Add durable measurements, bounded background collection/history catch-up, retention,
   explicit freshness/provenance/coverage and recovery after provider/backend failure.
 - Complete role/session/accessibility/failure QA and portable single-instance packaging.
+- Server infrastructure/application deployment and production target acceptance belong
+  to the receiving team; no autonomous intent-based deployment implementation is needed.
 - No remote device writes, calibration, SMS/email, predictive agronomy, PWA/browser
   offline storage, multi-instance infrastructure or two-way synchronization.
 - Formal project reports and operator/user manuals are a separate workstream.
@@ -244,26 +250,23 @@ migration runner; current pruned runtime is not assumed to contain Prisma CLI/ts
 Verify: image/config/startup/deep-link/proxy tests, native dependencies, all required
 safe CI config; no workstation-only volume paths or dotenv in assets.
 
-### F12 — Intent/target resolution and read-only preflight
+### F12 — Receiving-team deployment preflight (handoff, not autonomous deploy)
 
 Depends: F11 plus deployment contract. M.
-Candidates: proposed scripts/deployment/resolve-target.mjs, target-schema.mjs,
-preflight.mjs/tests and secret-free target.example.json.
-Acceptance: validated mode/target/release plus detected CPU/Docker/storage/origin choose
-LAN or website profile; dry-run shows exact destination/versions/migrations/actions.
-Unknown/ambiguous target, missing secret, unsafe directory or overwrite conflict stops.
-Verify: fake target adapters for Pi/server/ambiguous/unreachable/mismatched CPU cases.
-Never eval request text, interpolate untrusted shell input, scan broad networks,
-disable SSH host verification, auto-install host packages or change machine-wide config.
+Candidates: secret-free deployment configuration and validation in F11 assets;
+deployment-guide content is separate. No natural-language target resolver is required.
+Acceptance: team can select the server profile and validate CPU/Docker/storage/origin,
+release/migration compatibility and required secrets before writing. Missing/ambiguous
+target or existing-data conflict stops. Codex does not access/provision their host.
+Verify: local profile/config validation; actual target preflight belongs to the team.
 
-### F13 — Authorized apply, smoke and application rollback
+### F13 — Receiving-team apply, smoke and application rollback
 
 Depends: F12/F-data/F-product. M slices for apply/rollback.
-Candidates: proposed deploy-release.mjs, target-adapter.mjs, rollback-release.mjs/tests;
-scripts/verify-release.mjs only where approved.
-Acceptance: deployment lock, verified backup, retained prior release, approved migration,
-correct API/web rollout order, smoke/hash checks; rerun same release is idempotent.
-Verify: failure injection at every stage, then an authorized staging rollout.
+Candidates: versioned F11 assets and existing scripts/verify-release.mjs; no custom
+remote orchestration framework is required. Team-owned acceptance: verified backup,
+retained previous release, approved migration, rollout order and smoke/hash checks.
+Verify: local packaging/smoke rehearsal, then team evidence for their staging rollout.
 Rollback application only if schema-compatible; no automatic live-DB restore after a
 migration failure. Recover interrupted rollout without deleting data.
 
