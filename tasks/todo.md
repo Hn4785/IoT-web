@@ -298,6 +298,8 @@ Detailed acceptance, candidate files, dependencies and verification are in
       Original checkpoint applied migration only to local `iot_test`. Later Pi
       follow-up is recorded above; no F7 UI changes or full live-backfill claim.
 - [ ] F7: Show exact-station last-known latest data; isolate endpoint failures.
+      Resumed with F8-F10/F-product by owner on 2026-10-05. Verify/commit local
+      only; no GitHub push or Pi update until the F publishing gate is met.
 - [ ] F8: Preserve exact-query history; isolate failed stations and stale responses.
 - [ ] F9: Invalidate retained data on account/session/grant/source changes.
 - [ ] F10: Verify fresh-only automatic alerts and notification recovery without duplicates.
