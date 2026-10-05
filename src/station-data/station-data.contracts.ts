@@ -97,6 +97,8 @@ export type NormalizedHistoryPage = Readonly<{
   nextCursor: string | null;
 }>;
 export type SoilHistoryDto = Readonly<{
+  dataOrigin?: 'upstream' | 'stored';
+  coverage?: SoilHistoryCoverageDto;
   stationId: string;
   measurement: 'soil';
   series: readonly SoilHistorySeriesDto[];
@@ -104,6 +106,13 @@ export type SoilHistoryDto = Readonly<{
   fetchedAt: string;
   isFromCache: boolean;
   isStale: boolean;
+}>;
+export type SoilHistoryCoverageDto = Readonly<{
+  status: 'complete' | 'partial' | 'unknown';
+  fields: readonly Readonly<{
+    field: SoilField;
+    ranges: readonly Readonly<{ begin: string; end: string }>[];
+  }>[];
 }>;
 export type CursorPage<T> = Readonly<{ items: readonly T[]; nextCursor: string | null }>;
 export type FarmDto = Readonly<{ id: string; name: string }>;

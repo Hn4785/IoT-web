@@ -24,6 +24,12 @@ const cursorPayloadSchema = z.discriminatedUnion('kind', [
   }),
   z.strictObject({ v: z.literal(1), kind: z.literal('client-station'), name, id: uuid }),
   z.strictObject({
+    v: z.literal(2),
+    kind: z.literal('stored-soil-history'),
+    queryFingerprint: fingerprint,
+    boundaryTime: z.iso.datetime({ offset: true }),
+  }),
+  z.strictObject({
     v: z.literal(1),
     kind: z.literal('soil-history'),
     queryFingerprint: fingerprint,

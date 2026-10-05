@@ -25,6 +25,7 @@ import {
 import type { NormalizedHistoryPage, NormalizedLatestSoil } from './station-data.contracts.js';
 import { StationDataService } from './station-data.service.js';
 import { SoilReadingRepository } from './soil-reading.repository.js';
+import { StoredHistoryRepository } from './stored-history.repository.js';
 import { StationRepository } from './station.repository.js';
 import { StationSourceClientResolver } from './station-source-client.resolver.js';
 
@@ -36,6 +37,7 @@ import { StationSourceClientResolver } from './station-source-client.resolver.js
     HierarchyService,
     StationDataService,
     SoilReadingRepository,
+    StoredHistoryRepository,
     StationSourceClientResolver,
     ClientRateLimitStore,
     ClientRateLimitGuard,
