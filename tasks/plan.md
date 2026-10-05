@@ -2,7 +2,16 @@
 
 Updated: 2026-10-05
 Status: D app/local and local Checkpoint F-data complete on 2026-10-05.
-No Pi database change, deployment or push is authorized in this iteration.
+Follow-up owner authorization: publish only completed F-data logic to Git/Pi for
+internal testing, preserving existing data and applying its two additive migrations.
+The remaining D/F/FE updates will be published together after verification.
+Publish to the existing BE/FE branches, not a separate public test branch. All
+future F/FE releases transfer verified system logic, never sample/fixture/test
+databases to Pi/server. F-data follow-up: BE de466ea now runs on Pi with additive
+migrations 12/13 and genuine latest readings. Raw-history validation currently
+reports invalid; live backfill coverage remains unverified. See the single release
+record in D:/IoT-web/docs/internal-release-notes.md. Reconcile this scoped BE
+release before the later combined D/F/FE push; never force-push over it.
 
 > For agentic workers: use superpowers:executing-plans for coordination, one approved
 > slice at a time. Codex plans/reviews; project code follows the bounded Antigravity
@@ -45,8 +54,9 @@ Do not infer permission to access or change a server from this plan.
 - Current slice (latest owner update 2026-10-05): local F2-F6 and Checkpoint F-data
   are complete against the approved section 16 contract, including the separately
   approved internal fetch-generation columns. This supersedes the earlier F1 hold.
-  F7 onward remains planned, not authorized by the current data-foundation slice.
-  Formal reports/manuals and Pi database changes remain excluded.
+  F7 onward remains planned; the owner explicitly paused F7. A separate scoped
+  F-data Pi test rollout is now authorized, with backup and no seeds/fixture data.
+  Formal reports/manuals remain excluded.
 - MFA/SSO is excluded by the owner/team decision on 2026-10-05. Keep existing
   authentication, authorization, secret protection, audit and recovery controls.
 

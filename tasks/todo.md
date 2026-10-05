@@ -253,8 +253,16 @@ and must not duplicate the full contract.
 
 1. Local F2-F6 and Checkpoint F-data are complete with fresh regression and measured
    fixture evidence. D app/local stays complete; team-owned deployment stays open.
-   The next planned slice is F7-F10/F-product, only after owner authorization.
-   Do not change the Pi database or deploy as part of the closed F-data slice.
+   The owner paused F7 and authorized a separate scoped F-data Git/Pi test rollout:
+   only real-reading storage/collection logic, backup and additive migrations;
+   preserve existing data and never seed/import fixtures or restore local test DB.
+   Remaining D/F/FE updates will be published together after verification.
+   Use the existing BE/FE branches; do not create a public test-release branch.
+   No fixture/sample/test database is deployed or imported on Pi.
+   F-data BE `de466ea` is now on Git/Pi; API/web/database smoke passes and genuine
+   latest readings persist. Raw-history backfill remains `invalid`/unverified;
+   this rollout does not close F-product, F7 or production gates. All future F/FE
+   releases transfer verified logic only, never sample/test databases.
 2. Close FE-2/FE-5/FE-6/QA-1/QA-2 through F16 with actual evidence, not blanket ticks.
 3. Preserve the no-device-write scope and B/C owner acceptance.
 4. Keep local/Pi acceptance distinct from website/public production acceptance.
@@ -277,7 +285,7 @@ Detailed acceptance, candidate files, dependencies and verification are in
 - [x] F1-data: Approve persistence/provenance/coverage and retention/capacity contracts.
       Owner approved 90-day real raw history plus separate last-known snapshots;
       detailed section 16 schema/DTO/collection contract approved 2026-10-05.
-      No Pi DB change.
+      Approval was local; the later scoped Pi rollout is recorded above.
 - [ ] F1-target: Receiving team approves its server deployment target contract.
 - [x] F2: Persist normalized real readings and latest snapshots with deduplication.
 - [x] F3: Serve authorized durable latest data through outage and backend restart.
@@ -287,7 +295,8 @@ Detailed acceptance, candidate files, dependencies and verification are in
 - [x] Checkpoint F-data: Restart/outage/history/scope acceptance with durable readings.
       Local fixture acceptance, not live-provider/Pi/server certification:
       [checkpoint evidence](../docs/checkpoints/2026-10-05-f-data-progress.md).
-      Migration applied only to local `iot_test`; no Pi deployment or F7 UI changes.
+      Original checkpoint applied migration only to local `iot_test`. Later Pi
+      follow-up is recorded above; no F7 UI changes or full live-backfill claim.
 - [ ] F7: Show exact-station last-known latest data; isolate endpoint failures.
 - [ ] F8: Preserve exact-query history; isolate failed stations and stale responses.
 - [ ] F9: Invalidate retained data on account/session/grant/source changes.
