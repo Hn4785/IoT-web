@@ -3,13 +3,13 @@
 ## Objective
 
 Build the Role 3 backend as a secure boundary between the Role 2 web application,
-the existing Weather API, and the future PostgreSQL business database.
+the existing Weather API, and the PostgreSQL identity/business/reading database.
 
 | Module id          | Responsibility                                                                                                  | Depends on                            |
 | ------------------ | --------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
 | `integration-core` | Runtime configuration, public health check, Weather API client, validation, timeouts, and normalized errors     | -                                     |
 | `identity-access`  | PostgreSQL identity state, sessions, three-role/Super Admin policy, resource authorization, and client API keys | `integration-core`                    |
-| `station-data`     | Authorized stations, latest data, history, metadata enrichment, and frontend DTOs                               | `integration-core`, `identity-access` |
+| `station-data`     | Authorized stations, durable readings/snapshots/history, bounded background collection, metadata, and DTOs      | `integration-core`, `identity-access` |
 | `alert-config`     | Alert rules, alert lifecycle, escalation, notifications, and the no-device-write boundary                       | `station-data`                        |
 | `operations`       | Audit log, monitoring, deployment, backup, and operational documentation                                        | All preceding modules                 |
 
@@ -24,6 +24,10 @@ Build order:
 ## Dependency rules
 
 - Dependencies point only from later modules to earlier modules.
+- The finite private operations-signals provider is shared infrastructure: station
+  collection may consume it. Its module depends only on identity/authentication,
+  not station-data or alert-config, avoiding a module cycle. Do not expose the
+  process-local metric registry as a public API.
 - Weather API credentials are owned by `integration-core` and are never exposed to consumers.
 - Public station-data endpoints cannot be added before `identity-access` supplies authentication and station authorization.
 - Database models must not leak directly into the public API; each module owns explicit input and output contracts.

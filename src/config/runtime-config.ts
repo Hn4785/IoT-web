@@ -92,6 +92,19 @@ const runtimeConfigSchema = z
     SOIL_STALE_AFTER_MS: z.coerce.number().int().min(1).max(3_600_000),
     SOIL_STALE_IF_ERROR_MS: z.coerce.number().int().min(1).max(3_600_000),
     SOIL_CACHE_MAX_ENTRIES: z.coerce.number().int().min(1).max(10_000),
+    SOIL_COLLECTION_ENABLED: booleanString.default(true),
+    SOIL_COLLECTION_INTERVAL_MS: z.coerce
+      .number()
+      .int()
+      .min(120_000)
+      .max(3_600_000)
+      .default(120_000),
+    SOIL_COLLECTION_CONCURRENCY: z.coerce.number().int().min(1).max(2).default(2),
+    SOIL_COLLECTION_BATCH_SIZE: z.coerce.number().int().min(1).max(20).default(20),
+    SOIL_COLLECTION_PAGE_LIMIT: z.coerce.number().int().min(1).max(10).default(10),
+    SOIL_COLLECTION_LEASE_MS: z.coerce.number().int().min(1000).max(3_599_999).default(115_000),
+    SOIL_RAW_STATION_LIMIT: z.coerce.number().int().min(1).max(2_000_000).default(2_000_000),
+    SOIL_RAW_GLOBAL_LIMIT: z.coerce.number().int().min(1).max(10_000_000).default(10_000_000),
     ALERT_EVALUATION_INTERVAL_MS: z.coerce
       .number()
       .int()
@@ -105,6 +118,13 @@ const runtimeConfigSchema = z
     ALERT_DEMO_STATION_CODES: stationCodes.default([]),
   })
   .superRefine((value, context) => {
+    if (value.SOIL_COLLECTION_LEASE_MS >= value.SOIL_COLLECTION_INTERVAL_MS) {
+      context.addIssue({
+        code: 'custom',
+        path: ['SOIL_COLLECTION_LEASE_MS'],
+        message: 'Collection lease must be shorter than interval',
+      });
+    }
     if (
       value.NODE_ENV === 'production' &&
       new URL(value.WEATHER_API_BASE_URL).protocol !== 'https:'
@@ -164,6 +184,14 @@ export type RuntimeConfig = Readonly<{
   soilStaleAfterMs: number;
   soilStaleIfErrorMs: number;
   soilCacheMaxEntries: number;
+  soilCollectionEnabled: boolean;
+  soilCollectionIntervalMs: number;
+  soilCollectionConcurrency: number;
+  soilCollectionBatchSize: number;
+  soilCollectionPageLimit: number;
+  soilCollectionLeaseMs: number;
+  soilRawStationLimit: number;
+  soilRawGlobalLimit: number;
   alertEvaluationIntervalMs: number;
   alertEvaluationBatchSize: number;
   alertEvaluatorLeaseMs: number;
@@ -194,6 +222,14 @@ export function parseRuntimeConfig(env: Record<string, string | undefined>): Run
     soilStaleAfterMs: value.SOIL_STALE_AFTER_MS,
     soilStaleIfErrorMs: value.SOIL_STALE_IF_ERROR_MS,
     soilCacheMaxEntries: value.SOIL_CACHE_MAX_ENTRIES,
+    soilCollectionEnabled: value.SOIL_COLLECTION_ENABLED,
+    soilCollectionIntervalMs: value.SOIL_COLLECTION_INTERVAL_MS,
+    soilCollectionConcurrency: value.SOIL_COLLECTION_CONCURRENCY,
+    soilCollectionBatchSize: value.SOIL_COLLECTION_BATCH_SIZE,
+    soilCollectionPageLimit: value.SOIL_COLLECTION_PAGE_LIMIT,
+    soilCollectionLeaseMs: value.SOIL_COLLECTION_LEASE_MS,
+    soilRawStationLimit: value.SOIL_RAW_STATION_LIMIT,
+    soilRawGlobalLimit: value.SOIL_RAW_GLOBAL_LIMIT,
     alertEvaluationIntervalMs: value.ALERT_EVALUATION_INTERVAL_MS,
     alertEvaluationBatchSize: value.ALERT_EVALUATION_BATCH_SIZE,
     alertEvaluatorLeaseMs: value.ALERT_EVALUATOR_LEASE_MS,

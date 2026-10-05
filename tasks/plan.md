@@ -42,8 +42,10 @@ Do not infer permission to access or change a server from this plan.
   Existing in-app History & Report/CSV remains supported and gets regression checks;
   no new reporting subsystem or report deliverable is included.
 - Technical specs, tests and release evidence remain in scope, not deferred manuals.
-- Current iteration: F0-F6/F-data and safely verifiable D work. F7 onward remains
-  planned. Formal reports/manuals and Pi database changes remain excluded.
+- Current priority (owner update 2026-10-05): complete safely verifiable D work;
+  F1 contract approval is enough for now. Preserve verified F implementation as
+  progress without closing F2-F6 or expanding further. F7 onward remains planned.
+  Formal reports/manuals and Pi database changes remain excluded.
 - MFA/SSO is excluded by the owner/team decision on 2026-10-05. Keep existing
   authentication, authorization, secret protection, audit and recovery controls.
 
@@ -94,6 +96,12 @@ an offline-browser authorization mechanism and cannot detect remote revocation w
 disconnected.
 
 ## Global execution constraints
+
+Dependency audit update (2026-10-05): `pnpm audit --prod` fails with 14 advisories
+(7 high, 7 moderate), including direct Fastify/Nest adapter advisories. Review and
+patch compatible pinned versions in a separate regression-tested slice. Do not
+silently waive the gate or call this release production-ready. App/data work can
+continue locally; no public deployment is authorized by this observation.
 
 - Node >=24.17.0 <25, pnpm 11.19.0, existing lockfiles/stack; no unapproved dependency.
 - Same-origin /api/v1; no embedded Pi IP, secrets, provider keys or public DB.
@@ -357,7 +365,8 @@ No delivery-date promises before F0/F1 resolve the actual risks.
 
 ## Current execution
 
-Execute F0-F6 and safely verifiable D work. The owner accepted station-data section
-16 (schema, additive DTOs, collection/capacity bounds) for local implementation on
-2026-10-05. No Pi database change, remote push or deployment in this iteration.
-This roadmap may evolve without reopening accepted B/C.
+Prioritize D delivery/recovery/security revalidation. The owner accepts stopping
+the F checklist at F1 for now. Already verified local F code is retained as progress,
+not final F-data acceptance. Section 16 remains the approved local contract.
+No Pi database change, remote push or receiving-team deployment in this iteration.
+Team-owned target gates cannot be checked off with local substitute evidence.

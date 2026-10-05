@@ -570,7 +570,9 @@ interval; incomplete boundary fragments are withheld, not published as full buck
   a failure must not starve other active stations. Skip unverified CENTER soil data.
 - Fetch latest plus bounded raw catch-up windows (at most 24h per window and 7-day
   raw request bound). Persist overlap/resume checkpoints; advance proven coverage
-  only after all pages in a window have committed. Stop at an unexhaustible saturated
+  only for committed, exhausted ranges. A full ascending page proves the prefix
+  ending 1ms before its final timestamp; resume inclusively at that timestamp and
+  never claim the unexhausted tail. Stop at an unexhaustible saturated
   timestamp rather than skip samples. Catch up at most the retained 90-day horizon.
 - Proposed initial configurable ceilings: 2 million raw field readings per station,
   10 million globally. These are protective limits, not a measured Pi capacity claim.
@@ -579,6 +581,10 @@ interval; incomplete boundary fragments are withheld, not published as full buck
 - Prune readings older than 90 days by observedAt in bounded batches; trim coverage
   and keep latest snapshots. Do not delete audit, lifecycle or notification data.
   Collector shutdown is bounded and commit fencing survives lease expiry/restart.
+- Local reads clip expired raw rows/coverage even while bounded physical pruning
+  catches up. Capacity/retention use a consistent global-lock-first order. Each
+  collector acquisition uses a fresh holder generation; expiry is checked against
+  database wall-clock time after lock waits and again before commit.
 - Expose only finite collection states/counters through existing private operations
   instrumentation; no credentials, upstream bodies or unbounded metric labels.
 - Stored fallback, old backfill and same-time corrections cannot be replayed as new

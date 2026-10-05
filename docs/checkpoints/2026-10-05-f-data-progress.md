@@ -12,18 +12,29 @@ Implemented and independently checked:
 - Local query-bound stored cursors, complete timestamp groups and full UTC-bucket aggregation.
 - Non-UTC PostgreSQL-session regressions: explicit UTC binding/projection avoids adapter offset loss.
 - CI job/image-smoke configuration parity, reproduced missing configuration before the fix.
+- Browser-independent bounded collector, renewable generation-fenced lease, fair
+  station batches, isolated failures/backoff, safe shutdown and source-removal fences.
+- Inclusive raw-page traversal, conservative full-page prefix coverage and bounded
+  catch-up; no skipped saturated timestamp group.
+- Bounded 90-day raw retention, independent snapshots and serialized storage caps;
+  no early deletion or false coverage when capacity blocks new raw rows.
+- Current source-grant/API-key/role/revocation negatives for stored HTTP reads.
 
 Root verification on 2026-10-05: `pnpm verify` passed (format/typecheck/lint/build),
-76/76 test files and 455/455 tests passed sequentially in 100.97s. Focused red/green
-cases preceded each behavioral change. Secret/diff checks passed; new staged files
-are scanned again before commit. Antigravity CI output was independently reviewed,
-with strict-type and report-metric corrections; no automatic merge.
+83/83 test files and 493/493 tests passed with coverage sequentially in 133.20s.
+Coverage: 88.35% statements, 77.92% branches, 93.15% functions, 90.97% lines.
+Two additional collector tests then passed in the focused 10/10 boundary suite
+(11.80s); no claim of a full 495-test run at this point. Focused red/green cases
+preceded behavioral fixes, including a reproduced write/retention deadlock.
+Secret scan passed for 265 files; diff check passed. Antigravity raw traversal was
+independently reviewed and verified after two correction rounds; no automatic merge.
 
 These tests use validated deterministic provider fixtures, not live provider recovery.
-Fresh coverage, dependency audit, full packaging/backup/restore and large-scale capacity
-evidence have not been claimed for this slice.
+Fresh production dependency audit failed with 14 advisories (7 high, 7 moderate).
+Current full packaging/backup/restore and large-scale capacity evidence are not claimed.
 
-Still open: F4 background collection/lease/checkpoint recovery, remaining F5 bounded
-catch-up traversal, F6 retention/capacity/health, current-role/grant/key denial regressions,
-OpenAPI parity and final F-data acceptance. D-production remains team-owned/open.
+Owner priority update: stop expanding/closing F after F1 for now and complete D.
+Preserve the code above as verified local progress. F2-F6 and final F-data acceptance
+remain unchecked; OpenAPI parity, measured deployment capacity and live recovery
+still need their own evidence. D-production remains team-owned/open.
 Formal report, operating manual and deployment guide are separate deliverables.

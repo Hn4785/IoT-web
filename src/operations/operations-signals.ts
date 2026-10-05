@@ -5,6 +5,17 @@ type HttpStatusClass = '1xx' | '2xx' | '3xx' | '4xx' | '5xx';
 type Dependency = 'database' | 'weather';
 type EvaluatorOutcome = 'acquired' | 'skipped' | 'failed';
 type NotificationOutcome = 'delivered' | 'skipped' | 'failed';
+type CollectionOutcome =
+  | 'success'
+  | 'skipped'
+  | 'budget'
+  | 'saturated'
+  | 'storage_limit'
+  | 'lease_lost'
+  | 'invalid'
+  | 'upstream_error'
+  | 'source_error'
+  | 'database_error';
 
 export type MetricSample = Readonly<{
   name:
@@ -12,6 +23,7 @@ export type MetricSample = Readonly<{
     | 'dependency_failures_total'
     | 'evaluator_runs_total'
     | 'http_requests_total'
+    | 'soil_collection_runs_total'
     | 'notification_deliveries_total';
   labels: Readonly<Record<string, string>>;
   value: number;
@@ -61,6 +73,10 @@ export class OperationsMetrics {
 
   recordNotificationDelivery(outcome: NotificationOutcome): void {
     this.increment('notification_deliveries_total', { outcome });
+  }
+
+  recordSoilCollection(outcome: CollectionOutcome): void {
+    this.increment('soil_collection_runs_total', { outcome });
   }
 
   snapshot(): readonly MetricSample[] {

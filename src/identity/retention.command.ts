@@ -14,7 +14,7 @@ async function main(): Promise<void> {
     throw new Error(`Retention requires the explicit ${CONFIRMATION_FLAG} flag`);
   }
   const context = await NestFactory.createApplicationContext(
-    AppModule.register(parseRuntimeConfig(process.env)),
+    AppModule.register({ ...parseRuntimeConfig(process.env), soilCollectionEnabled: false }),
     { logger: false },
   );
   try {

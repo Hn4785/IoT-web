@@ -6,6 +6,7 @@ import { DataSourceModule } from '../data-sources/data-source.module.js';
 import { RUNTIME_CONFIG } from '../config/runtime-config.module.js';
 import type { RuntimeConfig } from '../config/runtime-config.js';
 import { WeatherModule } from '../integrations/weather/weather.module.js';
+import { OperationsModule } from '../operations/operations.module.js';
 import {
   BoundedAsyncCache,
   HISTORY_SOIL_CACHE,
@@ -25,18 +26,20 @@ import {
 import type { NormalizedHistoryPage, NormalizedLatestSoil } from './station-data.contracts.js';
 import { StationDataService } from './station-data.service.js';
 import { SoilReadingRepository } from './soil-reading.repository.js';
+import { SoilCollectionService } from './soil-collection.service.js';
 import { StoredHistoryRepository } from './stored-history.repository.js';
 import { StationRepository } from './station.repository.js';
 import { StationSourceClientResolver } from './station-source-client.resolver.js';
 
 @Module({
-  imports: [AuthModule, WeatherModule, ApiKeyModule, DataSourceModule],
+  imports: [AuthModule, WeatherModule, ApiKeyModule, DataSourceModule, OperationsModule],
   controllers: [BrowserStationController, ClientController],
   providers: [
     StationRepository,
     HierarchyService,
     StationDataService,
     SoilReadingRepository,
+    SoilCollectionService,
     StoredHistoryRepository,
     StationSourceClientResolver,
     ClientRateLimitStore,

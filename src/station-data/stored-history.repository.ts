@@ -34,8 +34,10 @@ export class StoredHistoryRepository {
     const stride = { raw: 1, '5m': 300_000, '30m': 1_800_000, '1h': 3_600_000, '1d': 86_400_000 }[
       query.interval
     ];
-    const begin = new Date(query.begin);
+    const cutoff = new Date(Date.now() - 90 * 86_400_000);
+    const begin = new Date(Math.max(Date.parse(query.begin), cutoff.getTime()));
     const end = new Date(query.end);
+    if (end < begin) return null;
     const rows = await this.prisma.$queryRaw<
       { field: SoilField; value: number; observedAt: Date; fetchedAt: Date }[]
     >`
@@ -122,12 +124,14 @@ export class StoredHistoryRepository {
   }
 
   private coverageRows(station: AuthorizedStation, query: SoilHistoryQuery) {
+    const cutoff = new Date(Date.now() - 90 * 86_400_000).toISOString();
     return this.prisma.$queryRaw<{ field: SoilField; begin: Date; end: Date; fetchedAt: Date }[]>`
-      SELECT r.field, r.begin AT TIME ZONE 'UTC' AS begin, r."end" AT TIME ZONE 'UTC' AS "end",
+      SELECT r.field, GREATEST(r.begin, ${cutoff}::timestamptz) AT TIME ZONE 'UTC' AS begin, r."end" AT TIME ZONE 'UTC' AS "end",
         r."fetchedAt" AT TIME ZONE 'UTC' AS "fetchedAt"
       FROM "SoilHistoryCoverage" r JOIN "DataSource" s ON s.id = r."dataSourceId" AND s."removedAt" IS NULL
       WHERE r."dataSourceId" = ${station.dataSourceId}::uuid AND r."stationId" = ${station.id}::uuid
-        AND r.field = ANY(${[...query.fields]}::text[]) AND r.begin <= ${query.end}::timestamptz AND r."end" >= ${query.begin}::timestamptz`;
+        AND r.field = ANY(${[...query.fields]}::text[]) AND r.begin <= ${query.end}::timestamptz
+        AND r."end" >= GREATEST(${query.begin}::timestamptz, ${cutoff}::timestamptz) AND ${query.end}::timestamptz >= ${cutoff}::timestamptz`;
   }
 }
 

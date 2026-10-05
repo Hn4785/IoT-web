@@ -230,8 +230,9 @@ and must not duplicate the full contract.
 
 ## Immediate next action
 
-1. Execute the approved local F-data slices (station-data section 16), reconcile
-   F0 evidence and independently verify each slice. Team-owned deployment stays open.
+1. Prioritize D build/security/backup/restore revalidation. Owner accepts F1 as the
+   current F stopping point; preserve verified local F progress without closing
+   further F milestones. Team-owned deployment stays open.
 2. Close FE-2/FE-5/FE-6/QA-1/QA-2 through F16 with actual evidence, not blanket ticks.
 3. Preserve the no-device-write scope and B/C owner acceptance.
 4. Keep local/Pi acceptance distinct from website/public production acceptance.
@@ -247,6 +248,10 @@ Detailed acceptance, candidate files, dependencies and verification are in
 [tasks/plan.md](plan.md); only the short task index is maintained here.
 
 - [ ] F0: Reconcile old TODO/issue evidence and clear verified quality/config debt.
+      CI/config/format and capability-map debt reconciled locally. Fresh dependency
+      audit 2026-10-05 reports 14 production advisories (7 high, 7 moderate);
+      review/patch in a separate dependency slice before public release. No automatic
+      upgrade or exploitability claim. This gate stays open.
 - [x] F1-data: Approve persistence/provenance/coverage and retention/capacity contracts.
       Owner approved 90-day real raw history plus separate last-known snapshots;
       detailed section 16 schema/DTO/collection contract approved 2026-10-05.
