@@ -1,48 +1,358 @@
-# Active backend context
+# Implementation Plan: Final portable soil monitoring
 
-Updated: 2026-09-28
+Updated: 2026-10-05
+Status: execution and detailed F-data contract approved on 2026-10-05.
+No Pi database change, deployment or push is authorized in this iteration.
 
-Đây là điểm vào ngắn cho phiên tiếp theo. Không sao chép lại chi tiết từ spec,
-plan đã hoàn thành hoặc checkpoint lịch sử.
+> For agentic workers: use superpowers:executing-plans for coordination, one approved
+> slice at a time. Codex plans/reviews; project code follows the bounded Antigravity
+> workflow in AGENTS.md. This roadmap is not an executable handoff or blanket consent.
 
-## Nguồn sự thật
+## Goal and confirmed deployment model
 
-- Trạng thái và thứ tự làm: [`tasks/todo.md`](todo.md)
-- Acceptance criteria dài hạn:
-  [`backend completion roadmap`](../docs/roadmaps/2026-09-02-backend-completion-roadmap.md)
-- Lỗi và rủi ro còn mở:
-  [`backend issue ledger`](../docs/reviews/2026-09-04-backend-follow-up.md)
-- Lệnh local: [`LOCAL-RUNBOOK.md`](../docs/operations/LOCAL-RUNBOOK.md)
-- Nối frontend/backend: `D:/IoT-web/docs/integration/README.md`
+Complete the existing monitoring app with durable real soil readings, honest
+last-known/latest/history presentation, outstanding QA, and reproducible deployment
+of the same application on Pi/local OR server/website.
 
-`docs/superpowers/plans/`, `docs/checkpoints/` và báo cáo test theo ngày chỉ là
-lịch sử/bằng chứng; chỉ đọc khi cần truy quyết định cũ.
+The owner chose data transfer when needed, not bidirectional Pi/cloud sync.
+Two separately deployed copies are not automatically synchronized or one database.
 
-## Trạng thái hiện tại
+Deployment automation receives the intended operating mode, resolves an authorized
+target, detects its capabilities and selects the matching profile. It then performs
+preflight -> backup -> deployment -> smoke checks -> safe application rollback.
+The coordinator may translate natural-language intent into validated parameters;
+request text is never executed as a shell command. Unknown hosts, ambiguous intent,
+missing domain/secrets or existing-data conflicts stop before writes.
 
-- Phase A: hoàn thành.
-- Phase B: backend core và frontend adapter/page đã hoàn thành; B-device được
-  đánh dấu `live-verified` ngày 2026-09-28 vì API lấy trực tiếp từ các trạm quan
-  trắc đang hoạt động, số liệu cập nhật và bên cung cấp xác nhận dữ liệu
-  CENTER/NODE là dữ liệu cảm biến thật. Browser role matrix vẫn là checkpoint
-  riêng.
-- Phase C: backend core và frontend alert/inbox/capability page đã hoàn thành;
-  còn browser role matrix. Theo quyết định bên cung cấp ngày 2026-09-28, web chỉ
-  cấu hình ngưỡng cảnh báo; hiệu chuẩn/can thiệp thiết bị thực hiện tại hiện
-  trường và không có contract ghi xuống thiết bị trong phạm vi hiện tại.
-- Phase D: local release candidate hoàn thành; production còn phụ thuộc staging,
-  TLS/proxy, shared limiter, backup, MFA và metrics tập trung.
-- Gate gần nhất: backend 59/59 file, 375/375 test đạt và `pnpm verify` xanh;
-  frontend 37/37 test và production build đạt.
+## Scope and boundaries
 
-## Thứ tự tiếp theo
+- Preserve Admin/Super Admin, Farmer, Client Developer and accepted B/C functionality.
+- Add durable measurements, bounded background collection/history catch-up, retention,
+  explicit freshness/provenance/coverage and recovery after provider/backend failure.
+- Complete role/session/accessibility/failure QA and portable single-instance packaging.
+- No remote device writes, calibration, SMS/email, predictive agronomy, PWA/browser
+  offline storage, multi-instance infrastructure or two-way synchronization.
+- Formal project reports and operator/user manuals are a separate workstream.
+  Existing in-app History & Report/CSV remains supported and gets regression checks;
+  no new reporting subsystem or report deliverable is included.
+- Technical specs, tests and release evidence remain in scope, not deferred manuals.
+- Current iteration: F0-F6/F-data and safely verifiable D work. F7 onward remains
+  planned. Formal reports/manuals and Pi database changes remain excluded.
+- MFA/SSO is excluded by the owner/team decision on 2026-10-05. Keep existing
+  authentication, authorization, secret protection, audit and recovery controls.
 
-1. Chạy browser matrix theo từng trang và tạo checkpoint theo role:
-   **Admin/Super Admin → Farmer → Client Developer**.
-2. Hoàn thành registry/browser checks còn lại; giữ device writes ngoài phạm vi
-   và điều hướng thay đổi ngưỡng sang Alert Center.
-3. Chạy QA recovery và chỉ sau đó mới nghiệm thu staging/production.
+## Sources, baseline and design approval
 
-B-device `live-verified` chỉ xác nhận nguồn dữ liệu thật từ trạm quan trắc, không
-đóng browser matrix hay D-production. C-device đã được đóng bằng quyết định không
-triển khai remote write, không phải bằng một contract phần cứng mới.
+Active status is tasks/todo.md; frontend task files point here rather than duplicate
+the final checklist. Existing module boundaries stay in CAPABILITY-MAP.md:
+station-data provides measurements, alert-config consumes eligible samples,
+operations owns deployment/recovery.
+
+Read the relevant existing specs before each slice:
+docs/superpowers/specs/2026-09-02-station-data-design.md and
+docs/superpowers/specs/2026-09-20-operations-design.md.
+Station-data currently excludes persistent time series. F1 must approve and update
+that design BEFORE changing schema, DTOs or production code; this roadmap does not
+silently override it.
+
+B/C owner acceptance on 2026-09-30 stays closed. The single release record,
+D:/IoT-web/docs/internal-release-notes.md (2026-10-05), records BE 6262e80/FE 089a116
+on Pi and FE 181/BE 427 passing tests. These are prior evidence, not fresh live checks.
+Four pre-existing BE Prettier failures still block pnpm verify. Fixture browser QA
+and container health do not prove complete role E2E.
+
+Old issue-ledger seed/Farm Demo instructions predate accepted B/C and demo removal.
+Reconcile them with newer evidence; never rerun old seeds to satisfy stale text.
+
+## Proposed architecture, not yet an approved storage contract
+
+Reuse PostgreSQL/Prisma without a new time-series engine. Persist validated readings
+and serve stored results under current server-side source/station authorization.
+The provider remains the origin of measurements; no fabricated samples during outage.
+
+Keep sensor observedAt, original fetch/ingestion time, source/station identity,
+metadata revision and delivery provenance distinct. Reading the local database is
+not a successful provider connection. Latest may be old; history may cover only
+part of a requested range. Represent those facts explicitly in the approved DTOs.
+
+Owner-approved on 2026-10-05: retain normalized raw readings for 90 days and retain the
+latest last-known snapshot separately for active stations. Decide collection interval,
+backfill budgets and capacity from provider quotas and measured Pi storage, not
+guesses. Do not store hourly/daily upstream aggregates as raw observations or average
+averages. Unknown units/depth/sensor metadata stay unknown.
+
+Persistence belongs to the backend. Browser retention is exact-query, current-session
+memory only. It must clear on observed access loss/logout/account change; it is not
+an offline-browser authorization mechanism and cannot detect remote revocation while
+disconnected.
+
+## Global execution constraints
+
+- Node >=24.17.0 <25, pnpm 11.19.0, existing lockfiles/stack; no unapproved dependency.
+- Same-origin /api/v1; no embedded Pi IP, secrets, provider keys or public DB.
+- Ask before schema, auth, CORS, limiter, integration or security-policy changes.
+- No dumps/credentials/tokens in Git, logs, test fixtures or screenshots.
+- Never delete volumes, reintroduce demos, restore over a live DB or reset user work.
+- TDD per approved slice: expected failing behavioral test -> minimal code -> green
+  connected tests -> repository gates -> independent review.
+- Aim for <=5 changed files per code slice; split candidate groups before dispatch.
+- Every code handoff uses both delegation skills and budget policy: 20% reserve,
+  exact paths/commands/limits/timeouts, <=4 mandatory skills, worker no commit/push/merge,
+  <=2 correction rounds. Candidate paths below are not permission grants.
+- Exact release/target approval may authorize ordinary automated deploy steps;
+  target changes, destructive restore and new security policy require fresh approval.
+
+## Ordered tasks with acceptance
+
+### F0 — Baseline and quality debt
+
+Depends: none. Split docs reconciliation and formatting into separate S slices.
+Candidates: tasks/plan.md, tasks/todo.md, current issue ledger; four formatting files
+named in the release record.
+Acceptance: B/C remains closed; Audit implementation vs browser evidence distinguished;
+CI/config discrepancies reproduced before being declared bugs. No demo/seed rewrite.
+Verify: evidence/diff review; formatting-only slice runs pnpm verify plus connected tests.
+
+### F1 — Approve storage, collection and deployment contracts
+
+Depends: F0. S spec slices, no production code.
+Candidates: existing station-data/operations specs; read schema/contracts/config.
+Acceptance: approve dedup/correction identity, metadata/provenance/coverage, access and
+source-removal behavior, retention/capacity, polling/backfill budgets, transfer policy
+and local/private/public target gates.
+Verify: examples for online/stored-only/empty/partial/denied/recovery; no DTO/migration
+becomes authoritative before explicit schema/public-contract approval.
+
+### F2 — Durable observations and latest snapshot
+
+Depends: F1. M.
+Candidates: prisma/schema.prisma, one new migration,
+new src/station-data/soil-observation.repository.ts and DB tests.
+Acceptance: finite validated values retain source/station/field/sensor-time identity;
+retries deduplicate, older samples cannot overwrite newer snapshots, metadata changes
+and same-timestamp corrections follow the approved policy.
+Verify: isolated migration/insert/retry/restart/readback, duplicate station codes across
+sources, raw-vs-aggregate separation and database failure.
+
+### F3 — Authorized durable latest fallback
+
+Depends: F2. M.
+Candidates: station-data.service.ts, soil.mapper.ts, observation repository,
+test/integration/station-data/latest.spec.ts and new durable-latest.spec.ts.
+Acceptance: upstream success persists; eligible provider failure/backend restart serves
+only matching authorized last-known data with unchanged sample time and truthful origin.
+Access/source errors and DB failures never become stale success or markConnected.
+Verify: success -> outage -> process restart -> stored read; no data -> truthful empty/error;
+cross-source, removed source and revoked scope negatives.
+
+### F4 — Collection without an open browser
+
+Depends: F3. M; split lease/recovery if >5 files.
+Candidates: new soil-collection.service.ts/tests, station-data.module.ts,
+station-source-client.resolver.ts, approved collection-state repository.
+Acceptance: active configured soil stations only; bounded concurrency/timeouts/backoff,
+persistent watermark and safe shutdown. Overlap/restart cannot duplicate writes or
+advance the watermark before committing.
+Verify: deterministic fake provider/clock, no logged-in browser, overlapping workers,
+outage/recovery, crash/restart; source removal stops further collection.
+
+### F5 — Local history import and query
+
+Depends: F4. Two M slices: raw backfill, then query/aggregation.
+Candidates: new soil-history-import.service.ts/tests and soil-history.repository.ts/tests;
+station-data.service.ts/history.mapper.ts only as required.
+Acceptance: raw import pages within existing <=7-day windows and approved budgets.
+Local UTC filters/order/cursors/mean/min/max/first/last preserve existing <=90-day
+aggregate range limits. Gaps and partial coverage are explicit.
+Bind continuations to query and data origin; do not silently mix upstream and
+local pages or accept an incompatible cursor when falling back.
+Verify: pagination/resume, zero/sparse values, duplicates, UTC boundaries, reference
+aggregation fixtures; never label incomplete history complete or average averages.
+
+### F6 — Storage bounds and collection health
+
+Depends: F5. Separate M retention and S health slices.
+Candidates: observation repository, identity/retention.service.ts/tests;
+approved operations signals only.
+Acceptance: bounded retention keeps active last-known snapshots and audit/lifecycle
+evidence; safely surface stalled collection/storage pressure without secret or
+unbounded metric labels. Distinguish DB failure from provider outage.
+Verify: measure rows/indexes/WAL/backup bytes, disk/RAM headroom and query latency for
+declared stations/samples/day/retention; controlled purge/disk-write failure recovery.
+
+### Checkpoint F-data
+
+Provider may be unavailable: controlled tests prove durable readings survive restart,
+history coverage is honest and no wrong-source/unauthorized data is returned.
+Live-provider recovery stays a separate evidence gate.
+
+### F7 — Last-known latest presentation
+
+Depends: F3 plus approved DTOs. M slices per page group.
+FE candidates: src/types/soil.ts, services/latestSoilService.ts, new scoped state helper;
+farm-owner/RealtimeSoilMonitoring.tsx, FarmDashboard.tsx, admin/StationDetail.tsx/tests.
+Acceptance: sample age/last successful update/stored-old status/retry are visible.
+Latest/history/alerts failures are independent; StationDetail never retains another
+station's data after route changes. Successful empty response clears obsolete data.
+Verify: focused tests and browser online -> refresh failure -> stored recovery.
+
+### F8 — Exact-range history and partial-station recovery
+
+Depends: F5/F7. M slices.
+FE candidates: services/stationBrowserService.ts, history-query state helper,
+farm-owner/HistoricalAnalysis.tsx and HistoryReport.tsx/focused tests.
+Acceptance: state keys include actual begin/end, station/field/interval/aggregate/cursor.
+One station failure preserves other valid series; gaps/coverage visible; late responses
+cannot overwrite a changed selection.
+Verify: selection/range changes, out-of-order requests, failed station, UTC/local labels
+and existing truthful CSV behavior. No new report artifact.
+
+### F9 — Purge data on scope/session changes
+
+Depends: F7/F8. M.
+FE candidates: scoped helper, hooks/useStationHierarchy.ts and scope-isolation tests;
+auth store/API client only after explicit auth-flow approval.
+Acceptance: account/role/environment/logout clears retained data; observed 401/403/404
+and grant/source removal purge affected copies. Scope refresh works even when farm/plot
+IDs stay unchanged; retention cannot bypass backend authorization.
+Verify: each role, failed refresh, account switch, unchanged hierarchy IDs, revoked access.
+
+### F10 — Fresh automatic alerts exactly once
+
+Depends: F4/F5/F9. M.
+Candidates: alert-config/alert-evaluation.service.ts, alert-evaluator.ts,
+focused evaluation/notification integration tests.
+Acceptance: preserve revision/metadata and observedAt ordering; old snapshots/backfilled
+samples cannot produce duplicate or misleading live notifications; fresh recovered
+samples resume current rules with existing owner/shared boundaries.
+Verify: collector/evaluator overlap, restart, backfill, rule/grant changes and fanout.
+
+### Checkpoint F-product
+
+Browser acceptance Admin/Super Admin -> Farmer -> Client Developer for online,
+stored-only, empty and denied states. Stored readings do not imply Connected provider.
+No sample production data, remote writes or SMS.
+
+### F11 — Reproducible full-app packaging
+
+Depends: F0; finalize migration packaging after F2. M slices.
+Candidates: BE Dockerfile, deployment Compose overrides, backend CI; FE Docker/proxy
+definition in D:/IoT-web; packaging tests.
+Acceptance: versioned web/API/DB, same-origin routing, private persistent DB and working
+provider egress; native ARM64 and server architecture gates. Explicit maintenance/
+migration runner; current pruned runtime is not assumed to contain Prisma CLI/tsx.
+Verify: image/config/startup/deep-link/proxy tests, native dependencies, all required
+safe CI config; no workstation-only volume paths or dotenv in assets.
+
+### F12 — Intent/target resolution and read-only preflight
+
+Depends: F11 plus deployment contract. M.
+Candidates: proposed scripts/deployment/resolve-target.mjs, target-schema.mjs,
+preflight.mjs/tests and secret-free target.example.json.
+Acceptance: validated mode/target/release plus detected CPU/Docker/storage/origin choose
+LAN or website profile; dry-run shows exact destination/versions/migrations/actions.
+Unknown/ambiguous target, missing secret, unsafe directory or overwrite conflict stops.
+Verify: fake target adapters for Pi/server/ambiguous/unreachable/mismatched CPU cases.
+Never eval request text, interpolate untrusted shell input, scan broad networks,
+disable SSH host verification, auto-install host packages or change machine-wide config.
+
+### F13 — Authorized apply, smoke and application rollback
+
+Depends: F12/F-data/F-product. M slices for apply/rollback.
+Candidates: proposed deploy-release.mjs, target-adapter.mjs, rollback-release.mjs/tests;
+scripts/verify-release.mjs only where approved.
+Acceptance: deployment lock, verified backup, retained prior release, approved migration,
+correct API/web rollout order, smoke/hash checks; rerun same release is idempotent.
+Verify: failure injection at every stage, then an authorized staging rollout.
+Rollback application only if schema-compatible; no automatic live-DB restore after a
+migration failure. Recover interrupted rollout without deleting data.
+
+### F14 — Safe host-to-host data transfer
+
+Depends: F6/F11/F13. M.
+Candidates: existing backup-restore-rehearsal.ps1 and proposed portable
+backup/restore/cutover helper/tests.
+Acceptance: isolated destination restore first; real readings, grants, alerts,
+notifications/audit and source decryption remain correct. Source stays recoverable;
+only one target becomes authoritative after explicit cutover.
+Verify: isolated restore/count/scope/read checks and cutover/rollback rehearsal.
+Securely transfer DATA_SOURCE_ENCRYPTION_KEY separately from dump; specify pepper/JWT/
+session recovery policy, never secret values. Do not delete source volumes.
+
+### F15 — Additional website security and capacity gate
+
+Depends: F11-F14 and approved public/private target intent. Separate S/M slices.
+Candidates: approved ingress/config/security/audit protection and scoped CI/tests.
+Acceptance for public website: HTTPS, cookie/origin/proxy/IP policy, private DB/metrics,
+off-host encrypted backup with RPO/RTO/restore owner, Super Admin recovery policy,
+approved append-only audit protection and reviewed CI action pinning.
+Approve and test the single-instance target's limiter placement/policy; the existing
+local process limiter is not automatically approved for an Internet-facing proxy.
+Verify: staging auth/role/proxy negatives, target load/disk failure/recovery, restore and
+secret/dependency gates. LAN readiness is not public production readiness.
+No multi-instance/shared limiter/Redis unless separately approved.
+
+### F16 — Remaining TODO regression and live recovery
+
+Depends: data/product/deploy gates; F15 before public acceptance. S/M by role/scenario.
+Candidates: focused BE/FE/browser tests, existing issue ledger and single release record.
+Acceptance: close FE-2, FE-5 acceptance, FE-6, QA-1/QA-2 with evidence: login/password/
+refresh/logout/key lifecycle, user management/Super Admin transfer, audit scope/filter/
+cursor, grant removal, responsive/accessibility and actual existing CSV download.
+Include invalid input, expired/revoked credentials, concurrent requests/refresh
+single-flight, upstream timeout and database-down/restart/recovery cases.
+Verify: desktop/~390px at 100% zoom; each role, Pi/server same-origin smoke and negative
+scope tests. FE-6 requires automated browser tests PLUS manual responsive/accessibility
+checks, not either one alone; source tests alone are not E2E. Approve the browser
+runner/dependencies and bounded commands before adding automation.
+Live recovery proves advancing observedAt and one fresh rule notification. If the API
+remains unavailable, keep only that live gate open; do not fabricate a passing result.
+
+### F17 — Final technical acceptance
+
+Depends: all applicable slices. S acceptance, no new feature.
+Candidates: tasks/todo.md and existing internal release record.
+Local/Pi complete only after applicable data/product/deploy/QA gates; website complete
+only after its additional F15 target-specific security acceptance.
+Record exact version/platform/limits; unit tests and healthy containers alone do not
+justify production-ready. Formal reports and manuals remain separately requested.
+
+## Verification commands and execution rhythm
+
+These are existing commands for FUTURE approved execution, not results from this plan.
+Use isolated DBs/ports. Never fault-inject against live Pi/server data.
+
+Backend:
+
+    pnpm exec vitest run --pool=threads --maxWorkers=1
+    pnpm verify
+    pnpm test:coverage
+    pnpm security:secrets
+    pnpm audit --prod --audit-level=high
+    pnpm db:status
+    pnpm release:check -- --skip-openapi
+
+Run pnpm db:migrate:deploy only against the exact approved test/deployment destination
+after its backup gate. Focused new tests use explicit paths with the same Vitest flags.
+
+Frontend:
+
+    npm test
+    npm run lint
+    npm run build
+    node --experimental-strip-types --test test/stationBrowserService.test.ts test/latestSoilAdapter.test.ts
+
+FE build includes TypeScript. There is no existing browser-E2E script; F16 approves
+the runner and bounded commands before implementation. Coverage/audit are final gates.
+
+Order: F0 -> F1 -> F2/F3 -> F4/F5/F6 -> F7/F8/F9/F10 -> product acceptance.
+F11/F12 can proceed independently after their contract gate; F13 waits for data/product.
+F14 rehearses transfer; F15 gates website; F16/F17 close acceptance.
+No delivery-date promises before F0/F1 resolve the actual risks.
+
+## Current execution
+
+Execute F0-F6 and safely verifiable D work. The owner accepted station-data section
+16 (schema, additive DTOs, collection/capacity bounds) for local implementation on
+2026-10-05. No Pi database change, remote push or deployment in this iteration.
+This roadmap may evolve without reopening accepted B/C.

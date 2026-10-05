@@ -1,14 +1,18 @@
 # Backend delivery checklist
 
-Updated: 2026-09-29
+Updated: 2026-10-05
 
 This is the single short status index for the project. Detailed acceptance
-criteria remain in the
-[canonical roadmap](../docs/roadmaps/2026-09-02-backend-completion-roadmap.md),
+criteria for the original modules remain in the
+[original module roadmap](../docs/roadmaps/2026-09-02-backend-completion-roadmap.md),
 open risks remain in the
 [backend issue ledger](../docs/reviews/2026-09-04-backend-follow-up.md), and local
 commands remain in the
 [operations runbook](../docs/operations/LOCAL-RUNBOOK.md).
+
+The current completion roadmap is [tasks/plan.md](plan.md). It adds durable
+measurements and portable Pi/server deployment without reopening accepted B/C.
+Execution through F-data is approved; formal reports/operator manuals are separate.
 
 ## Status meaning
 
@@ -158,11 +162,18 @@ Evidence: [`2026-09-16-c1.md`](../docs/checkpoints/2026-09-16-c1.md).
       typecheck, lint, build, migration status, secret scan and diff check.
 - [ ] OP-4-production: Assign RPO/RTO, encrypted off-machine backup destination,
       retention, restore owner and credential-rotation procedure.
+      Owner accepted RPO 24h, RTO 4h and 7 daily/4 weekly copies on 2026-10-05;
+      destination, key custodian, restore owner and rotation evidence remain open.
 - [ ] OP-5-staging: Pass complete role E2E, load limit and security acceptance on
       staging with production-like topology.
-- [ ] D-infrastructure: Approve ingress/TLS, trusted proxy hops,
-      multi-instance/shared rate limiting and private metrics aggregation.
-- [ ] D-security: Approve MFA/SSO and Super Admin enrollment/recovery policy.
+- [ ] D-infrastructure: Approve the selected single-instance target's ingress/TLS,
+      trusted proxy hops, rate-limit placement/policy and private metrics boundary.
+      Multi-instance/shared limiting and metrics aggregation remain conditional
+      future extensions outside the final Pi/server roadmap, not hidden blockers.
+- [x] D-security-MFA-scope: Owner/team excluded MFA/SSO from this delivery on
+      2026-10-05; no MFA implementation or public-security certification is claimed.
+- [ ] D-security-recovery: Verify the existing Super Admin recovery and credential
+      rotation procedure for the selected target without weakening login/access/audit.
 - [ ] Checkpoint D-production: Accept all staging, infrastructure, backup,
       security and live-device evidence. Only this checkpoint may claim
       `production-ready`.
@@ -201,8 +212,10 @@ and must not duplicate the full contract.
 - [x] FE-4: Complete C-integration code for alert rules, alert lifecycle and in-app
       notifications; keep remote device writes unavailable and direct threshold
       changes to Alert Center.
-- [ ] FE-5: Connect the Admin audit view only to the scoped audit contract; do not
-      expose the process-local metrics registry as a public UI API.
+- [ ] FE-5: Verify the already-connected Super Admin audit view against the
+      scoped contract in browser role/filter/cursor cases; do not expose the
+      process-local metrics registry as a public UI API. The implementation is
+      present; the remaining gate is acceptance evidence, not a new Audit page.
 - [ ] FE-6: Run automated browser tests plus manual responsive/accessibility
       checks for Admin, Farmer and Client Developer.
 - [ ] QA-1: Run normal, invalid-input, expired/revoked credential, concurrent,
@@ -212,12 +225,47 @@ and must not duplicate the full contract.
 
 ## Immediate next action
 
-1. Keep FE-6/QA-1 as release-hardening work for automated responsive,
-   accessibility, failure and recovery coverage; owner acceptance for B/C is
-   already complete.
-2. Complete FE-5 only against the approved scoped audit contract; do not expose
-   the process-local metrics registry as a public UI API.
-3. Keep IoT Config/Config Proposals fail-closed: thresholds belong to Alert
-   Center and physical intervention stays onsite.
-4. Keep D-production ownership decisions separate from the healthy Pi staging
-   deployment.
+1. Review the final roadmap, reconcile old evidence (F0), then approve the
+   durable-data/deployment contracts (F1) before schema or API implementation.
+2. Close FE-2/FE-5/FE-6/QA-1/QA-2 through F16 with actual evidence, not blanket ticks.
+3. Preserve the no-device-write scope and B/C owner acceptance.
+4. Keep local/Pi acceptance distinct from website/public production acceptance.
+
+## F. Final portable monitoring — execution approved through F-data
+
+Owner confirmed: the same app may run on Pi/local OR server; transfer data when
+needed. No bidirectional sync. Automation resolves explicit operating intent and
+the authorized target, detects capabilities, selects a profile, then runs a safe
+deployment workflow. Missing/ambiguous targets or secrets stop before writes.
+
+Detailed acceptance, candidate files, dependencies and verification are in
+[tasks/plan.md](plan.md); only the short task index is maintained here.
+
+- [ ] F0: Reconcile old TODO/issue evidence and clear verified quality/config debt.
+- [ ] F1: Approve persistence/provenance/coverage, retention/capacity and target contracts.
+      Owner approved 90-day real raw history plus separate last-known snapshots;
+      detailed section 16 schema/DTO/collection contract approved 2026-10-05.
+      No Pi DB change. Deployment target contracts remain separately open.
+- [ ] F2: Persist normalized real readings and latest snapshots with deduplication.
+- [ ] F3: Serve authorized durable latest data through outage and backend restart.
+- [ ] F4: Collect without a browser; bound retries, concurrency and resume watermarks.
+- [ ] F5: Import bounded raw history and query local history with honest coverage.
+- [ ] F6: Enforce reading retention/storage limits and safe collection-health signals.
+- [ ] Checkpoint F-data: Restart/outage/history/scope acceptance with durable readings.
+- [ ] F7: Show exact-station last-known latest data; isolate endpoint failures.
+- [ ] F8: Preserve exact-query history; isolate failed stations and stale responses.
+- [ ] F9: Invalidate retained data on account/session/grant/source changes.
+- [ ] F10: Verify fresh-only automatic alerts and notification recovery without duplicates.
+- [ ] Checkpoint F-product: Role/browser acceptance for online/stored/empty/denied states.
+- [ ] F11: Reproducible full-app packaging, migration runner and ARM64/server gates.
+- [ ] F12: Validated intent/target resolution, capability detection and read-only dry-run.
+- [ ] F13: Authorized idempotent deploy, smoke checks and schema-safe application rollback.
+- [ ] F14: Rehearse Pi/server data and secret transfer with isolated restore/cutover.
+- [ ] F15: Pass the additional website security, backup and measured capacity gate.
+- [ ] F16: Close existing FE/QA gates and live-provider recovery with linked evidence.
+- [ ] F17-local: Accept local/Pi after applicable F-data/F-product/deploy/QA gates.
+- [ ] F17-web: Accept the website target only after F15 and its target-specific tests.
+
+No item above is complete merely because this plan was written. Formal report and
+operator/user manual work is excluded; existing in-app CSV/report functionality
+still receives regression checks. D-production stays open until its own gates pass.

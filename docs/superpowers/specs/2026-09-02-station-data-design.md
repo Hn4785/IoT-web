@@ -495,3 +495,103 @@ IDs and safe error codes, not upstream bodies, credentials or raw exceptions.
 
 No Phase C alert/configuration implementation begins before B-core is verified.
 Phase B is labeled fully verified only after B-device validation.
+
+## 16. F-data amendment — approved for local implementation
+
+Date: 2026-10-05. The owner approved this detailed contract, including 90-day real
+raw history plus a separate last-known snapshot. Sections 1/3/4/10 above describe
+the accepted B baseline; this amendment supersedes their persistence deferral.
+B/C acceptance is not reopened. No Pi database migration,
+push, deployment, frontend F7 work, MFA, SMS or device writes are included here.
+
+### Storage and transactional boundaries
+
+- Add `SoilReading`, `SoilLatestReading`, `SoilHistoryCoverage` and
+  `SoilCollectionCheckpoint` to the existing PostgreSQL/Prisma schema.
+- Reading identity is `(dataSourceId, stationId, field, observedAt)`. A composite
+  station/source foreign key prevents cross-source records. Store finite validated
+  double-precision values without unit conversion or fixed-decimal rounding.
+- Store original fetch time, ingestion origin (`latest`/`rawHistory`), and a
+  revision. Latest uses each field's `_fieldTs`; raw history uses record `ts`.
+  Never substitute fetch time for missing observation time.
+- Repeated identity/value is idempotent. Changed value at the same timestamp is
+  a correction: only a newer fetch generation may win. Serialize/fence writes
+  to prevent late responses replacing a newer correction.
+- Latest is one row per source/station/field, independent of retained raw rows.
+  Older backfill cannot roll it backwards; a newer accepted same-time correction
+  may replace its value. Metadata remains revision-aware and unknown when unverified.
+- Recheck source activity and collection lease inside every write transaction.
+  Removed sources cannot gain new rows through an in-flight response. Reads must
+  resolve current account/key/grant/source/station authorization first, including
+  Client Developer access. A cursor or stored row never grants access.
+
+### Additive response contract
+
+Keep existing routes, request bounds, envelopes and required DTO fields. Add
+`dataOrigin: 'upstream' | 'stored'` to latest/history. For history add:
+
+```ts
+type SoilHistoryCoverageDto = {
+  status: 'complete' | 'partial' | 'unknown';
+  fields: Array<{
+    field: SoilField;
+    ranges: Array<{ begin: string; end: string }>;
+  }>;
+};
+```
+
+Ranges are bounded to the requested interval and proven completed raw windows,
+not inferred from earliest/latest sample or row count. Truncation, invalid fields,
+retention, incomplete pages and collection gaps cannot be labeled complete.
+Valid exhausted empty windows can prove coverage; malformed responses cannot.
+
+On eligible provider failure, authorized latest may fall back to durable snapshots
+after process restart, beyond the old memory-cache grace. Preserve observation time
+and original successful fetch time; set `dataOrigin: 'stored'`, `isFromCache: true`
+and `isStale: true`. Database reads never mark a source connected. No stored result
+means the existing safe upstream error, not fabricated zeroes or measurements.
+
+History can serve only captured local raw readings during outage, with honest
+coverage. A local cursor binds source/station/query/order/limit/read origin and an
+immutable timestamp keyset, paginating complete timestamp groups. Aggregate complete
+UTC buckets before pagination using raw values (`mean/min/max/first/last`), never
+upstream aggregates as raw or averages of averages. Upstream and local cursor
+chains cannot silently switch origin; require a new query without cursor if needed.
+
+### Collection, backfill and capacity
+
+- Reuse the existing source resolver, validated upstream client and independent
+  database lease pattern. No new dependencies or browser requirement.
+- Proposed initial collector interval: 120 seconds; at most 2 concurrent station
+  requests, 20 stations per tick, 10 raw pages per station/window. Every call keeps
+  the configured upstream timeout. Backoff is bounded from 120 seconds to 15 minutes;
+  a failure must not starve other active stations. Skip unverified CENTER soil data.
+- Fetch latest plus bounded raw catch-up windows (at most 24h per window and 7-day
+  raw request bound). Persist overlap/resume checkpoints; advance proven coverage
+  only after all pages in a window have committed. Stop at an unexhaustible saturated
+  timestamp rather than skip samples. Catch up at most the retained 90-day horizon.
+- Proposed initial configurable ceilings: 2 million raw field readings per station,
+  10 million globally. These are protective limits, not a measured Pi capacity claim.
+  At capacity stop new raw collection and expose a finite storage-limit signal;
+  preserve existing history/snapshots rather than silently shorten retention.
+- Prune readings older than 90 days by observedAt in bounded batches; trim coverage
+  and keep latest snapshots. Do not delete audit, lifecycle or notification data.
+  Collector shutdown is bounded and commit fencing survives lease expiry/restart.
+- Expose only finite collection states/counters through existing private operations
+  instrumentation; no credentials, upstream bodies or unbounded metric labels.
+- Stored fallback, old backfill and same-time corrections cannot be replayed as new
+  alert breach/recovery samples. Regress current freshness/deduplication protections.
+
+### Verification and acceptance
+
+Follow the existing TDD, format, typecheck, lint, build, coverage, dependency/secret
+and migration gates. Database tests/migrations target isolated `iot_test` only.
+Test deduplication/correction races, older backfill, source consistency/removal,
+restart/outage latest/history, empty/partial coverage, cursor origin/binding,
+aggregation across pages, current role/grant/key denial, collection progress/backoff/
+lease fencing, retention preserving snapshots, capacity stops and alert regressions.
+
+F-data closes only after fresh evidence for those scenarios. A real provider outage
+may require deterministic validated fixtures for recovery tests; label that evidence
+fixture-verified, not live recovery. Production host/domain, encrypted off-machine
+backup destination/owners and actual staging evidence remain separate D gates.

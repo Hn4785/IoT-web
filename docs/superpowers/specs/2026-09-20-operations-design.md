@@ -4,6 +4,13 @@ Date: 2026-09-20
 Status: Checkpoint D1 verified locally; deployment decisions remain deferred  
 Module id: `operations`
 
+Scope decision (2026-10-05): the owner/team excludes MFA/SSO from this delivery.
+They may add it later. This is a scope waiver, not an implemented security control.
+Existing login, server-side authorization, secrets, audit and Super Admin recovery
+remain required. Production host/domain and off-machine backup destination/owners
+are still unspecified. Accepted backup objectives: RPO 24h, RTO 4h, 7 daily and
+4 weekly copies; implementation and restore evidence must still satisfy them.
+
 ## 1. Objective
 
 Make the verified Phase A-C backend diagnosable, recoverable and reproducible
@@ -205,8 +212,10 @@ rehearsal evidence; unit tests cannot substitute for restore or staging evidence
 
 These do not block D0 or local OP-1/OP-2 implementation, but block the named gate:
 
-- ingress/TLS/proxy topology and shared limiter choice — before OP-3;
+- selected single-instance ingress/TLS/proxy topology and limiter policy — before
+  that target's release; shared limiting is conditional on future multi-instance use;
 - production metrics exposure and scraper network — before D1 acceptance;
 - RPO, RTO, off-machine encrypted backup target and retention — before OP-4;
-- MFA/SSO provider and Super Admin recovery policy — before public launch;
+- Super Admin recovery and credential-rotation evidence — before target release;
+  MFA/SSO is excluded by the owner/team decision above;
 - live CENTER/NODE hardware verification — before Phase B/C device claims.

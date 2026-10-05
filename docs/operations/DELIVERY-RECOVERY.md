@@ -103,10 +103,12 @@ credential in evidence.
 
 ## 5. Production decisions still requiring an owner
 
-- ingress, TLS termination, trusted proxy hops and multi-instance rate limiter;
-- private metrics transport and aggregation;
-- RPO/RTO, encrypted off-machine backup and retention;
-- MFA/SSO and Super Admin recovery policy;
+- selected single-instance ingress, TLS, trusted proxy hops and limiter policy;
+- private metrics transport (shared aggregation only for future multi-instance use);
+- encrypted off-machine backup destination, key custodian and restore owner;
+  RPO 24h, RTO 4h and 7 daily/4 weekly copies were accepted on 2026-10-05;
+- Super Admin recovery and credential rotation; MFA/SSO was excluded from this
+  delivery by the owner/team on 2026-10-05, not implemented or certified;
 - staging URL/credentials and complete browser-role evidence.
 
 These are release blockers, not missing application code to guess locally.
