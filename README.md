@@ -15,18 +15,18 @@ Tài liệu này là điểm bắt đầu duy nhất dành cho tester. Không c�
 | Admin quản lý tài khoản và phân quyền | Hoàn thành |
 | Chuyển giao quyền Super Admin | Hoàn thành; thao tác sẽ đăng xuất cả hai tài khoản |
 | Farm → Plot → Station theo phạm vi Farmer | Hoàn thành |
-| Dữ liệu đất latest/history | Đã nối provider; còn gate xác minh live CENTER/NODE |
+| Dữ liệu đất latest/history | Lưu raw 90 ngày và snapshot cuối; phân biệt upstream/stored, cũ và lịch sử thiếu |
 | Client Developer API và API key | Hoàn thành |
-| Responsive desktop/mobile | Có hỗ trợ; còn chuẩn hóa hình ảnh 5 trang Farmer |
-| Thiết bị thật CENTER + NODE01–NODE06 | Đã có credential thử nghiệm; chưa đóng live-device gate |
-| Alert và thông báo in-app | Đã nối backend; còn browser role matrix |
+| Responsive desktop/mobile | Có kiểm thử desktop/390px; xem checkpoint mới nhất để biết phạm vi |
+| Thiết bị thật CENTER + NODE01–NODE06 | Provider xác nhận nguồn thật; recovery/live backfill cần bằng chứng riêng |
+| Alert và thông báo in-app | Đã nối backend; chỉ dữ liệu fresh hợp lệ được phát cảnh báo tự động |
 | Cấu hình/health thiết bị | Hiển thị unavailable có chủ ý khi chưa có contract thiết bị thật |
 | Tạo/sửa/xóa Farm, Plot, Station trên UI | Chưa triển khai |
 | Khôi phục mật khẩu bằng email | Chưa triển khai; hiện liên hệ Admin |
 
-Gate v2.5.3: frontend `53/53` test, lint và production build đạt. Backend
-`pnpm verify` đạt; full suite `373/374` test, còn một test heartbeat lease đã
-được ghi nhận và chưa coi là đã sửa.
+Trạng thái và bằng chứng mới nhất ở [release notes](docs/internal-release-notes.md).
+Các số test/checkpoint cũ là lịch sử, không phải kết quả hiện tại. Pi là môi
+trường team test; bên nhận tự triển khai website và nghiệm thu hạ tầng của họ.
 
 ## 2. Yêu cầu máy
 
@@ -60,6 +60,8 @@ Mở `.env` và thay toàn bộ giá trị `replace-with-...`. Tối thiểu c�
 - `JWT_SECRET` và `CREDENTIAL_PEPPER`: hai chuỗi khác nhau, mỗi chuỗi tối thiểu 32 ký tự.
 - `WEATHER_API_KEY`: dùng key local; không gửi cho frontend và không commit `.env`.
 - `FRONTEND_ORIGIN=http://localhost:5173`.
+- `DATA_SOURCE_ENCRYPTION_KEY`: khóa 32 byte dạng base64; giữ riêng khỏi backup.
+- `DATA_SOURCE_ALLOWED_ORIGINS`: origin HTTPS được phép của nguồn thật, không có path.
 
 Khởi động PostgreSQL và kiểm tra trạng thái:
 
@@ -79,13 +81,9 @@ Tạo Super Admin đầu tiên; mật khẩu được nhập bằng prompt ẩn:
 pnpm db:bootstrap-super-admin -- --email root@example.com
 ```
 
-Tạo registry demo an toàn:
-
-```powershell
-pnpm db:seed-station-demo -- --confirm-demo-seed
-```
-
-Seed hiện tạo `Farm Demo`, `Plot Demo`, `NODE01` và `NODE02`. Đây chỉ là dữ liệu cấu trúc local, không đại diện đầy đủ hệ thống thật dự kiến có `CENTER` và `NODE01`–`NODE06`.
+Không seed Farm Demo hoặc nhập database thử nghiệm. Admin thêm nguồn thật và cấp
+quyền station tại API Sources; User Management quản lý tài khoản, không phải
+màn hình sửa registry/nguồn. Pi/server chỉ nhận bản chạy và dữ liệu thật đã có.
 
 Chạy backend:
 
@@ -120,7 +118,7 @@ chuyển request tới backend `http://127.0.0.1:3000`. Chỉ đặt
 2. Đăng nhập Super Admin vừa tạo.
 3. Tạo một Admin, một Farmer và một Client Developer; lưu lại temporary password lúc backend trả về vì plaintext chỉ hiển thị một lần.
 4. Đăng nhập tài khoản mới, xác nhận hệ thống bắt đổi mật khẩu trước khi vào trang nghiệp vụ.
-5. Gán Farm/Station cho Farmer rồi kiểm tra Farmer chỉ xem được phạm vi đã cấp.
+5. Chia sẻ nguồn/station tại API Sources rồi kiểm tra Farmer chỉ xem được phạm vi đã cấp.
 6. Mở Soil Dashboard, chọn Farm → Plot → Station và kiểm tra latest/history, loading, empty state và nút thử lại khi API lỗi.
 7. Với Client Developer, tạo API key, lưu key lúc hiển thị một lần, sau đó thử `/client/stations`, `/client/data/latest` và `/client/data/history` trong API Explorer.
 8. Kiểm tra `401`, `403`, `404`, `429` và `503` không làm vỡ trang hoặc lộ stack trace.
@@ -138,11 +136,14 @@ pnpm db:recover-super-admin -- --email root@example.com
 
 Frontend:
 
+Dừng Vite đang chạy trước lệnh E2E; Playwright tự mở server riêng trên cổng 5173.
+
 ```powershell
 cd D:\IoT-web
 npm run lint
 npm test
 npm run build
+npm run test:e2e -- e2e/smoke.spec.ts
 ```
 
 Backend, khi Docker/PostgreSQL đang chạy:

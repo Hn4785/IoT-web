@@ -90,7 +90,7 @@ Page/Hook -> Service -> apiClient -> Backend controller
 | Đổi mật khẩu | `POST /auth/change-password` | Đã nối |
 | Danh sách/tạo/sửa user | `GET/POST /admin/users`, `PATCH /admin/users/:id` | Đã nối |
 | Reset mật khẩu | `POST /admin/users/:id/reset-password` | Đã nối |
-| Quyền Farm/Station | `PUT/DELETE /admin/users/:id/farm-memberships/:farmId`, `PUT/DELETE /admin/users/:id/station-grants/:stationId` | Đã nối selector và thao tác cấp/thu hồi; cần kiểm thử browser |
+| Quyền Farm/Station | `PUT/DELETE /admin/users/:id/farm-memberships/:farmId`, `PUT/DELETE /admin/users/:id/station-grants/:stationId` | Contract backend còn giữ; UI cấp/thu hồi hiện hành ở API Sources, User Management chỉ đọc scope |
 | Chuyển Super Admin | `POST /admin/super-admin/transfer` | Đã nối |
 | API key | `/developer/api-keys/*` | Đã nối |
 
@@ -226,6 +226,15 @@ Sau gate tĩnh, chạy browser matrix cho Admin, Farmer và Client Developer tr�
 - upstream/database hoạt động và tạm mất kết nối.
 
 ## 8. Trạng thái tích hợp hiện tại
+
+F-data/F-product: `dataOrigin` phân biệt `upstream` và `stored`; `isStale` cùng
+timestamp gốc cho biết độ mới. Coverage không đủ phải ghi lịch sử thiếu, không
+gọi là đầy đủ chỉ vì request thành công. Latest chỉ được giữ cho đúng station;
+history giữ theo đúng station/metric/begin/end/aggregation. 401/403/404 hoặc mất
+scope phải xoá phần không còn quyền; lỗi tạm thời không xoá kết quả hợp lệ của
+endpoint/trạm khác. API key chỉ hiện secret một lần, phải xác nhận đã lưu trước
+khi đóng; không ghi secret vào ảnh/tài liệu. Xem `e2e/real-backend.spec.ts` cho
+ma trận HTTP thật với fixture cô lập, không dùng fixture này trên Pi.
 
 Phase B được đánh dấu hoàn tất local ngày 2026-09-30. Điều hướng hiện hành:
 

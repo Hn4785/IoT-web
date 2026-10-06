@@ -13,7 +13,32 @@ Với mỗi thay đổi:
 3. Ghi rõ kết quả test; không đánh dấu hoàn thành nếu chưa có bằng chứng kiểm tra.
 4. Không ghi secret, mật khẩu, access token, refresh token hoặc API key vào file này.
 
-## F-product local — 2026-10-05 (chưa push GitHub/Pi)
+## F/FE final candidate — 2026-10-06
+
+- Hoàn thiện đóng gói runtime/tools non-root, Compose cùng-origin cho Pi/server,
+  preflight chỉ đọc theo profile rõ ràng; không tự chọn hay triển khai host bên nhận.
+- Backup AES-256-GCM có kiểm tra tính toàn vẹn; restore/transfer chỉ vào DB cô lập.
+  Rehearsal full-stack và rollback ứng dụng giữ nguyên container/volume PostgreSQL,
+  13 migration; không reverse schema, seed hay nhập database thử lên Pi.
+- Sửa race phiên/refresh/logout, màn hình đổi mật khẩu, one-time API key acknowledgement,
+  notification mất quyền và case-sensitive CSS trên Linux; bộ lọc Soil co đúng mobile.
+- Bản vá Nest Fastify 12.0.3/Fastify 5.12.5/brace-expansion 5.0.12 và source-map-js
+  1.2.2 giữ nguyên audit gate. BE/FE audit không còn advisory đã biết.
+- Local: backend 93 file/619 tests, coverage 85.78/77.27/91.82/88.52%, verify/secret
+  scan đạt; frontend 241 tests, lint/typecheck/build đạt. HTTP backend/DB fixture
+  14/14 desktop/mobile: credential/user/transfer, audit filter/cursor, 101 notifications,
+  key lifecycle và native CSV. Fixture tách khỏi dữ liệu thật và không phát hành.
+- GitHub BE `44fa8a2`: [Backend CI](https://github.com/Hn4785/IoT-web/actions/runs/37404491022)
+  và [image amd64/arm64](https://github.com/Hn4785/IoT-web/actions/runs/37404491066) xanh.
+  Đợt Pi cuối đang chuẩn bị; chưa coi candidate này là đã triển khai.
+- Sổ lỗi local theo đúng 15 cột A–O, STT 48–63, retest 06/10/2026. Chưa xác nhận
+  đồng bộ Google Sheet. Không đưa lỗi mạng/build Pi vào danh sách lỗi ứng dụng.
+- Chỉ chuẩn bị kế hoạch viết/review tài liệu tại BE `tasks/plan.md` mục H,
+  chưa tạo tài liệu bàn giao. Không xoá spec/checkpoint lịch sử; inventory không
+  tìm thấy file Markdown trùng hoàn toàn. Target/domain/TLS/backup custody và
+  nghiệm thu provider thật vẫn do bên nhận xác nhận, không tích bằng fixture.
+
+## F-product local — 2026-10-05 (chưa push GitHub/Pi tại thời điểm checkpoint)
 
 - F7: latest/history/alerts tải độc lập; giữ last-known đúng trạm khi lỗi tạm thời,
   giữ timestamp gốc, phân biệt Stored/Last known/Empty. Chặn dữ liệu route cũ,
