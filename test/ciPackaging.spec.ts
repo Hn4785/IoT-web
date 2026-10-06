@@ -48,4 +48,31 @@ describe('CI Packaging and Workflows', () => {
     expect(imagesContent).toContain('/api/v1/readiness');
     expect(imagesContent).toContain('id -u');
   });
+
+  it('publishes only the smoke-verified runtime with its commit tag and checksum', () => {
+    const content = fs.readFileSync(imagesPath, 'utf8');
+    const smoke = content.indexOf('test "$(docker exec iot-api-smoke id -u)" = 1000');
+    const tag = content.indexOf('docker tag iot-backend-runtime agrisense-api:${{ github.sha }}');
+    const save = content.indexOf('docker save agrisense-api:${{ github.sha }} | gzip');
+    const upload = content.indexOf(
+      'actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02',
+    );
+    expect(smoke).toBeGreaterThan(0);
+    expect(tag).toBeGreaterThan(smoke);
+    expect(save).toBeGreaterThan(tag);
+    expect(upload).toBeGreaterThan(save);
+    expect(content.indexOf('- name: Cleanup CI container and network')).toBeGreaterThan(upload);
+    expect(
+      content.match(/if: github.event_name == 'push' && github.ref == 'refs\/heads\/BE'/g),
+    ).toHaveLength(2);
+    expect(content).toContain('pull_request:');
+    expect(content).toContain('runtime-artifact/runtime.tar.gz');
+    expect(content).toContain('runtime-artifact/SHA256SUMS');
+    expect(content).toContain('sha256sum runtime.tar.gz > SHA256SUMS');
+    expect(content).toContain('name: runtime-${{ matrix.os }}-${{ github.sha }}');
+    expect(content).toContain('retention-days: 3');
+    expect(content).toContain('if-no-files-found: error');
+    expect(content).toContain('compression-level: 0');
+    expect(content).not.toContain('docker save iot-backend-tools');
+  });
 });

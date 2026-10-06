@@ -98,6 +98,24 @@ jobs:
           done
           curl --fail --silent http://127.0.0.1:3000/api/v1/readiness
           test "$(docker exec iot-api-smoke id -u)" = 1000
+      - name: Export verified runtime artifact
+        if: github.event_name == 'push' && github.ref == 'refs/heads/BE'
+        run: |
+          mkdir -p runtime-artifact
+          docker tag iot-backend-runtime agrisense-api:${{ github.sha }}
+          docker save agrisense-api:${{ github.sha }} | gzip > runtime-artifact/runtime.tar.gz
+          cd runtime-artifact
+          sha256sum runtime.tar.gz > SHA256SUMS
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: github.event_name == 'push' && github.ref == 'refs/heads/BE'
+        with:
+          name: runtime-${{ matrix.os }}-${{ github.sha }}
+          path: |
+            runtime-artifact/runtime.tar.gz
+            runtime-artifact/SHA256SUMS
+          retention-days: 3
+          if-no-files-found: error
+          compression-level: 0
       - name: Cleanup CI container and network
         if: always()
         run: |
