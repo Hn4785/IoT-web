@@ -13,7 +13,7 @@ Với mỗi thay đổi:
 3. Ghi rõ kết quả test; không đánh dấu hoàn thành nếu chưa có bằng chứng kiểm tra.
 4. Không ghi secret, mật khẩu, access token, refresh token hoặc API key vào file này.
 
-## F/FE final candidate — 2026-10-06
+## F/FE verified runtime release — 2026-10-06
 
 - Hoàn thiện đóng gói runtime/tools non-root, Compose cùng-origin cho Pi/server,
   preflight chỉ đọc theo profile rõ ràng; không tự chọn hay triển khai host bên nhận.
@@ -24,13 +24,25 @@ Với mỗi thay đổi:
   notification mất quyền và case-sensitive CSS trên Linux; bộ lọc Soil co đúng mobile.
 - Bản vá Nest Fastify 12.0.3/Fastify 5.12.5/brace-expansion 5.0.12 và source-map-js
   1.2.2 giữ nguyên audit gate. BE/FE audit không còn advisory đã biết.
-- Local: backend 93 file/619 tests, coverage 85.78/77.27/91.82/88.52%, verify/secret
+- Local: backend 93 file/620 tests, coverage 85.78/77.31/91.82/88.52%, verify/secret
   scan đạt; frontend 241 tests, lint/typecheck/build đạt. HTTP backend/DB fixture
   14/14 desktop/mobile: credential/user/transfer, audit filter/cursor, 101 notifications,
   key lifecycle và native CSV. Fixture tách khỏi dữ liệu thật và không phát hành.
-- GitHub BE `44fa8a2`: [Backend CI](https://github.com/Hn4785/IoT-web/actions/runs/37404491022)
-  và [image amd64/arm64](https://github.com/Hn4785/IoT-web/actions/runs/37404491066) xanh.
-  Đợt Pi cuối đang chuẩn bị; chưa coi candidate này là đã triển khai.
+- GitHub BE runtime `26df9dd`: [Backend CI](https://github.com/Hn4785/IoT-web/actions/runs/37406275985)
+  và [image amd64/arm64](https://github.com/Hn4785/IoT-web/actions/runs/37406275960) xanh.
+  Linux CI chạy 605 test, skip đúng 15 test PowerShell/Windows; 15 test này đã chạy
+  và đạt trên local Windows. Không bỏ hoặc hạ gate audit để làm xanh.
+  FE `5130dc4`: [Frontend CI](https://github.com/Hn4785/IoT-web/actions/runs/37406638446) xanh.
+- Pi chạy API `26df9ddc20c41aee250d7be3ef4815908ed4ebf4` và web `2077871-arm64`;
+  commit docs mới hơn không đổi runtime. Image runtime không có test/fixture/.env.
+  LAN và HTTPS ngrok: health/readiness/web/deep-link đạt, nguồn yêu cầu đăng nhập
+  trả 401. Host web 80 chuyển tới container 8080; ngrok cùng-origin web:8080.
+  Hash index khớp image gốc; user non-root 1000/101. PostgreSQL giữ nguyên container,
+  volume, 13 migration hoàn thành; user/source/farm/plot/station không đổi, Farm Demo 0.
+  Readings tăng 1088 → 1132, observedAt/fetchedAt tiến sau rollout; snapshot 42.
+  Đây là bộ lưu raw tối đa 90 ngày, không phải đã backfill đủ 90 ngày: sáu checkpoint
+  raw-history vẫn invalid. Chưa chứng minh một notification tự động mới trên provider thật.
+  Backup trước rollout và image cũ được giữ tại Pi để phục hồi; không restore DB test.
 - Sổ lỗi local theo đúng 15 cột A–O, STT 48–63, retest 06/10/2026. Chưa xác nhận
   đồng bộ Google Sheet. Không đưa lỗi mạng/build Pi vào danh sách lỗi ứng dụng.
 - Chỉ chuẩn bị kế hoạch viết/review tài liệu tại BE `tasks/plan.md` mục H,
