@@ -5,8 +5,7 @@ import { Button } from "../../components/common/Button.tsx";
 import PageHeader from "../../components/layout/PageHeader.tsx";
 import { notificationService } from "../../services/notificationService.ts";
 import type { NotificationDto } from "../../types/notification.ts";
-import { normalizeApiError } from "../../utils/apiError.ts";
-import { appendNotificationItems } from "./notificationInboxPagination.ts";
+import { appendNotificationItems, applyNotificationErrorState } from "./notificationInboxPagination.ts";
 import styles from "./NotificationInbox.module.css";
 
 function formatDate(value: string) {
@@ -73,9 +72,30 @@ export default function NotificationSettings() {
   const [updatingId, setUpdatingId] = useState("");
   const [error, setError] = useState("");
   const requestGeneration = useRef(0);
+  const lastFilter = useRef(showUnread);
+  const stateRef = useRef({ items, unreadCount, nextCursor });
+  useEffect(() => {
+    stateRef.current = { items, unreadCount, nextCursor };
+  }, [items, unreadCount, nextCursor]);
+
+  const purgeAccess = useCallback(() => {
+    requestGeneration.current += 1;
+    stateRef.current = { items: [], unreadCount: 0, nextCursor: null };
+    setItems([]);
+    setUnreadCount(0);
+    setNextCursor(null);
+    setLoading(false);
+    setLoadingMore(false);
+    setUpdatingId("");
+  }, []);
 
   const load = useCallback(async () => {
     const generation = ++requestGeneration.current;
+    if (lastFilter.current !== showUnread) {
+      lastFilter.current = showUnread;
+      setItems([]);
+      setNextCursor(null);
+    }
     setLoading(true);
     setLoadingMore(false);
     setError("");
@@ -86,11 +106,14 @@ export default function NotificationSettings() {
       setUnreadCount(page.unreadCount);
       setNextCursor(page.nextCursor);
     } catch (reason) {
-      if (generation === requestGeneration.current) setError(normalizeApiError(reason).message);
+      if (generation !== requestGeneration.current) return;
+      const res = applyNotificationErrorState(reason, stateRef.current);
+      setError(res.error);
+      if (res.accessLost) purgeAccess();
     } finally {
       if (generation === requestGeneration.current) setLoading(false);
     }
-  }, [showUnread]);
+  }, [showUnread, purgeAccess]);
 
   useEffect(() => {
     let active = true;
@@ -119,22 +142,30 @@ export default function NotificationSettings() {
       setUnreadCount(page.unreadCount);
       setNextCursor(page.nextCursor);
     } catch (reason) {
-      if (generation === requestGeneration.current) setError(normalizeApiError(reason).message);
+      if (generation !== requestGeneration.current) return;
+      const res = applyNotificationErrorState(reason, stateRef.current);
+      setError(res.error);
+      if (res.accessLost) purgeAccess();
     } finally {
-      if (generation === requestGeneration.current) setLoadingMore(false);
+      setLoadingMore(false);
     }
   }
 
   async function toggleRead(item: NotificationDto) {
+    const generation = requestGeneration.current;
     setUpdatingId(item.id);
     setError("");
     try {
       const updated = await notificationService.setRead(item.id, !item.isRead);
+      if (generation !== requestGeneration.current) return;
       if (showUnread && updated.isRead) setItems((current) => current.filter(({ id }) => id !== updated.id));
       else setItems((current) => current.map((entry) => entry.id === updated.id ? updated : entry));
       setUnreadCount((count) => Math.max(0, count + (updated.isRead ? -1 : 1)));
     } catch (reason) {
-      setError(normalizeApiError(reason).message);
+      if (generation !== requestGeneration.current) return;
+      const res = applyNotificationErrorState(reason, stateRef.current);
+      setError(res.error);
+      if (res.accessLost) purgeAccess();
     } finally {
       setUpdatingId("");
     }
