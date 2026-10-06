@@ -1,10 +1,13 @@
 # Delivery, recovery and frontend release gate
 
-Updated: 2026-09-23
+Updated: 2026-10-06
 
 This is the canonical Phase D operator checklist. It prepares a local release
 candidate; it does not replace staging, live-device or production infrastructure
 approval.
+
+Full handoff-writing/review sequencing is in `tasks/plan.md`, section H. This file
+is the canonical deployment/recovery procedure, not another acceptance checklist.
 
 ## 1. Immutable verification
 
@@ -111,7 +114,8 @@ credential in evidence.
   delivery by the owner/team on 2026-10-05, not implemented or certified;
 - staging URL/credentials and complete browser-role evidence.
 
-These are release blockers, not missing application code to guess locally.
+These block receiving-team public-target acceptance, not the verified local/Pi
+application baseline. Do not guess them or mark them done from local tests.
 
 ## 6. Raspberry Pi staging network
 

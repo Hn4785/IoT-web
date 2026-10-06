@@ -5,7 +5,8 @@ Status: D app/local and local Checkpoint F-data complete on 2026-10-05.
 F7-F10 and Checkpoint F-product-local are also complete with 557 backend and 218
 frontend tests plus isolated role/browser data-state evidence. See
 [F-product evidence](../docs/checkpoints/2026-10-05-f-product-progress.md).
-F11 onwards, broad FE/QA and receiving-team target gates remain open.
+F11-F14 local implementation/rehearsals and bounded FE/QA acceptance are verified
+on 2026-10-06; live recovery and receiving-team target gates remain separate.
 Follow-up owner authorization: publish only completed F-data logic to Git/Pi for
 internal testing, preserving existing data and applying its two additive migrations.
 Latest owner instruction (2026-10-06): finish applicable F11-F17 and outstanding
@@ -64,8 +65,9 @@ Do not infer permission to access or change a server from this plan.
   are complete against the approved section 16 contract, including the separately
   approved internal fetch-generation columns. This supersedes the earlier F1 hold.
   The owner has now resumed F7-F10 and Checkpoint F-product locally. The earlier
-  scoped F-data Pi rollout is historical; no new Pi changes or remote push are
-  authorized during this iteration. No seeds/fixture data are delivery data.
+  scoped F-data Pi rollout is historical. The 2026-10-06 owner instruction above
+  supersedes the local-only hold: publish verified combined BE/FE and update Pi.
+  No seeds/fixture data are delivery data.
   Formal reports/manuals remain excluded.
 - MFA/SSO is excluded by the owner/team decision on 2026-10-05. Keep existing
   authentication, authorization, secret protection, audit and recovery controls.
@@ -378,7 +380,7 @@ Frontend:
     npm run build
     node --experimental-strip-types --test test/stationBrowserService.test.ts test/latestSoilAdapter.test.ts
 
-FE build includes TypeScript. There is no existing browser-E2E script; F16 approves
+FE build includes TypeScript. The bounded Playwright runner is now available; F16 uses
 the runner and bounded commands before implementation. Coverage/audit are final gates.
 
 Order: F0 -> F1 -> F2/F3 -> F4/F5/F6 -> F7/F8/F9/F10 -> product acceptance.
@@ -398,7 +400,114 @@ fixture-verified with fresh full-suite, OpenAPI, migration and capacity evidence
 [F-data checkpoint](../docs/checkpoints/2026-10-05-f-data-progress.md).
 Live-provider recovery, actual Pi/server capacity and public deployment remain
 separate gates. F7-F10 and local F-product acceptance are now complete with linked
-evidence; F11 onward is not implicitly authorized by the local-only publishing
-instruction.
-No Pi database change, remote push or receiving-team deployment in this iteration.
+evidence. F11-F17/FE and verified Git/Pi publishing were explicitly resumed on
+2026-10-06. Do not alter Pi schema beyond separately approved migrations or transfer
+fixture data. Receiving-team deployment remains outside this execution.
 Team-owned target gates cannot be checked off with local substitute evidence.
+
+## H. Handoff documentation plan — planning only, no document drafting yet
+
+Owner request: 2026-10-06. This extends the same unfinished final-delivery plan;
+it does not replace F, reopen accepted B/C, or claim the manuals are already written.
+Latest clarification: prepare this plan only; do not create or draft the handoff
+documents until the owner explicitly starts that workstream.
+Codex coordinates/final-reviews. Antigravity may draft bounded code-grounded sections
+or cross-check Codex drafts in an isolated worktree; never auto-merge worker claims.
+
+### H0 — Freeze evidence and choose a small document set
+
+Depends: applicable F/FE verification and Git/Pi release evidence.
+Files: `tasks/todo.md`, FE `docs/internal-release-notes.md`, latest BE checkpoint.
+Accept: exact BE/FE commits, architecture, migration list, verification commands,
+limits and unresolved receiving-team decisions are linked, without secret values.
+Review documents by meaning and SHA256; keep dated specs/ADRs/checkpoints as history.
+Delete only proven duplicate/obsolete files after fixing inbound links; record paths
+and Git recovery commit. Inventory found no exact duplicates, so no blanket deletion.
+
+### H1 — Scope and system overview
+
+Files: FE `README.md`, BE `CAPABILITY-MAP.md` (links, not a second module spec).
+Writer: Codex; Antigravity cross-checks page/module references.
+Include purpose, actors/role matrix, FE → API → PostgreSQL/provider flow, durable
+readings, single authoritative Pi OR server, accepted boundaries and exclusions.
+Accept: a newcomer can distinguish supported monitoring from device commands,
+SMS/email, predictive advice, multi-instance and two-way sync, which are excluded.
+Verify every capability against routes/DTOs/page navigation; use real masked screenshots
+only after source recovery, or explicitly label isolated screenshots as QA evidence.
+
+### H2 — Backend/API and database section
+
+Files: FE `docs/integration/README.md`, links to BE module specs and `prisma/schema.prisma`.
+Writer: bounded Antigravity per API/data slice; Codex reviews authorization/schema facts.
+Include endpoint/auth/error conventions, roles, API-key lifecycle, database diagram,
+13 migrations, raw 90-day retention, separate snapshot, dedup/fetch fencing,
+provenance/coverage, collector budgets and fresh-only alerts.
+Accept: each statement cites its actual controller/contract/schema/function and test;
+no database records or credentials copied into documents. Existing specs remain canonical.
+Verify with `pnpm release:check` on a non-production fixture and contract tests;
+compare field names with `/docs-json`, not handwritten alternate DTOs.
+
+### H3 — User and tester guide
+
+Files: FE `README.md` and `docs/integration/README.md` (extend existing sections).
+Writer: bounded Antigravity; Codex checks page wording and access behavior.
+Include Admin/Super Admin, Farmer, Client Developer journeys; adding/sharing sources,
+station selection, latest vs history, timezone/units, stored/stale/empty/denied states,
+CSV, Alert Center/Notifications and safe one-time secret acknowledgement.
+Accept: concrete action → expected screen/result → recovery action for each journey.
+Verify using desktop/390px browser tests and manual keyboard/visual checks; no demo
+seed is part of onboarding. Do not use User Management as the source-sharing screen.
+
+### H4 — Deployment, operation and recovery guide
+
+Files: BE `docs/operations/DELIVERY-RECOVERY.md`, `LOCAL-RUNBOOK.md`.
+Writer: Codex; Antigravity checks named script flags/container paths independently.
+Include prerequisites, explicit profile/preflight, immutable image digests, migration
+runner, initialization, HTTPS/Secure cookie boundary, same-origin reverse proxy,
+health/readiness, source outage, logs, backup encryption/key custody and isolated restore,
+one-target cutover, compatible application rollback, secret rotation and troubleshooting.
+Accept: commands have working directory, prerequisites, expected exit/status and stop
+condition; no `down -v`, reset, production fault injection or automatic restore over data.
+Verify every executable block against disposable environments. Record RPO 24h/RTO 4h
+and 7 daily/4 weekly objectives as objectives until destination/owners/schedule are assigned.
+
+### H5 — QA and known limitations
+
+Files: latest BE checkpoint, canonical backend issue ledger, FE release notes.
+Writer: Codex; Antigravity checks test names and reproducibility, no invented pass counts.
+Include version/platform/date, automated vs manual vs live evidence, regression matrix,
+security audit/CI links, backup/rollback results and receiving-team open gates.
+Accept: fixed issues have RED/GREEN evidence and actual retest date; STT/status follow
+the Trung sheet's existing 15-column form (A through O). No Pi infrastructure bugs in that bug list.
+If Google Sheet cannot be verified, keep the same form locally and clearly state sync pending.
+
+### H6 — Cross-review and small corrective changes
+
+Depends: H1-H5 drafts. Review per section, not one huge context handoff.
+Codex-written facts receive independent AG checks; AG-written facts receive Codex review.
+Map suspected unused code to actual callers/contracts before touching it. Fix confirmed
+defects with RED/GREEN tests; remove code only when behavior/API/access does not change.
+Use bounded code handoffs and at most two corrections; no opportunistic broad refactor.
+Re-run affected gates, update the canonical ledger/Trung form and release notes, then
+repeat Git/Pi acceptance only if runtime code changed. Never describe a planned check as passed.
+
+### H7 — Delivery index and receiving-team acceptance
+
+Files: FE `README.md` links, BE `tasks/todo.md`, FE release notes.
+Accept: one navigation index to the four maintained documents, specs and evidence;
+receiver can build, start, read stored data, test permitted roles and rehearse recovery.
+Receiver fills target/domain/TLS/proxy, backup destination/custodian/restore owner,
+capacity limits and live-provider recovery evidence. Those decisions are not guessed
+by an intern or an agent. Formal sign-off stays unchecked until the receiving team accepts.
+
+Writing pattern for each section: purpose/audience → supported behavior → prerequisites
+→ numbered procedure with expected results → failure/recovery → code/evidence links
+→ limits/owner. Backend/Database, Frontend/UI, QA/SDET, Security and DevOps/System
+perspectives are required; Tech Lead/Solution Architect contribute the overview and
+cross-review. PM/BA/PO are acceptance stakeholders, not separate technical manuals.
+UI/UX gets a practical screen guide, not a new design-system deliverable.
+
+Primary references for command review:
+[Docker single-server Compose](https://docs.docker.com/compose/how-tos/production/) and
+[PostgreSQL 17 SQL dump/restore](https://www.postgresql.org/docs/17/backup-dump.html).
+These explain tooling; project-specific policies and actual acceptance remain above.

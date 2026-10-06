@@ -1,8 +1,17 @@
 # Sổ lỗi Backend
 
-Cập nhật gần nhất: 2026-10-05. Đây là file theo dõi lỗi chính của backend. Lỗi chưa hoàn thành luôn đặt ở trên; lỗi đã sửa được chuyển xuống cuối file sau khi có test hoặc bằng chứng kiểm chứng.
+Cập nhật gần nhất: 2026-10-06. Đây là file theo dõi lỗi chính của backend. Lỗi chưa hoàn thành luôn đặt ở trên; lỗi đã sửa được chuyển xuống cuối file sau khi có test hoặc bằng chứng kiểm chứng.
 
 ## Gate hiện tại
+
+- Lượt cuối local 2026-10-06: backend 93 file/620 tests, `pnpm verify`, dependency
+  audit và secret scan đạt; coverage 85.78% statements / 77.31% branches /
+  91.82% functions / 88.52% lines. Frontend 241 tests, lint/build và audit đạt.
+  Browser HTTP thật dùng fixture cô lập; kết quả phát hành cuối ghi duy nhất ở
+  FE `docs/internal-release-notes.md`. Không chuyển fixture/database thử sang Pi.
+- Owner đã duyệt publish BE/FE và Pi ngày 2026-10-06, thay thế lệnh giữ local trước
+  đó. Chỉ chuẩn bị kế hoạch viết tài liệu bàn giao tại `tasks/plan.md` mục H;
+  chưa tạo bộ tài liệu bàn giao mới. Các gate target/live còn mở không bị tích thay.
 
 - Gate D local lịch sử ngày 2026-10-05: 85/85 file, 510/510 test đạt; `pnpm verify`
   đạt format/typecheck/lint/Prisma generate/build; coverage 88.69% statements,
@@ -22,8 +31,8 @@ Cập nhật gần nhất: 2026-10-05. Đây là file theo dõi lỗi chính c�
   cho F-product; không dùng số liệu coverage D cũ như số liệu mới.
   Sheet 40–47 đã có regression, review và bằng chứng phù hợp, chuyển xuống Đã sửa;
   [bằng chứng F-product](../checkpoints/2026-10-05-f-product-progress.md).
-- Chủ dự án yêu cầu chỉ sửa/test/commit local đến khi hoàn tất F; không push
-  GitHub hoặc cập nhật Pi trong đợt này. Lỗi F-product đã ghi riêng vào tab Trung,
+- Lệnh giữ local của đợt F-product 2026-10-05 đã được thay thế bởi duyệt phát hành
+  2026-10-06. Lỗi F-product đã ghi riêng vào tab Trung,
   STT 40–47; không đưa lỗi hạ tầng/DB Pi vào các dòng mới.
 - B-device được đánh dấu `live-verified` ngày 2026-09-28: API lấy trực tiếp từ
   các trạm quan trắc đang hoạt động, số liệu cập nhật và bên cung cấp xác nhận
@@ -70,9 +79,10 @@ kiểm chứng browser/nguồn thật theo phạm vi nghiệm thu hiện tại.
 - Historical Analysis đã sửa điều khiển, dữ liệu rỗng và F8; Notifications đã có
   tải thêm; tìm kiếm chung đã nối station đúng role. Các lỗi implementation này
   được tích riêng ở phần Đã sửa, không tiếp tục ghi là chưa có code.
-- Chưa đóng E2E đầy đủ: đăng nhập/credential, Audit role/filter/cursor,
-  notification hơn 100 mục và quyền thay đổi, tìm kiếm mọi role, responsive/
-  accessibility toàn trang, tải CSV native và provider thật phục hồi.
+- Browser HTTP thực tế với backend/DB fixture cô lập đã đạt 14/14: đăng nhập,
+  đổi mật khẩu/logout/reload, user/transfer, Audit role/filter/cursor,
+  notification 101 mục, API key và CSV native. Mock desktop/mobile đạt 14/14;
+  provider thật phục hồi và kiểm tra toàn diện accessibility/target vẫn tách riêng.
 - Checkpoint F-product-local chỉ đóng các trạng thái dữ liệu trên các trang đã
   kiểm tra. FE-2/FE-5/FE-6/QA-1/F16 vẫn mở với bằng chứng riêng.
 
@@ -111,8 +121,8 @@ kiểm chứng browser/nguồn thật theo phạm vi nghiệm thu hiện tại.
   đã được duyệt; destination mã hoá ngoài máy, người giữ key, người restore và
   rotation/restore evidence trên target vẫn do bên nhận dự án hoàn thiện.
 - Dependency audit chỉ phát hiện advisory đã biết, không loại trừ supply-chain compromise.
-- GitHub Actions hiện khóa theo major tag (`v4`), chưa khóa theo commit SHA đã
-  duyệt. Trước khi dùng CI bảo vệ production cần pin SHA và có lịch cập nhật.
+- GitHub Actions hiện đã pin commit SHA chính thức; CI backend và image gates
+  amd64/arm64 ngày 2026-10-06 đã đạt. Lịch cập nhật pin/advisory vẫn cần duy trì.
 
 ## Đã kiểm chứng không phải lỗi
 
@@ -137,6 +147,32 @@ kiểm chứng browser/nguồn thật theo phạm vi nghiệm thu hiện tại.
   trong bộ nhớ frontend, kể cả request logout thất bại.
 
 ## Đã sửa
+
+### [x] Lỗi xác nhận 2026-10-06 — form Trung giữ tại local
+
+Đúng 15 cột A–O theo form đã gửi. STT 48–63 là số tiếp nối **trong sổ local** sau
+40–47; chưa xác nhận/ghi các dòng này trên Google Sheet. Khi đồng bộ phải đọc STT
+cuối của tab Trung, đối chiếu mô tả và cập nhật dòng đã có, không tạo trùng hoặc
+ghi đè tab khác. Đây là lỗi code/đóng gói ứng dụng, không phải lỗi mạng/DB của Pi.
+
+| STT | Ngày yêu cầu | Người yêu cầu | Sprint  | Chức năng            | Phân loại     | Mô tả bug                                                                   | Kết quả mong muốn                                                   | Phân loại | Mức độ ưu tiên            | Trạng thái xử lý | Ngày test lại | Chịu trách nhiệm xử lý | Ghi chú của test                                                       | Ghi chú của dev                                                   |
+| --- | ------------ | ------------- | ------- | -------------------- | ------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------- | --------- | ------------------------- | ---------------- | ------------- | ---------------------- | ---------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| 48  | 06/10/2026   | Tester        | Phase F | Refresh session      | Lỗi logic     | Refresh thất bại xoá token nhưng còn user Zustand.                          | Xoá cả token/user; không lặp refresh.                               | Frontend  | Ưu tiên mức độ cao        | [x] Đã xử lý     | 06/10/2026    | Ngân                   | Concurrent refresh RED/GREEN; browser revoked-session đạt.             | Session invalidator dùng chung.                                   |
+| 49  | 06/10/2026   | Tester        | Phase F | Phiên bị thu hồi     | Phân quyền    | Retry vẫn 401 nhưng giữ phiên đăng nhập.                                    | Purge đúng phiên; không refresh lần hai.                            | Frontend  | Ưu tiên mức độ cao        | [x] Đã xử lý     | 06/10/2026    | Ngân                   | `apiClientRefresh.test.ts` RED/GREEN.                                  | Invalidate theo request snapshot.                                 |
+| 50  | 06/10/2026   | Tester        | Phase F | Khôi phục phiên      | Lỗi đồng thời | Restore cũ ghi đè user/token hoặc xoá phiên mới.                            | Phản hồi cũ không tác động phiên thay thế.                          | Frontend  | Ưu tiên mức độ cao        | [x] Đã xử lý     | 06/10/2026    | Ngân                   | Success/failure restore races RED/GREEN.                               | Epoch fence cả success và cleanup.                                |
+| 51  | 06/10/2026   | Tester        | Phase F | Đăng xuất            | Lỗi đồng thời | Logout cũ xoá phiên mới; chuyển login sớm trước khi cookie bị xoá.          | Bảo vệ phiên mới và chờ server logout trước điều hướng.             | Frontend  | Ưu tiên mức độ cao        | [x] Đã xử lý     | 06/10/2026    | Ngân                   | Hai unit RED/GREEN; HTTP logout/reload desktop/mobile 2/2.             | Fence ngay khi logout, loading đến khi cookie kết thúc.           |
+| 52  | 06/10/2026   | Tester        | Phase F | Refresh đồng thời    | Lỗi logic     | 401 gốc về muộn sau refresh bị từ chối dù cùng user.                        | Replay token hiện tại một lần, không refresh thừa.                  | Frontend  | Ưu tiên mức độ trung bình | [x] Đã xử lý     | 06/10/2026    | Ngân                   | Delayed-original 401 RED/GREEN; 13/13 session tests.                   | Epoch chỉ đổi ở boundary phiên, không đổi khi refresh token.      |
+| 53  | 06/10/2026   | Tester        | Phase F | API key modal        | Giao diện     | Shift+Tab từ dialog làm focus thoát trước xác nhận lưu secret.              | Focus nằm trong dialog; Escape/backdrop không đóng sớm.             | Frontend  | Ưu tiên mức độ trung bình | [x] Đã xử lý     | 06/10/2026    | Ngân                   | Browser RED/GREEN desktop/mobile; 14/14 mock smoke.                    | Acknowledgement gate và focus trap.                               |
+| 54  | 06/10/2026   | Tester        | Phase F | Notifications        | Xử lý lỗi     | 403 khi load-more purge dữ liệu nhưng spinner không kết thúc.               | Xoá rows/cursor/unread và hiển thị lỗi; 5xx giữ dữ liệu hợp lệ.     | Frontend  | Ưu tiên mức độ cao        | [x] Đã xử lý     | 06/10/2026    | Ngân                   | Browser 100→101/5xx/403 RED/GREEN; unit pagination.                    | Reset loading/loadingMore/updatingId khi access mất.              |
+| 55  | 06/10/2026   | Tester        | Phase F | Đổi mật khẩu         | Lỗi logic     | Đổi user status remount page làm mất màn hình thành công.                   | Account Secured xuất hiện trước vào dashboard.                      | Frontend  | Ưu tiên mức độ trung bình | [x] Đã xử lý     | 06/10/2026    | Ngân                   | HTTP tạo user/invalid input/password/reload/logout desktop/mobile đạt. | Publish user ACTIVE cùng điều hướng, không đổi auth policy.       |
+| 56  | 06/10/2026   | Tester        | Phase F | Tools image          | Đóng gói      | User node không truy cập Corepack cache; tools phụ thuộc tải mạng.          | Prisma/tsx/pnpm chạy non-root offline.                              | Backend   | Ưu tiên mức độ cao        | [x] Đã xử lý     | 06/10/2026    | Trung                  | Docker `--network none` RED/GREEN, UID 1000.                           | Copy cache vào COREPACK_HOME thuộc node.                          |
+| 57  | 06/10/2026   | Tester        | Phase F | Deployment preflight | Cấu hình      | Chấp nhận non-loopback HTTP nhưng cookie production Secure không hoạt động. | Yêu cầu HTTPS ngoài loopback, không hạ bảo mật.                     | Backend   | Ưu tiên mức độ cao        | [x] Đã xử lý     | 06/10/2026    | Trung                  | Reject LAN HTTP regressions đạt.                                       | Giữ auth/cookie policy; validate origin.                          |
+| 58  | 06/10/2026   | Tester        | Phase F | Deployment preflight | Lỗi logic     | Node `process.version` có tiền tố v bị báo sai version.                     | Node v24.17.0 qua đúng floor.                                       | Backend   | Ưu tiên mức độ trung bình | [x] Đã xử lý     | 06/10/2026    | Trung                  | RED/GREEN; 23/23 preflight; CLI valid:true.                            | Parse version chặt và hỗ trợ v prefix.                            |
+| 59  | 06/10/2026   | Tester        | Phase F | Compose ingress      | Đóng gói      | Web chỉ gắn internal network; healthy nhưng host port không nhận kết nối.   | Host ingress và same-origin proxy hoạt động; DB vẫn private.        | Backend   | Ưu tiên mức độ cao        | [x] Đã xử lý     | 06/10/2026    | Trung                  | Connection-refused RED; host health/readiness/deep-link 200 GREEN.     | Web thêm egress, DB không có host port.                           |
+| 60  | 06/10/2026   | Tester        | Phase F | Linux build          | Lỗi cấu hình  | Pageheader.module.css khác case import PageHeader.module.css.               | Host CI/Docker Linux build cùng tên file chuẩn.                     | Frontend  | Ưu tiên mức độ cao        | [x] Đã xử lý     | 06/10/2026    | Ngân                   | Exact directory-entry RED/GREEN; Linux Docker build đạt.               | Rename chuẩn, bỏ lệnh copy workaround.                            |
+| 61  | 06/10/2026   | Tester        | Phase F | Dependency audit     | Bảo mật       | source-map-js advisory mới làm audit fail.                                  | Bản vá tương thích và giữ audit gate.                               | Cả hai    | Ưu tiên mức độ cao        | [x] Đã xử lý     | 06/10/2026    | Trung                  | Fresh BE/FE audit: zero advisories.                                    | Pin override 1.2.2; Nest/Fastify/brace-expansion patches vẫn giữ. |
+| 62  | 06/10/2026   | Tester        | Phase F | Giao diện Soil       | Giao diện     | Bộ lọc và grid giữ min-width làm nội dung bị cắt trên mobile.               | Bộ lọc co theo 390px, không che overflow để giấu lỗi.               | Frontend  | Ưu tiên mức độ thấp       | [x] Đã xử lý     | 06/10/2026    | Ngân                   | Regression layout; browser ba role 1440/390px không có control bị cắt. | minmax(0,1fr), min-width 0 và select rộng theo ô.                 |
+| 63  | 06/10/2026   | Tester        | Phase F | Đăng xuất            | Lỗi đồng thời | Request xếp hàng trước logout có thể refresh token và treo loading.         | Phiên đang kết thúc không refresh; phiên login mới vẫn được bảo vệ. | Frontend  | Ưu tiên mức độ cao        | [x] Đã xử lý     | 06/10/2026    | Ngân                   | Unit RED/GREEN 14/14; full 241/241 và review độc lập đạt.              | Guard ending-session; cleanup theo epoch thay vì token cũ.        |
 
 ### [x] [Cao, F7/Frontend, 2026-10-05] Lỗi endpoint phụ làm mất latest hợp lệ — Sheet 40
 

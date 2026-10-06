@@ -211,8 +211,9 @@ D-local historical regression gate (2026-10-05): 85/85 files, 510/510 tests, cov
 Frontend: 181/181 tests, lint, build and zero production dependency advisories.
 Fresh image/restore evidence: [D revalidation](../docs/checkpoints/2026-10-05-d-local.md).
 These D and September checkpoints are retained historical evidence, not current
-F-product counts. Latest local F-product: backend 89 files/557 tests and frontend
-218 tests, with verification linked below; coverage was not rerun for F-product.
+F-product counts. F-product baseline: backend 89 files/557 tests and frontend
+218 tests, with verification linked below; coverage was not rerun for that checkpoint.
+Latest F/FE release evidence is maintained in FE `docs/internal-release-notes.md`.
 
 ## Frontend and tester integration order
 
@@ -226,32 +227,39 @@ and must not duplicate the full contract.
 - [x] Complete the locally implementable Phase B/C adapters and pages before the
       comprehensive browser pass. External provider and hardware contracts stay
       open and must not be replaced with fabricated data.
-- [ ] After that gate, connect and verify one page at a time in this fixed role
+- [x] After that gate, connect and verify one page at a time in this fixed role
       order: **Admin/Super Admin first → Farmer second → Client Developer last**.
-- [ ] Finish each role's page matrix, authorization negatives and regression
+- [x] Finish each role's page matrix, authorization negatives and regression
       checks before moving to the next role. Shared components may be reused, but
       unfinished work from two roles must not be mixed into one checkpoint.
 
 - [x] FE-1: Freeze the current `/docs-json` contract and update typed
       frontend DTO/API adapters without renaming backend routes ad hoc.
-- [ ] FE-2: Re-run Phase A browser flows: login, forced password change,
+- [x] FE-2: Re-run Phase A browser flows: login, forced password change,
       single-flight refresh, logout, user management, Super Admin transfer and API
       key create/copy/rotate/revoke.
+      HTTP fixture desktop/mobile covers account/key/transfer/logout/reload;
+      clipboard compared in actual Chromium at 1440/390px without logging secrets.
+      Concurrent refresh and late-session races have focused RED/GREEN regressions.
 - [x] FE-3: Complete B-integration code for farm, plot, station, latest, history,
       dashboard, report and Client Developer explorer pages.
 - [x] FE-4: Complete C-integration code for alert rules, alert lifecycle and in-app
       notifications; keep remote device writes unavailable and direct threshold
       changes to Alert Center.
-- [ ] FE-5: Verify the already-connected Super Admin audit view against the
+- [x] FE-5: Verify the already-connected Super Admin audit view against the
       scoped contract in browser role/filter/cursor cases; do not expose the
       process-local metrics registry as a public UI API. The implementation is
-      present; the remaining gate is acceptance evidence, not a new Audit page.
-- [ ] FE-6: Run automated browser tests plus manual responsive/accessibility
+      present; actual HTTP filter/cursor and Admin denial pass on desktop/mobile.
+- [x] FE-6: Run automated browser tests plus manual responsive/accessibility
       checks for Admin, Farmer and Client Developer.
-- [ ] QA-1: Run normal, invalid-input, expired/revoked credential, concurrent,
+      Mock/HTTP suites plus keyboard/layout checks at 1440/390px. This is bounded
+      application acceptance, not a complete WCAG certification or receiver-target test.
+- [x] QA-1-local: Run normal, invalid-input, expired/revoked credential, concurrent,
       upstream-down, database-down/restart and recovery scenarios.
-- [ ] QA-2: Record reproducible failures in the backend issue ledger and move an
+      Isolated integration/failure/recovery tests only; never fault-inject on Pi.
+- [x] QA-2: Record reproducible failures in the backend issue ledger and move an
       item to fixed only after regression evidence exists.
+      Local 15-column form and verified retest dates; Google Sheet sync unverified.
 
 ## Immediate next action
 
@@ -267,14 +275,14 @@ and must not duplicate the full contract.
    latest readings persist. Raw-history backfill remains `invalid`/unverified;
    this rollout does not close F-product, F7 or production gates. All future F/FE
    releases transfer verified logic only, never sample/test databases.
-   F7-F10/F-product are now complete locally with linked evidence. Do not push
-   GitHub or update Pi during this iteration; verified commits remain local.
-   F11 onwards are not closed by this checkpoint or authorized as part of this slice.
-2. Close FE-2/FE-5/FE-6/QA-1/QA-2 through F16 with actual evidence, not blanket ticks.
+   The local-only hold above was superseded on 2026-10-06: verified F/FE code may
+   publish to existing BE/FE and Pi. Never publish fixture databases or seed data.
+2. Finish final Git/Pi smoke and record applicable F/FE evidence; retain the
+   separate live-provider and receiving-team gates below.
 3. Preserve the no-device-write scope and B/C owner acceptance.
 4. Keep local/Pi acceptance distinct from website/public production acceptance.
 
-## F. Final portable monitoring — local execution approved through F-product
+## F. Final portable monitoring — applicable final execution approved
 
 The receiving team deploys the server website using verified handoff assets.
 Pi/local supports development/team testing; data transfer is explicit and never
@@ -330,16 +338,25 @@ Detailed acceptance, candidate files, dependencies and verification are in
       FE-2/FE-5/FE-6/QA-1/F16 remain separate, including native CSV download.
       [evidence](../docs/checkpoints/2026-10-05-f-product-progress.md).
       Local commits only; no GitHub push, Pi change or fixture/sample delivery.
-- [ ] F11: Reproducible full-app packaging, migration runner and ARM64/server gates.
-- [ ] F12-local: Implement and verify read-only explicit-profile deployment preflight.
+- [x] F11: Reproducible full-app packaging, migration runner and ARM64/server gates.
+      Runtime/tools separated; native amd64/ARM64 CI and same-origin full-stack smoke.
+- [x] F12-local: Implement and verify read-only explicit-profile deployment preflight.
+      Invalid secrets/images/migration prefix/origin/profile fail closed; CLI passes.
 - [ ] F12-team: Validate deployment profile/target prerequisites on the receiving host.
-- [ ] F13-local: Rehearse full-stack apply/smoke and schema-safe application rollback.
+- [x] F13-local: Rehearse full-stack apply/smoke and schema-safe application rollback.
+      Disposable stack readiness/deep-link/proxy and previous-image rollback pass;
+      PostgreSQL container/volume unchanged; no schema reversal or source DB restore.
 - [ ] F13-team: Team deployment, smoke and schema-safe rollback acceptance.
-- [ ] F14-local: Verify encrypted portable backup and isolated restore/transfer.
+- [x] F14-local: Verify encrypted portable backup and isolated restore/transfer.
+      Authenticated envelope/tamper/no-overwrite tests and actual isolated restore;
+      scope, durable readings, ciphertext decryption and lifecycle remain correct.
 - [ ] F14-target: Receiving team accepts secret custody and explicit one-target cutover.
 - [ ] F15: Pass the additional website security, backup and measured capacity gate.
-- [ ] F16: Close existing FE/QA gates and live-provider recovery with linked evidence.
-- [ ] F17-local: Accept local/Pi after applicable F-data/F-product/deploy/QA gates.
+- [x] F16-local: Close existing FE/QA gates with isolated HTTP/browser/regression evidence.
+- [ ] F16-live: Verify advancing provider observedAt and one fresh automatic-rule
+      notification after recovery. Do not trigger genuine rules artificially on Pi.
+- [ ] F17-local/Pi: Accept final runtime rollout after applicable data/product/deploy/QA
+      and live-recovery evidence. Local tests do not close the unobserved live gate.
 - [ ] F17-web: Accept the website target only after F15 and its target-specific tests.
 
 No item above is complete merely because this plan was written. Formal report and

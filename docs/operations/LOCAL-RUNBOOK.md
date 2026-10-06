@@ -3,7 +3,7 @@
 File này là hướng dẫn thao tác nhanh cho backend `iot-api`. Chạy các lệnh trong PowerShell tại thư mục:
 
 ```powershell
-cd D:\IoT-api\.worktrees\integration-core
+cd D:\IoT-api
 ```
 
 ## 1. Chuẩn bị lần đầu
@@ -58,7 +58,7 @@ docker compose start postgres
 
 Không dùng `docker compose down -v`: tùy chọn `-v` có thể xóa dữ liệu database.
 
-## 3. Tạo dữ liệu ban đầu
+## 3. Khởi tạo tài khoản và nguồn thật
 
 Tạo Super Admin lần đầu. Mật khẩu được nhập bằng prompt ẩn:
 
@@ -66,13 +66,10 @@ Tạo Super Admin lần đầu. Mật khẩu được nhập bằng prompt ẩn:
 pnpm db:bootstrap-super-admin -- --email root@example.com
 ```
 
-Tạo Farm, Plot và Station demo trong database `iot_dev`:
-
-```powershell
-pnpm db:seed-station-demo -- --confirm-demo-seed
-```
-
-Seed demo có thể chạy lại; không tạo user, membership, station grant hoặc API key.
+Không chạy seed demo trong quy trình vận hành/bàn giao. Sau khi đăng nhập, thêm
+nguồn thật tại API Sources và cấp quyền tại đó. Không sao chép database fixture
+`iot_test` hoặc dữ liệu mẫu sang Pi/server. Nếu upstream nghỉ, chỉ hiển thị phần
+đã lưu cùng timestamp/nhãn dữ liệu cũ; không dựng số liệu thay thế.
 
 ## 4. Chạy backend khi phát triển
 
