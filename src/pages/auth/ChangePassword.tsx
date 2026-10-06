@@ -15,6 +15,7 @@ import { useAuthStore } from "@/stores/authStore";
 import { normalizeApiError } from "@/utils/apiError";
 import { getDefaultRouteByRole } from "@/auth/defaultRoute";
 import { requiresPasswordChange } from "@/auth/passwordChange";
+import type { User } from "@/types/user";
 
 import styles from "./ChangePassword.module.css";
 
@@ -52,6 +53,7 @@ export default function ChangePassword() {
 
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [securedUser, setSecuredUser] = useState<User | null>(null);
   const changePasswordDescription = user && requiresPasswordChange(user)
     ? "Your account status is currently pending. Please update your password to secure your account and unlock the AgriSense system."
     : "Update your password to keep your AgriSense account secure.";
@@ -63,10 +65,11 @@ export default function ChangePassword() {
    * - đồng thời tự chuyển dashboard sau một khoảng ngắn
    */
   useEffect(() => {
-    if (!success || !user) return;
+    if (!success || !securedUser) return;
 
     const timer = window.setTimeout(() => {
-      navigate(getDefaultRouteByRole(user.role), {
+      setUser(securedUser);
+      navigate(getDefaultRouteByRole(securedUser.role), {
         replace: true,
       });
     }, 4000);
@@ -74,7 +77,7 @@ export default function ChangePassword() {
     return () => {
       window.clearTimeout(timer);
     };
-  }, [success, user, navigate]);
+  }, [success, securedUser, setUser, navigate]);
 
   const clearFieldError = (field: PasswordField) => {
     setFieldErrors((previous) => ({
@@ -133,7 +136,9 @@ export default function ChangePassword() {
         newPassword,
       });
 
-      setUser(updatedUser);
+      // Publishing the status first remounts the retained-view boundary and loses
+      // this success screen. Publish it atomically with dashboard navigation.
+      setSecuredUser(updatedUser);
       setFieldErrors(INITIAL_FIELD_ERRORS);
       setSuccess(true);
     } catch (reason) {
@@ -172,12 +177,14 @@ export default function ChangePassword() {
   };
 
   const goToDashboard = () => {
-    if (!user) {
+    const destinationUser = securedUser ?? user;
+    if (!destinationUser) {
       navigate("/", { replace: true });
       return;
     }
 
-    navigate(getDefaultRouteByRole(user.role), {
+    if (securedUser) setUser(securedUser);
+    navigate(getDefaultRouteByRole(destinationUser.role), {
       replace: true,
     });
   };
