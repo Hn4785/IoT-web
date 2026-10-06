@@ -100,13 +100,15 @@ export default function Sidebar() {
               <NavLink
                 to={path}
                 end={path === '/admin'}
+                aria-label={label}
+                title={label}
                 className={
                   path === activePath
                     ? `${styles.navItem} ${styles.navItemActive}`
                     : styles.navItem
                 }
               >
-                <Icon size={18} strokeWidth={2} className={styles.navIcon} />
+                <Icon size={18} strokeWidth={2} className={styles.navIcon} aria-hidden="true" />
                 <span>{label}</span>
               </NavLink>
             </li>

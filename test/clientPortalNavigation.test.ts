@@ -283,3 +283,9 @@ test("API Explorer page imports DeveloperSectionTabs", () => {
   );
   assert.match(source, /DeveloperSectionTabs/);
 });
+
+test("sidebar navigation retains names when mobile text is hidden", () => {
+  const source = readFileSync(new URL("../src/components/layout/Sidebar.tsx", import.meta.url), "utf8");
+  assert.match(source, /aria-label=\{label\}/);
+  assert.match(source, /aria-hidden="true"/);
+});

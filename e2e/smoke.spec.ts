@@ -6,12 +6,15 @@ test.describe("Mock smoke suite", () => {
     await setupMockApi(page, { userRole: "ADMIN" });
     await loginAs(page, "qa-admin@example.test");
     await expect(page).toHaveURL(/\/admin/);
+    await expect(page.getByRole("navigation", { name: "Main navigation" }).getByRole("link", { name: "Users", exact: true })).toBeVisible();
 
     await loginAs(page, "qa-farmer@example.test");
     await expect(page).toHaveURL(/\/farm-owner\/dashboard/);
+    await expect(page.getByRole("navigation", { name: "Main navigation" }).getByRole("link", { name: "Soil Dashboard", exact: true })).toBeVisible();
 
     await loginAs(page, "qa-client@example.test");
     await expect(page).toHaveURL(/\/developer\/dashboard/);
+    await expect(page.getByRole("navigation", { name: "Main navigation" }).getByRole("link", { name: "API Access", exact: true })).toBeVisible();
 
     await loginAs(page, "qa-temporary@example.test");
     await expect(page).toHaveURL(/\/change-password/);
