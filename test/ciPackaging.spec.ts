@@ -49,6 +49,23 @@ describe('CI Packaging and Workflows', () => {
     expect(imagesContent).toContain('id -u');
   });
 
+  it('requires every postgres pg_isready command in images workflow to use TCP host 127.0.0.1 before createdb with timeout', () => {
+    const imagesContent = fs.readFileSync(imagesPath, 'utf8');
+    const probeLines = imagesContent.split('\n').filter((line) => /\bpg_isready\b/.test(line));
+    expect(probeLines.length).toBeGreaterThan(0);
+    for (const line of probeLines) {
+      expect(line).toMatch(/-h\s*127\.0\.0\.1/);
+    }
+    const loopIndex = imagesContent.indexOf('for attempt in {1..30}; do');
+    const probeIndex = imagesContent.indexOf('pg_isready');
+    const timeoutIndex = imagesContent.indexOf('if [ $attempt -eq 30 ]; then exit 1; fi');
+    const createdbIndex = imagesContent.indexOf('docker exec iot-postgres-ci createdb');
+    expect(loopIndex).toBeGreaterThan(0);
+    expect(probeIndex).toBeGreaterThan(loopIndex);
+    expect(timeoutIndex).toBeGreaterThan(probeIndex);
+    expect(createdbIndex).toBeGreaterThan(timeoutIndex);
+  });
+
   it('publishes only the smoke-verified runtime with its commit tag and checksum', () => {
     const content = fs.readFileSync(imagesPath, 'utf8');
     const smoke = content.indexOf('test "$(docker exec iot-api-smoke id -u)" = 1000');

@@ -66,7 +66,7 @@ jobs:
           docker network create iot-ci-net
           docker run -d --name iot-postgres-ci --network iot-ci-net -e POSTGRES_PASSWORD=ci-database-password -e POSTGRES_USER=iot_app -e POSTGRES_DB=iot_dev postgres:17.6-alpine3.22@sha256:ef257d85f76e48da1c64832459b59fcaba1a4dac97bf5d7450c77753542eee94
           for attempt in {1..30}; do
-            docker exec iot-postgres-ci pg_isready -U iot_app -d iot_dev && break
+            docker exec iot-postgres-ci pg_isready -h127.0.0.1 -U iot_app -d iot_dev && break
             if [ $attempt -eq 30 ]; then exit 1; fi
             sleep 1
           done
