@@ -15,7 +15,25 @@ COPY prisma.config.ts tsconfig.json tsconfig.build.json ./
 RUN pnpm install --frozen-lockfile
 
 COPY src ./src
-RUN pnpm build && pnpm prune --prod
+RUN pnpm build
+
+FROM build AS tools
+
+ENV NODE_ENV=production
+ENV COREPACK_HOME=/pnpm/corepack
+WORKDIR /app
+
+COPY --from=build --chown=node:node /root/.cache/node/corepack /pnpm/corepack
+COPY --chown=node:node scripts/operations ./scripts/operations
+RUN mkdir -p /home/node/.cache /home/node/.local /pnpm \
+  && chown -R node:node /app /home/node /pnpm
+USER node
+
+CMD ["pnpm", "db:migrate:deploy"]
+
+FROM build AS prune
+
+RUN pnpm prune --prod
 
 FROM node:24.17.0-bookworm-slim@sha256:862263c612aa437e3037674b85419622a9d93bff80aa1eee5398dfe686375532 AS runtime
 
@@ -24,8 +42,8 @@ WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates openssl \
   && rm -rf /var/lib/apt/lists/*
-COPY --from=build --chown=node:node /app/package.json ./package.json
-COPY --from=build --chown=node:node /app/node_modules ./node_modules
+COPY --from=prune --chown=node:node /app/package.json ./package.json
+COPY --from=prune --chown=node:node /app/node_modules ./node_modules
 COPY --from=build --chown=node:node /app/dist ./dist
 
 USER node

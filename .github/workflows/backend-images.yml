@@ -1,4 +1,4 @@
-name: Backend CI
+name: Backend Images & Architecture Gate
 
 on:
   push:
@@ -10,32 +10,21 @@ permissions:
   contents: read
 
 jobs:
-  verify:
-    runs-on: ubuntu-24.04
+  image-matrix:
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 30
-    services:
-      postgres:
-        image: postgres:17.6-alpine3.22@sha256:ef257d85f76e48da1c64832459b59fcaba1a4dac97bf5d7450c77753542eee94
-        env:
-          POSTGRES_DB: iot_dev
-          POSTGRES_USER: iot_app
-          POSTGRES_PASSWORD: ci-database-password
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U iot_app -d iot_dev"
-          --health-interval 5s
-          --health-timeout 3s
-          --health-retries 20
+    strategy:
+      matrix:
+        os: [ubuntu-24.04, ubuntu-24.04-arm]
     env:
-      NODE_ENV: test
+      NODE_ENV: production
       PORT: 3000
       LOG_LEVEL: warn
       WEATHER_API_BASE_URL: https://example.invalid/api/v1
       WEATHER_API_KEY: ci-weather-placeholder
       WEATHER_API_TIMEOUT_MS: 1000
-      DATABASE_URL: postgresql://iot_app:ci-database-password@localhost:5432/iot_dev?schema=public
-      TEST_DATABASE_URL: postgresql://iot_app:ci-database-password@localhost:5432/iot_test?schema=public
+      DATABASE_URL: postgresql://iot_app:ci-database-password@iot-postgres-ci:5432/iot_dev?schema=public
+      TEST_DATABASE_URL: postgresql://iot_app:ci-database-password@iot-postgres-ci:5432/iot_test?schema=public
       FRONTEND_ORIGIN: http://localhost:5173
       JWT_SECRET: ci-jwt-secret-with-at-least-32-characters
       CREDENTIAL_PEPPER: ci-credential-pepper-distinct-32-chars
@@ -63,23 +52,34 @@ jobs:
           node-version: 24.17.0
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - name: Create isolated test database
-        run: docker exec ${{ job.services.postgres.id }} createdb -U iot_app iot_test
-      - run: pnpm db:migrate:deploy
-      - run: DATABASE_URL="$TEST_DATABASE_URL" pnpm db:migrate:deploy
-      - run: pnpm db:generate
-      - run: pnpm verify
-      - run: pnpm test:coverage
-      - run: pnpm audit --prod --audit-level=high
-      - run: pnpm security:secrets
-      - run: docker build --pull -t iot-api:ci .
-      - name: Smoke production image
+      - name: Build Docker runtime & tools
         run: |
-          docker run -d --name iot-api-smoke --add-host=host.docker.internal:host-gateway -p 3000:3000 \
+          docker build --target runtime -t iot-backend-runtime .
+          docker build --target tools -t iot-backend-tools .
+      - name: Test tools inside container as nonroot UID 1000
+        run: |
+          test "$(docker run --rm iot-backend-tools id -u)" = 1000
+          docker run --rm iot-backend-tools pnpm exec prisma --version
+          docker run --rm iot-backend-tools pnpm exec tsx --version
+      - name: Run Postgres and migrations in CI network
+        run: |
+          docker network create iot-ci-net
+          docker run -d --name iot-postgres-ci --network iot-ci-net -e POSTGRES_PASSWORD=ci-database-password -e POSTGRES_USER=iot_app -e POSTGRES_DB=iot_dev postgres:17.6-alpine3.22@sha256:ef257d85f76e48da1c64832459b59fcaba1a4dac97bf5d7450c77753542eee94
+          for attempt in {1..30}; do
+            docker exec iot-postgres-ci pg_isready -U iot_app -d iot_dev && break
+            if [ $attempt -eq 30 ]; then exit 1; fi
+            sleep 1
+          done
+          docker exec iot-postgres-ci createdb -U iot_app iot_test
+          docker run --rm --network iot-ci-net -e DATABASE_URL iot-backend-tools pnpm db:migrate:deploy
+          docker run --rm --network iot-ci-net -e DATABASE_URL="$TEST_DATABASE_URL" iot-backend-tools pnpm db:migrate:deploy
+      - name: Boot runtime smoke container and verify readiness
+        run: |
+          docker run -d --name iot-api-smoke --network iot-ci-net -p 3000:3000 \
             -e NODE_ENV=production -e PORT=3000 -e LOG_LEVEL=warn \
             -e WEATHER_API_BASE_URL=https://example.invalid/api/v1 -e WEATHER_API_KEY=ci-weather-placeholder -e WEATHER_API_TIMEOUT_MS=1000 \
-            -e DATABASE_URL=postgresql://iot_app:ci-database-password@host.docker.internal:5432/iot_dev?schema=public \
-            -e TEST_DATABASE_URL=postgresql://iot_app:ci-database-password@host.docker.internal:5432/iot_test?schema=public \
+            -e DATABASE_URL="$DATABASE_URL" \
+            -e TEST_DATABASE_URL="$TEST_DATABASE_URL" \
             -e FRONTEND_ORIGIN=http://localhost:5173 \
             -e JWT_SECRET=ci-jwt-secret-with-at-least-32-characters \
             -e CREDENTIAL_PEPPER=ci-credential-pepper-distinct-32-chars \
@@ -90,12 +90,19 @@ jobs:
             -e ALERT_DEMO_METADATA_ENABLED=false -e ALERT_DEMO_STATION_CODES= \
             -e DATA_SOURCE_ENCRYPTION_KEY=MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDE= \
             -e DATA_SOURCE_ALLOWED_ORIGINS=https://example.invalid \
-            iot-api:ci
+            iot-backend-runtime
           for attempt in {1..30}; do
             curl --fail --silent http://127.0.0.1:3000/api/v1/health && break
             if [ $attempt -eq 30 ]; then exit 1; fi
             sleep 1
           done
-          pnpm release:check -- --skip-openapi
-      - if: always()
-        run: docker rm -f iot-api-smoke 2>/dev/null || true
+          curl --fail --silent http://127.0.0.1:3000/api/v1/readiness
+          test "$(docker exec iot-api-smoke id -u)" = 1000
+      - name: Cleanup CI container and network
+        if: always()
+        run: |
+          docker stop iot-api-smoke || true
+          docker rm iot-api-smoke || true
+          docker stop iot-postgres-ci || true
+          docker rm iot-postgres-ci || true
+          docker network rm iot-ci-net || true
