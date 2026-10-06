@@ -8,6 +8,7 @@ import { createSingleFlight } from "./refreshCoordinator.ts";
 import {
   getCurrentSessionSnapshot,
   invalidateSession,
+  isSessionEnding,
 } from "../auth/sessionInvalidation.ts";
 import type { SessionSnapshot } from "../auth/sessionInvalidation.ts";
 
@@ -72,6 +73,8 @@ apiClient.interceptors.response.use(
     if (error.response?.status !== 401 || !request || isAuthOperation) {
       return Promise.reject(error);
     }
+
+    if (isSessionEnding()) return Promise.reject(error);
 
     if (request._retry) {
       invalidateSession(request._sessionSnapshot);

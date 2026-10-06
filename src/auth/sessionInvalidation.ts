@@ -2,6 +2,7 @@ import { authStorage } from "../utils/authStorage.ts";
 
 export type SessionInvalidationListener = () => void;
 let sessionEpoch = 0;
+let sessionEnding = false;
 const listeners = new Set<SessionInvalidationListener>();
 
 export interface SessionSnapshot {
@@ -14,7 +15,17 @@ export const getCurrentSessionSnapshot = (): SessionSnapshot => ({
   token: authStorage.getAccessToken(),
 });
 
-export const startSession = (): number => ++sessionEpoch;
+export const startSession = (): number => {
+  sessionEnding = false;
+  return ++sessionEpoch;
+};
+
+export const isSessionEnding = (): boolean => sessionEnding;
+
+export function endSession(): number {
+  sessionEnding = true;
+  return ++sessionEpoch;
+}
 
 export function registerSessionInvalidator(listener: SessionInvalidationListener): () => void {
   listeners.add(listener);
@@ -26,6 +37,7 @@ export function invalidateSession(expectedSnapshot?: SessionSnapshot): boolean {
     return false;
   }
   sessionEpoch += 1;
+  sessionEnding = false;
   authStorage.clearAccessToken();
   listeners.forEach((fn) => { try { fn(); } catch {} });
   return true;

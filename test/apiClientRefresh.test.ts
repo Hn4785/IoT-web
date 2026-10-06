@@ -240,6 +240,26 @@ test("logout fences an already pending session restore", async () => {
   setAuthServiceForTesting(null);
 });
 
+test("a request queued before logout cannot refresh the ending session", async () => {
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => { release = resolve; });
+  setAuthServiceForTesting({ refresh: async () => {}, getCurrentUser: async () => makeUser("old"), clearSession: () => {}, logout: async () => { await gate; } });
+  useAuthStore.getState().login(makeUser("old"));
+  authStorage.setAccessToken("test-expired-token");
+  refreshes = 0;
+  const request = Promise.allSettled([apiClient.get("/queued-before-logout")]);
+  const logout = useAuthStore.getState().logout();
+  const result = await request;
+  release();
+  await logout;
+  setAuthServiceForTesting(null);
+  assert.equal(result[0].status, "rejected");
+  assert.equal(refreshes, 0);
+  assert.equal(useAuthStore.getState().user, null);
+  assert.equal(useAuthStore.getState().isLoading, false);
+  assert.equal(authStorage.getAccessToken(), null);
+});
+
 test("a delayed original 401 replays the current token of the same session without another refresh", async () => {
   let release!: () => void;
   let started!: () => void;

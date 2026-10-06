@@ -3,7 +3,7 @@ import { create } from "zustand";
 import { restoreAuthenticatedUser } from "../auth/restoreAuthenticatedUser.ts";
 import { createSingleFlight } from "../api/refreshCoordinator.ts";
 import type { User } from "../types/user.ts";
-import { getCurrentSessionSnapshot, invalidateSession, registerSessionInvalidator, startSession } from "../auth/sessionInvalidation.ts";
+import { endSession, getCurrentSessionSnapshot, invalidateSession, isSessionEnding, registerSessionInvalidator, startSession } from "../auth/sessionInvalidation.ts";
 
 interface AuthState {
   user: User | null;
@@ -48,7 +48,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   logout: async () => {
     // Fence restores immediately; retain the token only long enough to revoke it.
-    startSession();
+    endSession();
     const snapshot = getCurrentSessionSnapshot();
     // Do not navigate to login before the server has cleared its refresh cookie.
     set({ isLoading: true });
@@ -57,7 +57,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       if (getCurrentSessionSnapshot().epoch !== snapshot.epoch) return;
       await service.logout?.();
     } finally {
-      invalidateSession(snapshot);
+      if (getCurrentSessionSnapshot().epoch === snapshot.epoch) invalidateSession();
     }
   },
 
@@ -67,6 +67,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   restoreSession: async () => {
+    if (isSessionEnding()) return;
     const { user, epoch } = await restoreSessionOnce();
     if (getCurrentSessionSnapshot().epoch !== epoch) return;
     if (user !== null) startSession();
