@@ -1,6 +1,6 @@
 # Backend delivery checklist
 
-Updated: 2026-10-05
+Updated: 2026-10-06
 
 This is the single short status index for the project. Detailed acceptance
 criteria for the original modules remain in the
@@ -12,7 +12,9 @@ commands remain in the
 
 The current completion roadmap is [tasks/plan.md](plan.md). It adds durable
 measurements and portable Pi/server deployment without reopening accepted B/C.
-Execution through F-data is approved; formal reports/operator manuals are separate.
+Execution through applicable F17 and FE/QA is approved; formal reports/operator
+manuals are separate. Owner authorized Git/Pi publication on 2026-10-06 after
+independent review and verification; the earlier local-only hold is superseded.
 Final target clarified 2026-10-05: server-hosted website; Pi/local remains development
 and team testing. Server/domain/ingress/backup gates must pass before website launch.
 The receiving team performs deployment. Codex owns app/data verification and handoff
@@ -329,9 +331,12 @@ Detailed acceptance, candidate files, dependencies and verification are in
       [evidence](../docs/checkpoints/2026-10-05-f-product-progress.md).
       Local commits only; no GitHub push, Pi change or fixture/sample delivery.
 - [ ] F11: Reproducible full-app packaging, migration runner and ARM64/server gates.
-- [ ] F12-team: Validate deployment profile/target prerequisites for receiving-team handoff.
+- [ ] F12-local: Implement and verify read-only explicit-profile deployment preflight.
+- [ ] F12-team: Validate deployment profile/target prerequisites on the receiving host.
+- [ ] F13-local: Rehearse full-stack apply/smoke and schema-safe application rollback.
 - [ ] F13-team: Team deployment, smoke and schema-safe rollback acceptance.
-- [ ] F14: Rehearse Pi/server data and secret transfer with isolated restore/cutover.
+- [ ] F14-local: Verify encrypted portable backup and isolated restore/transfer.
+- [ ] F14-target: Receiving team accepts secret custody and explicit one-target cutover.
 - [ ] F15: Pass the additional website security, backup and measured capacity gate.
 - [ ] F16: Close existing FE/QA gates and live-provider recovery with linked evidence.
 - [ ] F17-local: Accept local/Pi after applicable F-data/F-product/deploy/QA gates.

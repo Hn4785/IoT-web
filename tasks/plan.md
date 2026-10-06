@@ -1,6 +1,6 @@
 # Implementation Plan: Final portable soil monitoring
 
-Updated: 2026-10-05
+Updated: 2026-10-06
 Status: D app/local and local Checkpoint F-data complete on 2026-10-05.
 F7-F10 and Checkpoint F-product-local are also complete with 557 backend and 218
 frontend tests plus isolated role/browser data-state evidence. See
@@ -8,11 +8,12 @@ frontend tests plus isolated role/browser data-state evidence. See
 F11 onwards, broad FE/QA and receiving-team target gates remain open.
 Follow-up owner authorization: publish only completed F-data logic to Git/Pi for
 internal testing, preserving existing data and applying its two additive migrations.
-Latest owner instruction: resume F7-F10 through Checkpoint F-product, but keep
-all changes and verified commits local until the F work is finished. Do not push
-GitHub or update Pi during this iteration. This supersedes earlier push consent.
-The remaining D/F/FE updates will be published together after verification and
-the owner's publishing gate.
+Latest owner instruction (2026-10-06): finish applicable F11-F17 and outstanding
+FE/QA, fix the GitHub dependency-audit failure, and publish verified BE/FE code
+to the existing Git branches and Pi. This supersedes the earlier local-only hold.
+Codex coordinates and reviews; bounded Antigravity/subagents implement code.
+Never publish sample/test databases or overwrite Pi data. Formal handoff paperwork
+and the receiving team's website deployment remain separate.
 Publish to the existing BE/FE branches, not a separate public test branch. All
 future F/FE releases transfer verified system logic, never sample/fixture/test
 databases to Pi/server. F-data follow-up: BE de466ea now runs on Pi with additive
@@ -135,7 +136,8 @@ unchanged. Audit success is not public deployment or production acceptance.
 - Every code handoff uses both delegation skills and budget policy: 20% reserve,
   exact paths/commands/limits/timeouts, <=4 mandatory skills, worker no commit/push/merge,
   <=2 correction rounds. Candidate paths below are not permission grants.
-- This iteration authorizes local application/data work and handoff assets only.
+- This iteration authorizes application/data work, handoff assets and a verified
+  Git/Pi release; the receiving team's server is not an autonomous deploy target.
   Receiving-team deployment/acceptance remains separate; destructive restore and
   new security policy require explicit approval.
 
