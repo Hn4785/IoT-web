@@ -24,11 +24,11 @@ Với mỗi thay đổi:
   notification mất quyền và case-sensitive CSS trên Linux; bộ lọc Soil co đúng mobile.
 - Bản vá Nest Fastify 12.0.3/Fastify 5.12.5/brace-expansion 5.0.12 và source-map-js
   1.2.2 giữ nguyên audit gate. BE/FE audit không còn advisory đã biết.
-- Local: backend 93 file/620 tests, coverage 85.78/77.31/91.82/88.52%, verify/secret
+- Local: backend 93 file/621 tests, coverage 85.78/77.27/91.82/88.52%, verify/secret
   scan đạt; frontend 242 tests, lint/typecheck/build đạt. HTTP backend/DB fixture
   14/14 desktop/mobile: credential/user/transfer, audit filter/cursor, 101 notifications,
   key lifecycle và native CSV. Fixture tách khỏi dữ liệu thật và không phát hành.
-- GitHub BE `ccd8a53` (runtime `26df9dd`): [Backend CI](https://github.com/Hn4785/IoT-web/actions/runs/37407133279)
+- GitHub BE baseline `ccd8a53` (runtime `26df9dd`): [Backend CI](https://github.com/Hn4785/IoT-web/actions/runs/37407133279)
   và [image amd64/arm64](https://github.com/Hn4785/IoT-web/actions/runs/37407133287) xanh.
   Linux CI chạy 605 test, skip đúng 15 test PowerShell/Windows; 15 test này đã chạy
   và đạt trên local Windows. Không bỏ hoặc hạ gate audit để làm xanh.
@@ -51,7 +51,11 @@ Với mỗi thay đổi:
   SHA256 index khớp image, nginx chạy UID 101 và cấu hình hợp lệ.
 - Owner xác nhận web trên server chạy ổn ngày 06/10/2026. Đây là phản hồi vận hành,
   không thay thế nghiệm thu backup/TLS/capacity hoặc notification mới từ provider thật.
-- Sổ lỗi local theo đúng 15 cột A–O, STT 48–64, retest 06/10/2026. Chưa xác nhận
+- Follow-up CI image: `pg_isready` dùng TCP loopback thay socket để không nhận server
+  khởi tạo tạm. Regression RED/GREEN 6/6 và Docker tái hiện/khôi phục đạt;
+  giữ 30 lần chờ, migration/audit/architecture gates. Không đổi runtime hay DB Pi.
+  Thêm một regression so với baseline CI 605 + 15 test Windows ở trên.
+- Sổ lỗi local theo đúng 15 cột A–O, STT 48–65, retest 06/10/2026. Chưa xác nhận
   đồng bộ Google Sheet. Không đưa lỗi mạng/build Pi vào danh sách lỗi ứng dụng.
 - Chỉ chuẩn bị kế hoạch viết/review tài liệu tại BE `tasks/plan.md` mục H,
   chưa tạo tài liệu bàn giao. Không xoá spec/checkpoint lịch sử; inventory không
