@@ -1,5 +1,5 @@
 import { Check, Copy, KeyRound, Plus, RefreshCw, ShieldAlert, Trash2 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { apiKeyService, type AvailableApiKeyStation, type DeveloperApiKey } from "@/services/apiKeyService";
 import { normalizeApiError } from "@/utils/apiError";
@@ -19,8 +19,11 @@ export default function ApiKeys() {
   const [selectedStationIds, setSelectedStationIds] = useState<string[]>([]);
   const [credentialCopied, setCredentialCopied] = useState(false);
   const [credentialCopyFailed, setCredentialCopyFailed] = useState(false);
+  const [acknowledged, setAcknowledged] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const activeElementRef = useRef<HTMLElement | null>(null);
+  const dialogRef = useRef<HTMLDivElement | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -38,6 +41,74 @@ export default function ApiKeys() {
     return () => window.clearTimeout(task);
   }, [loadData]);
 
+  useEffect(() => {
+    if (showCreate) {
+      dialogRef.current?.focus();
+    }
+  }, [showCreate, generatedSecret]);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (!showCreate) return;
+      if (event.key === "Escape") {
+        event.preventDefault();
+        if (!generatedSecret || acknowledged) {
+          setShowCreate(false);
+          setGeneratedSecret(null);
+          setAcknowledged(false);
+          setCredentialCopied(false);
+          setCredentialCopyFailed(false);
+          activeElementRef.current?.focus();
+        }
+      } else if (event.key === "Tab") {
+        const dialog = dialogRef.current;
+        if (!dialog) return;
+        const focusableElements = dialog.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusableElements.length === 0) return;
+        const firstElement = focusableElements[0];
+        const lastElement = focusableElements[focusableElements.length - 1];
+
+        if (event.shiftKey) {
+          if (document.activeElement === dialog || document.activeElement === firstElement || !dialog.contains(document.activeElement)) {
+            event.preventDefault();
+            lastElement.focus();
+          }
+        } else {
+          if (document.activeElement === lastElement || !dialog.contains(document.activeElement)) {
+            event.preventDefault();
+            firstElement.focus();
+          }
+        }
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [showCreate, generatedSecret, acknowledged]);
+
+  const openCreateModal = () => {
+    activeElementRef.current = document.activeElement as HTMLElement;
+    setShowCreate(true);
+    setGeneratedSecret(null);
+    setNewKeyName("");
+    setSelectedStationIds(availableStations.map(({ id }) => id));
+    setCredentialCopied(false);
+    setCredentialCopyFailed(false);
+    setAcknowledged(false);
+  };
+
+  const closeCreateModal = () => {
+    if (!generatedSecret || acknowledged) {
+      setShowCreate(false);
+      setGeneratedSecret(null);
+      setAcknowledged(false);
+      setCredentialCopied(false);
+      setCredentialCopyFailed(false);
+      activeElementRef.current?.focus();
+    }
+  };
+
   const createKey = async () => {
     if (!newKeyName.trim()) return;
     setError("");
@@ -47,6 +118,7 @@ export default function ApiKeys() {
       setGeneratedSecret(issued.key);
       setCredentialCopied(false);
       setCredentialCopyFailed(false);
+      setAcknowledged(false);
     } catch (reason) { setError(normalizeApiError(reason).message); }
   };
 
@@ -55,9 +127,11 @@ export default function ApiKeys() {
     try {
       const issued = await apiKeyService.rotate(id);
       setKeys((current) => current.map((item) => item.id === id ? issued.apiKey : item));
+      activeElementRef.current = document.activeElement as HTMLElement;
       setGeneratedSecret(issued.key);
       setCredentialCopied(false);
       setCredentialCopyFailed(false);
+      setAcknowledged(false);
       setShowCreate(true);
     } catch (reason) { setError(normalizeApiError(reason).message); }
   };
@@ -76,19 +150,19 @@ export default function ApiKeys() {
 
   return <div className={styles.page}>
     <div className={styles.header}><div><div className={styles.eyebrow}>DEVELOPER PORTAL / SECURITY</div><h1>API Keys</h1><p>Manage credentials used by server-side integrations.</p></div>
-      <button className={styles.primaryButton} onClick={() => { setShowCreate(true); setGeneratedSecret(null); setNewKeyName(""); setSelectedStationIds(availableStations.map(({ id }) => id)); setCredentialCopied(false); setCredentialCopyFailed(false); }}><Plus size={17} />Create API Key</button>
+      <button className={styles.primaryButton} disabled={showCreate} onClick={openCreateModal}><Plus size={17} />Create API Key</button>
     </div>
     <DeveloperSectionTabs section="access" />
     <div className={styles.warning}><ShieldAlert size={19} /><div><strong>Keep API secrets secure.</strong><span>Never embed them in browser code or commit them to source control.</span></div></div>
-    {error && <div className={styles.warning} role="alert"><span>{error}</span><button className={styles.secondaryButton} onClick={() => void loadData()}><RefreshCw size={15} />Retry</button></div>}
+    {error && <div className={styles.warning} role="alert"><span>{error}</span><button className={styles.secondaryButton} disabled={showCreate} onClick={() => void loadData()}><RefreshCw size={15} />Retry</button></div>}
     <section className={styles.stats}><div><KeyRound size={19} /><span>Active Keys</span><strong>{activeCount}</strong></div><div><RefreshCw size={19} /><span>Expired</span><strong>{expiredCount}</strong></div><div><ShieldAlert size={19} /><span>Revoked</span><strong>{revokedCount}</strong></div></section>
     <section className={styles.card}><div className={styles.cardHeader}><h2>API Key Management</h2><p>Secrets are shown only after creation or rotation.</p></div>
       <div className={styles.tableWrapper}><table className={styles.table}><thead><tr><th>Name</th><th>Prefix</th><th>Created</th><th>Last used</th><th>Expires</th><th>Rate limit</th><th>Status</th><th>Stations</th><th /></tr></thead>
-      <tbody aria-busy={loading}>{!loading && keys.length === 0 && <tr><td colSpan={9}>No API keys yet.</td></tr>}{keys.map((key) => { const status = getApiKeyStatus(key); const revoked = status === "revoked"; return <tr key={key.id}><td><div className={styles.keyName}><span className={styles.keyIcon}><KeyRound size={16} /></span><strong>{key.name}</strong></div></td><td className={styles.mono}>{key.prefix}</td><td>{formatDate(key.createdAt)}</td><td>{formatDate(key.lastUsedAt)}</td><td>{formatDate(key.expiresAt)}</td><td>{key.requestsPerMinute}/min</td><td><span className={`${styles.status} ${status === "active" ? styles.active : styles.revoked}`}>{status[0].toUpperCase() + status.slice(1)}</span></td><td>{key.stationIds.length || "No access"}</td><td><div className={styles.actions}><button title="Rotate key" aria-label={`Rotate ${key.name}`} disabled={revoked} onClick={() => void rotateKey(key.id)}><RefreshCw size={16} /></button><button title="Revoke key" aria-label={`Revoke ${key.name}`} disabled={revoked} onClick={() => void revokeKey(key.id)}><Trash2 size={16} /></button></div></td></tr>; })}</tbody></table></div>
+      <tbody aria-busy={loading}>{!loading && keys.length === 0 && <tr><td colSpan={9}>No API keys yet.</td></tr>}{keys.map((key) => { const status = getApiKeyStatus(key); const revoked = status === "revoked"; return <tr key={key.id}><td><div className={styles.keyName}><span className={styles.keyIcon}><KeyRound size={16} /></span><strong>{key.name}</strong></div></td><td className={styles.mono}>{key.prefix}</td><td>{formatDate(key.createdAt)}</td><td>{formatDate(key.lastUsedAt)}</td><td>{formatDate(key.expiresAt)}</td><td>{key.requestsPerMinute}/min</td><td><span className={`${styles.status} ${status === "active" ? styles.active : styles.revoked}`}>{status[0].toUpperCase() + status.slice(1)}</span></td><td>{key.stationIds.length || "No access"}</td><td><div className={styles.actions}><button title="Rotate key" aria-label={`Rotate ${key.name}`} disabled={revoked || showCreate} onClick={() => void rotateKey(key.id)}><RefreshCw size={16} /></button><button title="Revoke key" aria-label={`Revoke ${key.name}`} disabled={revoked || showCreate} onClick={() => void revokeKey(key.id)}><Trash2 size={16} /></button></div></td></tr>; })}</tbody></table></div>
     </section>
-    {showCreate && <div className={styles.overlay} onMouseDown={(event) => { if (event.target === event.currentTarget) setShowCreate(false); }}><div className={styles.modal} role="dialog" aria-modal="true" aria-labelledby="api-key-dialog-title">
-      <div className={styles.modalHeader}><div><h2 id="api-key-dialog-title">{generatedSecret ? "API key ready" : "Create API key"}</h2><p>{generatedSecret ? "Copy it now; it will not be shown again." : "Name this server-side integration."}</p></div><button aria-label="Close" onClick={() => setShowCreate(false)}>×</button></div>
-      {generatedSecret ? <><div className={styles.secretWarning}><ShieldAlert size={20} /><strong>Store this secret securely.</strong></div><div className={styles.secretBox}><code tabIndex={0}>{generatedSecret}</code><button onClick={async () => { const copied = await copyText(generatedSecret); setCredentialCopied(copied); setCredentialCopyFailed(!copied); }}>{credentialCopied ? <Check size={16} /> : <Copy size={16} />}{credentialCopied ? "Copied" : "Copy"}</button></div>{credentialCopyFailed && <p className={styles.copyError} role="alert">Could not copy automatically. Select and copy the key manually.</p>}<button className={styles.primaryButton} onClick={() => setShowCreate(false)}>Done</button></> : <><label>API Key Name<input autoFocus value={newKeyName} maxLength={100} onChange={(event) => setNewKeyName(event.target.value)} placeholder="e.g. Greenhouse analytics" /></label><fieldset className={styles.stationSelector}><legend>Allowed stations</legend>{availableStations.length === 0 ? <p>No stations have been granted to this account. Ask an Admin to assign one first.</p> : availableStations.map((station) => <label key={station.id}><input type="checkbox" checked={selectedStationIds.includes(station.id)} onChange={(event) => setSelectedStationIds((current) => event.target.checked ? [...current, station.id] : current.filter((id) => id !== station.id))} /><span>{station.name} ({station.code})<code title={station.id}>{station.id}</code></span></label>)}</fieldset><div className={styles.modalActions}><button className={styles.secondaryButton} onClick={() => setShowCreate(false)}>Cancel</button><button className={styles.primaryButton} disabled={!newKeyName.trim() || selectedStationIds.length === 0} onClick={() => void createKey()}>Generate Key</button></div></>}
+    {showCreate && <div className={styles.overlay} onMouseDown={(event) => { if (event.target === event.currentTarget && (!generatedSecret || acknowledged)) { closeCreateModal(); } }}><div className={styles.modal} role="dialog" aria-modal="true" aria-labelledby="api-key-dialog-title" tabIndex={-1} ref={dialogRef}>
+      <div className={styles.modalHeader}><div><h2 id="api-key-dialog-title">{generatedSecret ? "API key ready" : "Create API key"}</h2><p>{generatedSecret ? "Copy it now; it will not be shown again." : "Name this server-side integration."}</p></div><button aria-label="Close" disabled={Boolean(generatedSecret && !acknowledged)} onClick={closeCreateModal}>×</button></div>
+      {generatedSecret ? <><div className={styles.secretWarning}><ShieldAlert size={20} /><strong>Store this secret securely.</strong></div><div className={styles.secretBox}><code tabIndex={0}>{generatedSecret}</code><button onClick={async () => { const copied = await copyText(generatedSecret); setCredentialCopied(copied); setCredentialCopyFailed(!copied); }}>{credentialCopied ? <Check size={16} /> : <Copy size={16} />}{credentialCopied ? "Copied" : "Copy"}</button></div>{credentialCopyFailed && <p className={styles.copyError} role="alert">Could not copy automatically. Select and copy the key manually.</p>}<label className={styles.ackLabel}><input type="checkbox" checked={acknowledged} onChange={(event) => setAcknowledged(event.target.checked)} /><span>I have saved this API key</span></label><button className={styles.primaryButton} disabled={!acknowledged} onClick={closeCreateModal}>Done</button></> : <><label>API Key Name<input autoFocus value={newKeyName} maxLength={100} onChange={(event) => setNewKeyName(event.target.value)} placeholder="e.g. Greenhouse analytics" /></label><fieldset className={styles.stationSelector}><legend>Allowed stations</legend>{availableStations.length === 0 ? <p>No stations have been granted to this account. Ask an Admin to assign one first.</p> : availableStations.map((station) => <label key={station.id}><input type="checkbox" checked={selectedStationIds.includes(station.id)} onChange={(event) => setSelectedStationIds((current) => event.target.checked ? [...current, station.id] : current.filter((id) => id !== station.id))} /><span>{station.name} ({station.code})<code title={station.id}>{station.id}</code></span></label>)}</fieldset><div className={styles.modalActions}><button className={styles.secondaryButton} onClick={closeCreateModal}>Cancel</button><button className={styles.primaryButton} disabled={!newKeyName.trim() || selectedStationIds.length === 0} onClick={() => void createKey()}>Generate Key</button></div></>}
     </div></div>}
   </div>;
 }

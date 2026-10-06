@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import { createApiKeyService } from "../src/services/apiKeyService.ts";
@@ -64,4 +65,18 @@ test("copyText reports clipboard success and denial without leaking the value", 
   assert.equal(await copyText("secret", { writeText: async (value) => { copied = value; } }), true);
   assert.equal(copied, "secret");
   assert.equal(await copyText("secret", { writeText: async () => { throw new Error("denied"); } }), false);
+});
+
+test("API Keys prevents loss of one-time API secret until explicit acknowledgement checkbox", () => {
+  const apiKeysTsx = readFileSync(
+    new URL("../src/pages/developer/ApiKeys.tsx", import.meta.url),
+    "utf8",
+  );
+  assert.match(apiKeysTsx, /I have saved this API key/);
+  assert.match(apiKeysTsx, /acknowledged/i);
+  assert.match(apiKeysTsx, /disabled=\{!acknowledged\}/);
+  assert.match(apiKeysTsx, /disabled=\{showCreate\}/);
+  assert.match(apiKeysTsx, /activeElementRef/);
+  assert.match(apiKeysTsx, /dialogRef/);
+  assert.match(apiKeysTsx, /Tab/);
 });

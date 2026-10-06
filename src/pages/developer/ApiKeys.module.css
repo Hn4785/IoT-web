@@ -461,3 +461,21 @@
   font-family: var(--font-family-mono);
   font-size: var(--font-size-micro);
 }
+
+.ackLabel {
+  display: flex;
+  flex-direction: row !important;
+  align-items: center;
+  gap: 9px;
+  margin: var(--spacing-4) 0;
+  cursor: pointer;
+  color: var(--color-text-primary) !important;
+  font-weight: var(--font-weight-medium) !important;
+}
+
+.ackLabel input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  cursor: pointer;
+}
