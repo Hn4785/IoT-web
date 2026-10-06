@@ -504,6 +504,13 @@ the accepted B baseline; this amendment supersedes their persistence deferral.
 B/C acceptance is not reopened. No Pi database migration,
 push, deployment, frontend F7 work, MFA, SMS or device writes are included here.
 
+Follow-up owner authorization on 2026-10-05: deploy only the completed F-data
+logic to Pi for internal testing, with existing data preserved and migrations
+12/13 applied after backup. No seed, fixture data or local test database is sent.
+Keep the existing frontend code; F7 is paused. The remaining D/F/FE updates will
+be published together after their verification. This extends the original local
+deployment boundary only for this scoped Pi rollout.
+
 ### Storage and transactional boundaries
 
 - Add `SoilReading`, `SoilLatestReading`, `SoilHistoryCoverage` and
