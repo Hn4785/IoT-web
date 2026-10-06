@@ -17,11 +17,12 @@ Never publish sample/test databases or overwrite Pi data. Formal handoff paperwo
 and the receiving team's website deployment remain separate.
 Publish to the existing BE/FE branches, not a separate public test branch. All
 future F/FE releases transfer verified system logic, never sample/fixture/test
-databases to Pi/server. F-data follow-up: BE de466ea now runs on Pi with additive
+databases to Pi/server. Historical F-data follow-up: BE de466ea ran on Pi with additive
 migrations 12/13 and genuine latest readings. Raw-history validation currently
 reports invalid; live backfill coverage remains unverified. See the single release
-record in D:/IoT-web/docs/internal-release-notes.md. Reconcile this scoped BE
-release before the later combined D/F/FE push; never force-push over it.
+record in D:/IoT-web/docs/internal-release-notes.md. This scoped BE release was
+reconciled before the combined D/F/FE push, without force-push. The verified
+2026-10-06 runtime rollout is recorded in the same release notes, not another manual.
 
 > For agentic workers: use superpowers:executing-plans for coordination, one approved
 > slice at a time. Codex plans/reviews; project code follows the bounded Antigravity

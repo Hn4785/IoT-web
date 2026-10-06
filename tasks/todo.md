@@ -268,10 +268,11 @@ and must not duplicate the full contract.
    The earlier scoped F-data Git/Pi test rollout is historical:
    only real-reading storage/collection logic, backup and additive migrations;
    preserve existing data and never seed/import fixtures or restore local test DB.
-   Remaining D/F/FE updates will be published together after verification.
+   Verified D/F/FE updates and the final web-only follow-up reached Git/Pi on
+   2026-10-06; smoke evidence is in the release notes. Live/team gates remain open.
    Use the existing BE/FE branches; do not create a public test-release branch.
    No fixture/sample/test database is deployed or imported on Pi.
-   F-data BE `de466ea` is now on Git/Pi; API/web/database smoke passes and genuine
+   At the historical F-data rollout, BE `de466ea` reached Git/Pi; smoke passed and genuine
    latest readings persist. Raw-history backfill remains `invalid`/unverified;
    this rollout does not close F-product, F7 or production gates. All future F/FE
    releases transfer verified logic only, never sample/test databases.
