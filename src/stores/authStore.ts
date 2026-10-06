@@ -1,9 +1,9 @@
 import { create } from "zustand";
 
-import { restoreAuthenticatedUser } from "@/auth/restoreAuthenticatedUser";
-import { createSingleFlight } from "@/api/refreshCoordinator";
-import { authService } from "@/services/authService";
-import type { User } from "@/types/user";
+import { restoreAuthenticatedUser } from "../auth/restoreAuthenticatedUser.ts";
+import { createSingleFlight } from "../api/refreshCoordinator.ts";
+import type { User } from "../types/user.ts";
+import { getCurrentSessionSnapshot, invalidateSession, registerSessionInvalidator, startSession } from "../auth/sessionInvalidation.ts";
 
 interface AuthState {
   user: User | null;
@@ -16,13 +16,25 @@ interface AuthState {
   restoreSession: () => Promise<void>;
 }
 
-const restoreSessionOnce = createSingleFlight(() =>
-  restoreAuthenticatedUser(
-    authService.refresh,
-    authService.getCurrentUser,
-    authService.clearSession,
-  ),
-);
+let customAuthService: {
+  refresh: () => Promise<unknown>;
+  getCurrentUser: () => Promise<User>;
+  clearSession: () => void;
+  logout?: () => Promise<void>;
+} | null = null;
+
+export function setAuthServiceForTesting(service: typeof customAuthService) {
+  customAuthService = service;
+}
+
+const restoreSessionOnce = createSingleFlight(async () => {
+  const epoch = getCurrentSessionSnapshot().epoch;
+  const service = customAuthService ?? (await import("../services/authService.ts")).authService;
+  const user = await restoreAuthenticatedUser(service.refresh, service.getCurrentUser, () => {
+    if (getCurrentSessionSnapshot().epoch === epoch) service.clearSession();
+  });
+  return { user, epoch };
+});
 
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
@@ -30,35 +42,38 @@ export const useAuthStore = create<AuthState>((set) => ({
   isLoading: true,
 
   login: (user) => {
-    set({
-      user,
-      isAuthenticated: true,
-      isLoading: false,
-    });
+    startSession();
+    set({ user, isAuthenticated: true, isLoading: false });
   },
 
   logout: async () => {
+    // Fence restores immediately; retain the token only long enough to revoke it.
+    startSession();
+    const snapshot = getCurrentSessionSnapshot();
+    // Do not navigate to login before the server has cleared its refresh cookie.
+    set({ isLoading: true });
     try {
-      await authService.logout();
+      const service = customAuthService ?? (await import("../services/authService.ts")).authService;
+      if (getCurrentSessionSnapshot().epoch !== snapshot.epoch) return;
+      await service.logout?.();
     } finally {
-      set({ user: null, isAuthenticated: false, isLoading: false });
+      invalidateSession(snapshot);
     }
   },
 
   setUser: (user) => {
-    set({
-      user,
-      isAuthenticated: user !== null,
-      isLoading: false,
-    });
+    if (user !== null) startSession();
+    set({ user, isAuthenticated: user !== null, isLoading: false });
   },
 
   restoreSession: async () => {
-    const user = await restoreSessionOnce();
-    set({
-      user,
-      isAuthenticated: user !== null,
-      isLoading: false,
-    });
+    const { user, epoch } = await restoreSessionOnce();
+    if (getCurrentSessionSnapshot().epoch !== epoch) return;
+    if (user !== null) startSession();
+    set({ user, isAuthenticated: user !== null, isLoading: false });
   },
 }));
+
+registerSessionInvalidator(() => {
+  useAuthStore.setState({ user: null, isAuthenticated: false, isLoading: false });
+});

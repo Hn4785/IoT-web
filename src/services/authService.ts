@@ -2,6 +2,7 @@ import { apiClient } from "@/api/apiClient";
 import { API_ENDPOINTS } from "@/api/endpoints";
 
 import { authStorage } from "@/utils/authStorage";
+import { getCurrentSessionSnapshot, invalidateSession } from "@/auth/sessionInvalidation";
 import { unwrapApiResponse } from "@/types/api";
 
 import type { User } from "@/types/user";
@@ -38,10 +39,11 @@ export const authService = {
   },
 
   async logout(): Promise<void> {
+    const snapshot = getCurrentSessionSnapshot();
     try {
       await apiClient.post(API_ENDPOINTS.auth.logout);
     } finally {
-      authStorage.clearAccessToken();
+      invalidateSession(snapshot);
     }
   },
 
@@ -54,9 +56,14 @@ export const authService = {
   },
 
   async refresh(): Promise<{ accessToken: string; expiresIn: number }> {
+    const snapshot = getCurrentSessionSnapshot();
     const response = await apiClient.post<
       ApiSuccessEnvelope<{ accessToken: string; expiresIn: number }>
     >(API_ENDPOINTS.auth.refresh);
+    const current = getCurrentSessionSnapshot();
+    if (current.epoch !== snapshot.epoch || current.token !== snapshot.token) {
+      throw new Error("Session was replaced while restoring");
+    }
     const data = unwrapApiResponse(response.data);
     authStorage.setAccessToken(data.accessToken);
     return data;

@@ -5,8 +5,13 @@ import { env } from "../config/env.ts";
 import { authStorage } from "../utils/authStorage.ts";
 import type { ApiSuccessEnvelope } from "../types/api.ts";
 import { createSingleFlight } from "./refreshCoordinator.ts";
+import {
+  getCurrentSessionSnapshot,
+  invalidateSession,
+} from "../auth/sessionInvalidation.ts";
+import type { SessionSnapshot } from "../auth/sessionInvalidation.ts";
 
-type RetriableRequest = InternalAxiosRequestConfig & { _retry?: boolean };
+type RetriableRequest = InternalAxiosRequestConfig & { _retry?: boolean; _sessionSnapshot?: SessionSnapshot };
 
 const refreshClient = axios.create({
   baseURL: env.apiBaseUrl,
@@ -15,9 +20,14 @@ const refreshClient = axios.create({
 });
 
 const refreshAccessToken = createSingleFlight(async () => {
+  const snapshot = getCurrentSessionSnapshot();
   const response = await refreshClient.post<
     ApiSuccessEnvelope<{ accessToken: string; expiresIn: number }>
   >("/auth/refresh");
+  const current = getCurrentSessionSnapshot();
+  if (current.epoch !== snapshot.epoch || current.token !== snapshot.token) {
+    throw new Error("Obsolete refresh succeeded after session replacement");
+  }
   const token = response.data.data.accessToken;
   authStorage.setAccessToken(token);
   return token;
@@ -35,6 +45,7 @@ export const apiClient = axios.create({
 
 apiClient.interceptors.request.use(
   (config) => {
+    (config as RetriableRequest)._sessionSnapshot = getCurrentSessionSnapshot();
     const token = authStorage.getAccessToken();
 
     if (token) {
@@ -58,17 +69,32 @@ apiClient.interceptors.response.use(
       (endpoint) => path.endsWith(endpoint),
     );
 
-    if (error.response?.status !== 401 || !request || request._retry || isAuthOperation) {
+    if (error.response?.status !== 401 || !request || isAuthOperation) {
+      return Promise.reject(error);
+    }
+
+    if (request._retry) {
+      invalidateSession(request._sessionSnapshot);
+      return Promise.reject(error);
+    }
+
+    const current = getCurrentSessionSnapshot();
+    if (request._sessionSnapshot && request._sessionSnapshot.epoch !== current.epoch) {
       return Promise.reject(error);
     }
 
     request._retry = true;
+    if (current.token && request._sessionSnapshot?.token !== current.token) {
+      request.headers.Authorization = `Bearer ${current.token}`;
+      return apiClient(request);
+    }
+    const snapshot = getCurrentSessionSnapshot();
     try {
       const token = await refreshAccessToken();
       request.headers.Authorization = `Bearer ${token}`;
       return apiClient(request);
     } catch (refreshError) {
-      authStorage.clearAccessToken();
+      invalidateSession(snapshot);
       return Promise.reject(refreshError);
     }
   }
