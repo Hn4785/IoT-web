@@ -9,7 +9,8 @@ nông trại/trạm và API key có scope cho Client Developer.
 
 `GET /api/v1/health` là endpoint public. Browser dùng `/api/v1/auth/*`; Admin quản
 lý tài khoản, authority, farm membership và station grant; Client Developer quản
-lý key qua `/api/v1/developer/api-keys`. Client Developer không có business UI.
+lý key qua `/api/v1/developer/api-keys`. Client Developer có portal quản lý key
+và API Tools riêng, không có quyền trang quản trị/nông trại.
 
 Phase A cung cấp identity/access; Phase B đã bổ sung latest/history của cảm biến
 và bắt buộc gọi policy scope hoặc API-key guard hiện có.
@@ -22,7 +23,7 @@ Phase B1 đã cung cấp hierarchy có phân quyền cho browser:
 - `GET /api/v1/plots/:plotId/stations`
 - `GET /api/v1/stations/:stationId`
 
-Admin đọc toàn bộ registry; Farmer chỉ đọc nông trại đang có membership. Các tài
+Admin đọc registry theo policy hiện hành; Farmer đọc phạm vi được sở hữu/chia sẻ. Các tài
 nguyên không tồn tại và ngoài phạm vi đều trả cùng `404 NOT_FOUND`. Client
 Developer không dùng các route browser này và nhận `403 FORBIDDEN`.
 
@@ -39,8 +40,12 @@ Frontend nên poll latest mỗi 30 giây. History raw tối đa 7 ngày; history
 ngày, phân trang bằng `nextCursor`. Client gửi `X-API-Key` và đọc các header
 `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`.
 
-`unit`, `sensorId` và `depthCm` có thể là `null` vì thiết bị thật chưa được
-xác minh. Backend chỉ proxy/cache dữ liệu đo, không lưu measurement vào database.
+`unit`, `sensorId` và `depthCm` có thể là `null` nếu nguồn không cung cấp metadata.
+Backend lưu số đo raw đã xác thực trong PostgreSQL tối đa 90 ngày, giữ snapshot
+cuối riêng và thu thập nền mỗi 120 giây, tối đa hai trạm đồng thời. API mất kết nối
+vẫn đọc được dữ liệu đã lưu theo quyền hiện tại; `dataOrigin`, `isStale` và coverage
+phân biệt dữ liệu mới, dữ liệu cũ và lịch sử chưa đủ. Không sinh số liệu khi mất nguồn.
+Snapshot/backfill cũ không được phát cảnh báo tự động như số đo mới.
 Nguồn CENTER/NODE đã được bên cung cấp xác nhận là dữ liệu cảm biến thật ngày
 2026-09-28; Phase B được đánh dấu `live-verified` và hoàn tất local ngày
 2026-09-30. Việc triển khai thay đổi local mới nhất lên Pi và ma trận recovery
@@ -76,17 +81,8 @@ Bootstrap Super Admin lần đầu. Mật khẩu được nhập hai lần bằn
 pnpm db:bootstrap-super-admin -- --email root@example.com
 ```
 
-Tạo registry demo sau khi migration đã áp dụng:
-
-```powershell
-pnpm db:seed-station-demo -- --confirm-demo-seed
-```
-
-Lệnh chỉ chạy khi `DATABASE_URL` trỏ chính xác tới database `/iot_dev`, môi trường
-không phải production và có đúng cờ xác nhận. Lệnh idempotent, chỉ tạo `Farm
-Demo`, `Plot Demo`, `Station NODE01` và `Station NODE02`; không sửa/xóa dữ liệu,
-không tạo user, membership, station grant hoặc API key. Admin vẫn phải gán quyền
-qua API quản trị.
+Không chạy seed demo trong quy trình triển khai. Thêm nguồn thật qua API Sources
+và chia sẻ quyền theo tài khoản. Không chuyển fixture/dump database test lên Pi/server.
 
 ```powershell
 pnpm dev
@@ -107,7 +103,7 @@ curl.exe http://localhost:3000/api/v1/health
   "success": true,
   "data": {
     "service": "iot-api",
-    "version": "2.5.0",
+    "version": "2.5.6",
     "status": "healthy",
     "environment": "development",
     "time": "2026-09-01T00:00:00.000Z"
@@ -147,7 +143,7 @@ Kết nối DBeaver tới `localhost:5432`, database `iot_dev`, user lấy từ
 `POSTGRES_USER`. Chỉ nhập mật khẩu local trong DBeaver; không lưu vào Git. Các cột
 `passwordHash`, `tokenHash`, `keyHash` phải chứa hash, không chứa plaintext.
 
-Retention không chạy lúc app khởi động. Operator phải xác nhận rõ:
+Retention tài khoản/session/lifecycle không chạy lúc app khởi động. Operator phải xác nhận rõ:
 
 ```powershell
 pnpm retention:run -- --confirm-retention
@@ -159,24 +155,23 @@ authority không bị anonymize; audit linkage bằng user ID được giữ l�
 
 ## Lệnh kiểm tra và vận hành
 
-| Lệnh                                               | Mục đích                                  |
-| -------------------------------------------------- | ----------------------------------------- |
-| `pnpm dev`                                         | Chạy development server                   |
-| `pnpm build`                                       | Biên dịch production                      |
-| `pnpm start`                                       | Chạy bản đã build                         |
-| `pnpm test`                                        | Chạy toàn bộ test                         |
-| `pnpm test:coverage`                               | Chạy test và xuất coverage                |
-| `pnpm typecheck`                                   | Kiểm tra TypeScript                       |
-| `pnpm lint`                                        | Kiểm tra ESLint, không chấp nhận warning  |
-| `pnpm format:check`                                | Kiểm tra Prettier                         |
-| `pnpm verify`                                      | Format, typecheck, lint và build          |
-| `pnpm audit --prod --audit-level=high`             | Chặn advisory high/critical               |
-| `pnpm security:secrets`                            | Quét credential trong file đang track     |
-| `pnpm release:check`                               | Kiểm tra runtime và OpenAPI nối frontend  |
-| `pnpm ignored-builds`                              | Kiểm tra package build script bị chặn     |
-| `pnpm db:status`                                   | Kiểm tra migration database hiện tại      |
-| `pnpm db:seed-station-demo -- --confirm-demo-seed` | Tạo registry demo an toàn trong `iot_dev` |
-| `pnpm retention:run -- --confirm-retention`        | Chạy retention có xác nhận                |
+| Lệnh                                        | Mục đích                                 |
+| ------------------------------------------- | ---------------------------------------- |
+| `pnpm dev`                                  | Chạy development server                  |
+| `pnpm build`                                | Biên dịch production                     |
+| `pnpm start`                                | Chạy bản đã build                        |
+| `pnpm test`                                 | Chạy toàn bộ test                        |
+| `pnpm test:coverage`                        | Chạy test và xuất coverage               |
+| `pnpm typecheck`                            | Kiểm tra TypeScript                      |
+| `pnpm lint`                                 | Kiểm tra ESLint, không chấp nhận warning |
+| `pnpm format:check`                         | Kiểm tra Prettier                        |
+| `pnpm verify`                               | Format, typecheck, lint và build         |
+| `pnpm audit --prod --audit-level=high`      | Chặn advisory high/critical              |
+| `pnpm security:secrets`                     | Quét credential trong file đang track    |
+| `pnpm release:check`                        | Kiểm tra runtime và OpenAPI nối frontend |
+| `pnpm ignored-builds`                       | Kiểm tra package build script bị chặn    |
+| `pnpm db:status`                            | Kiểm tra migration database hiện tại     |
+| `pnpm retention:run -- --confirm-retention` | Chạy retention có xác nhận               |
 
 ## Tài liệu kiến trúc và bảo mật
 
