@@ -29,7 +29,7 @@ Frontend source belongs in `D:/IoT-web` and must not be copied into this project
 ## Context and document budget
 
 - Keep task context focused: rules, current status/checkpoint, affected source and tests, one matching project pattern, and the relevant spec section. Aim to stay below 2,000 lines unless broader review is explicitly required.
-- Treat `docs/superpowers/plans/` as execution history. Read a completed plan only to verify an earlier decision or unfinished task; do not reload it for routine implementation.
+- Treat `docs/design/plans/` as execution history. Read a completed plan only to verify an earlier decision or unfinished task; do not reload it for routine implementation.
 - Prefer updating `tasks/todo.md`, the current checkpoint, or the current dated review over creating another status document with duplicate content.
 - Periodically compact active status and review documents: remove repetition, replace copied detail with links to the authoritative spec/test/file, and retain decisions, evidence, open risks, and next actions.
 - Never shorten approved specs, security records, migrations, or audit evidence merely to save tokens. Archive superseded human-facing summaries instead of deleting technical history.

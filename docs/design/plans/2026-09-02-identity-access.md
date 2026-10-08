@@ -4,15 +4,13 @@
 > checkpoint/plan's dated scope. Current completion and release applicability
 > are in [the task index](../../../tasks/todo.md); do not rerun old seed or rollout steps.
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
-
 **Goal:** Build PostgreSQL-backed accounts, secure rotating sessions, the three-role/Super Admin policy, resource-scope authorization, and scoped Client Developer API keys.
 
 **Architecture:** The existing NestJS/Fastify modular monolith gains one Prisma/PostgreSQL boundary and focused identity, auth, authorization, API-key and security-audit modules. Current authority is loaded from durable state on every protected request; public DTOs and policies remain independent of Prisma records.
 
 **Tech Stack:** Node.js 24.17 LTS, TypeScript 6, pnpm 11, NestJS 12, Fastify 5, PostgreSQL 17, Prisma 7.10, Zod 4, Argon2 0.45, JOSE 6, Vitest 4.
 
-**Spec:** `docs/superpowers/specs/2026-09-02-identity-access-design.md`
+**Spec:** `docs/design/specs/2026-09-02-identity-access-design.md`
 
 ## Global Constraints
 
@@ -765,7 +763,7 @@ git commit -m "docs: publish identity operations contract"
 **Files:**
 
 - Modify only for evidenced defects: files owned by Tasks 1-9.
-- Modify after all gates pass: `docs/superpowers/specs/2026-09-02-identity-access-design.md`
+- Modify after all gates pass: `docs/design/specs/2026-09-02-identity-access-design.md`
 - Modify: `tasks/todo.md`
 
 **Interfaces:**
@@ -805,9 +803,9 @@ Verify `localhost:5432`, `iot_dev`, migration table and expected identity tables
 Change spec status to `Implemented and verified`, check IA-1 through IA-7 and checkpoints A1/A2/A in `tasks/todo.md`, then:
 
 ```powershell
-git add docs/superpowers/specs/2026-09-02-identity-access-design.md tasks/todo.md
+git add docs/design/specs/2026-09-02-identity-access-design.md tasks/todo.md
 git commit -m "docs: record identity-access verification"
 git status --short --branch
 ```
 
-Expected: clean `codex/integration-core`; branch remains local until the user separately requests integration or push.
+Expected: clean working tree; integration or publication requires separate approval.

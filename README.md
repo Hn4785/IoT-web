@@ -6,8 +6,8 @@ cảnh báo tự động, thông báo trong ứng dụng và công cụ vận h�
 client và credential luôn nằm phía backend.
 
 Trạng thái hiện hành nằm tại [task index](./tasks/todo.md), kế hoạch còn lại tại
-[implementation/handover plan](./tasks/plan.md), và lịch sử phát hành duy nhất tại
-[release record của nhánh FE](https://github.com/Hn4785/IoT-web/blob/FE/docs/internal-release-notes.md).
+[kế hoạch hoàn thiện và bàn giao](./tasks/plan.md); phiên bản và kết quả nằm trong
+tài liệu bàn giao gửi riêng (không lưu trong Git).
 Các checkpoint có ngày là bằng chứng của đợt đó, không thay thế task index.
 
 ## Phạm vi hiện tại
@@ -53,7 +53,7 @@ phân biệt dữ liệu mới, dữ liệu cũ và lịch sử chưa đủ. Kh�
 Snapshot/backfill cũ không được phát cảnh báo tự động như số đo mới.
 Nguồn CENTER/NODE đã được bên cung cấp xác nhận là dữ liệu cảm biến thật ngày
 2026-09-28; Phase B được đánh dấu `live-verified` và hoàn tất local ngày
-2026-09-30. Bản D/F/FE đã triển khai Git/Pi ngày 2026-10-06 theo release record.
+2026-09-30. Bản D/F/FE đã triển khai Git/Pi ngày 2026-10-06 theo tài liệu bàn giao.
 Giới hạn 90 ngày là thời gian giữ dữ liệu, không chứng minh đã backfill đủ 90 ngày:
 cửa sổ history rỗng còn chặn backfill. Notification tự động mới từ provider sau
 phục hồi và nghiệm thu server bên nhận vẫn là gate riêng.
@@ -184,10 +184,10 @@ authority không bị anonymize; audit linkage bằng user ID được giữ l�
 
 ## Tài liệu kiến trúc và bảo mật
 
-- [Integration-core design spec](./docs/superpowers/specs/2026-08-30-integration-core-design.md)
-- [Identity-access design spec](./docs/superpowers/specs/2026-09-02-identity-access-design.md)
-- [Station-data design và hợp đồng F-data, mục 16](./docs/superpowers/specs/2026-09-02-station-data-design.md)
-- [Alert/notification design](./docs/superpowers/specs/2026-09-02-alert-config-design.md)
+- [Integration-core design spec](./docs/design/specs/2026-08-30-integration-core-design.md)
+- [Identity-access design spec](./docs/design/specs/2026-09-02-identity-access-design.md)
+- [Station-data design và hợp đồng F-data, mục 16](./docs/design/specs/2026-09-02-station-data-design.md)
+- [Alert/notification design](./docs/design/specs/2026-09-02-alert-config-design.md)
 - [Backend capability map](./CAPABILITY-MAP.md)
 - [Threat model](./docs/security/integration-core-threat-model.md)
 - [Backend completion roadmap — lịch sử](./docs/roadmaps/2026-09-02-backend-completion-roadmap.md)

@@ -4,19 +4,17 @@
 > checkpoint/plan's dated scope. Current completion and release applicability
 > are in [the task index](../../../tasks/todo.md); do not rerun old seed or rollout steps.
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
-
 **Goal:** Expose authorized farm, plot, station, latest-soil and bounded history APIs to browser and Client Developer callers without persisting measurements or leaking the Weather API boundary.
 
 **Architecture:** Browser Bearer routes and Client API-key routes remain separate trust boundaries. Both resolve an authorized registry station and call one `StationDataService`, which validates and maps Weather responses into explicit DTOs, then uses bounded in-memory cache/coalescing. PostgreSQL stores only hierarchy and authorization; sensor time series remain upstream.
 
 **Tech Stack:** Node.js 24, TypeScript 6 strict mode, NestJS 12 with Fastify 5, Prisma 7/PostgreSQL, Zod 4, Vitest 4, existing controlled Weather client and fake HTTP upstream.
 
-**Spec:** `docs/superpowers/specs/2026-09-02-station-data-design.md`
+**Spec:** `docs/design/specs/2026-09-02-station-data-design.md`
 
 ## Global Constraints
 
-- Work only in `D:/IoT-api/.worktrees/integration-core` on local branch `codex/integration-core`; do not push or merge.
+- Work in an isolated checkout; do not push or merge until verification is complete.
 - Read `AGENTS.md`, `CAPABILITY-MAP.md` and the approved station-data spec before each execution session.
 - Use TDD for every behavior: focused RED, confirm the expected failure, minimal GREEN, refactor while green, then an atomic commit.
 - Public prefix is `/api/v1`; success and error envelopes remain unchanged.

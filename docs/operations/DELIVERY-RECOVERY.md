@@ -3,8 +3,8 @@
 Cập nhật: 08/10/2026. Tài liệu giúp bên nhận tái tạo ứng dụng trên server hoặc Pi.
 Chỉ một máy giữ dữ liệu chính tại một thời điểm; không có đồng bộ hai chiều.
 Pi nội bộ là môi trường demo, không phải yêu cầu nghiệm thu.
-Logic và tồn đọng nằm trong [báo cáo bàn giao](https://github.com/Hn4785/IoT-web/blob/FE/docs/handover/README.md);
-phiên bản/kết quả chỉ ghi tại [release record](https://github.com/Hn4785/IoT-web/blob/FE/docs/internal-release-notes.md).
+Phạm vi, phiên bản, kết quả kiểm thử và tồn đọng được tổng hợp trong
+tài liệu bàn giao gửi riêng (không lưu trong Git).
 
 ## 1. Chọn cách chạy
 

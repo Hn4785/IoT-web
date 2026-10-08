@@ -235,7 +235,7 @@ test/
   integration/
   helpers/
 docs/
-  superpowers/specs/
+  design/specs/
 tasks/
 ```
 

@@ -6,15 +6,13 @@ historical plan steps, not open product work. Current completion evidence lives
 in [`2026-09-10-phase-b-core.md`](../../checkpoints/2026-09-10-phase-b-core.md)
 and the remaining release gates live in [`tasks/todo.md`](../../../tasks/todo.md).
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
-
 **Goal:** Add securely owned and shared upstream API sources, then connect the existing Admin and Farmer monitoring UI without exposing credentials.
 
 **Architecture:** PostgreSQL stores source ownership, grants, discovered stations, and AES-GCM encrypted upstream credentials. Existing station DTOs stay stable; station reads resolve an internal source-specific Weather client. Frontend parsing is local and sends only extracted URL/key fields.
 
 **Tech Stack:** NestJS 12, Fastify 5, Prisma/PostgreSQL, Zod, Vitest, React 19, TypeScript, CSS modules.
 
-**Spec:** `docs/superpowers/specs/2026-09-28-data-source-access-design.md`
+**Spec:** `docs/design/specs/2026-09-28-data-source-access-design.md`
 
 ## Global Constraints
 
@@ -80,7 +78,7 @@ and the remaining release gates live in [`tasks/todo.md`](../../../tasks/todo.md
 
 ### Task 5: Admin API Sources UI
 
-**Files:** Frontend source DTO/service/parser, Admin page/components/styles/routes/sidebar, tests, integration guide, and `docs/internal-release-notes.md`.
+**Files:** Frontend source DTO/service/parser, Admin page/components/styles/routes/sidebar, tests, integration guide, and `tasks/todo.md`.
 
 **Interfaces:** Consumes the approved data-source routes. Produces English `API Sources` UI with local paste parsing, list columns, owner-only actions, shared monitoring link, and truthful states.
 
@@ -92,7 +90,7 @@ and the remaining release gates live in [`tasks/todo.md`](../../../tasks/todo.md
 
 ### Task 6: Farmer owned/shared sources and shared monitoring
 
-**Files:** Farmer routes/sidebar/pages, shared monitoring container, tests, integration guide, and release notes.
+**Files:** Farmer routes/sidebar/pages, shared monitoring container, tests, integration guide, and tài liệu bàn giao.
 
 **Interfaces:** Reuses Task 5 parser/source components and existing latest/history services. Farmer sees owned and shared sources; only owned rows expose manage/reveal actions.
 
@@ -103,7 +101,7 @@ and the remaining release gates live in [`tasks/todo.md`](../../../tasks/todo.md
 
 ### Task 7: Client cleanup and final Settings gate
 
-**Files:** Client navigation/pages, account Settings page, route tests, integration guide, release notes, and browser evidence.
+**Files:** Client navigation/pages, account Settings page, route tests, integration guide, tài liệu bàn giao, and browser evidence.
 
 **Interfaces:** Client upstream-source sharing stays absent. Settings contains only account information, change password and logout.
 

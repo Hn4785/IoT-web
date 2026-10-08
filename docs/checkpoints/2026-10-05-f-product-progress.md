@@ -7,7 +7,6 @@
 Owner scope: F7-F10 and local F-product, no GitHub push or Pi change until the
 owner's F publishing gate. No fixture/sample database is delivery data.
 Canonical issue status: [backend issue ledger](../reviews/2026-09-04-backend-follow-up.md).
-External tracking: only Google Sheet `Test`, tab `Trung`, STT 40-47; no new Pi issues.
 
 ## F10 backend — complete locally
 
@@ -97,12 +96,7 @@ unit verification is not claimed as successful end-to-end download.
 
 ## Status reconciliation and delivery boundary
 
-- F0-local and F7-F10/F-product-local are checked in the canonical TODO; verified
-  Sheet STT 40-47 move to fixed in the issue ledger with their original numbers.
-- Tab Trung STT 40-47 was read back after the update: all eight status dropdowns
-  are Đã xử lý, retest date is 05/10/2026, owners and other form columns are unchanged.
-  Misaligned F10 notes were moved back to STT 46/47; orphan notes on blank row 48
-  were cleared without deleting a row or changing the Linh tab.
+- F0-local and F7–F10/F-product-local are verified in the task index.
 - FE-1/FE-3/FE-4 are implementation-complete. FE-2/FE-5/FE-6/QA-1 and broad browser
   acceptance remain under F16, not silently closed by these scoped checks.
 - F11 onwards and D-production/F1-target remain open; receiving-team server,

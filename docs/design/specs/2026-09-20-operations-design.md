@@ -14,7 +14,7 @@ are still unspecified. Accepted backup objectives: RPO 24h, RTO 4h, 7 daily and
 4 weekly copies; implementation and restore evidence must still satisfy them.
 Final target clarified on the same date: a normal server-hosted website. Pi/local
 is for development/team testing; its acceptance is not website release acceptance.
-The receiving team owns deployment and actual production target acceptance. Codex
+The receiving team owns deployment and actual production target acceptance. The development team
 does not provision/configure their server. A deployment guide is a separate handoff.
 
 ## 1. Objective

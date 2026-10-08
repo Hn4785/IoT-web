@@ -590,7 +590,7 @@ src/alert-config/evaluation/   pure decision logic and scheduled orchestration
 src/notifications/             in-app notification contract and persistence
 prisma/schema.prisma           durable Phase C state and invariants
 test/                          HTTP/database integration fixtures where needed
-docs/superpowers/specs/        approved design
+docs/design/specs/        approved design
 ```
 
 Contracts use Zod at HTTP and environment boundaries. Internal decisions use

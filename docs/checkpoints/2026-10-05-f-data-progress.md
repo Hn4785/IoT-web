@@ -64,9 +64,8 @@ write-failure regressions failed before the fix and the 15-test collector bounda
 suite then passed. A retention boundary fixture was made independent of the current
 minute so an incomplete-hour assertion stays deterministic.
 
-Antigravity's four-file OpenAPI slice was independently inspected/imported and
-tested after two bounded correction rounds (334 changed lines; no worker commit,
-push or automatic merge). Browser/client latest/history schemas now agree, and
+The OpenAPI change was reviewed and verified. Browser/client latest/history
+schemas now agree, and
 existing route/auth/query/cursor metadata remains intact. Independent read-only
 reviews checked storage fencing/migration, runtime failure paths and measurement
 target safety; their findings were reproduced/addressed, not accepted on trust.

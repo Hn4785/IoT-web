@@ -6,29 +6,14 @@ are verified. Recorded 2026-10-06 release: backend 93 files/621 tests, frontend
 242 tests and isolated HTTP/browser acceptance. BE source/CI follow-up `ec02462`;
 API runtime `26df9ddc20c41aee250d7be3ef4815908ed4ebf4`, web runtime `aea78f5-arm64`.
 Source/docs revisions and deployed runtime identities are intentionally distinct.
-See the [single release record](https://github.com/Hn4785/IoT-web/blob/FE/docs/internal-release-notes.md),
+See the handover report (provided separately, not in Git),
 [task index](todo.md) and [issue ledger](../docs/reviews/2026-09-04-backend-follow-up.md).
 Live recovery/backfill and receiving-team target gates remain separate.
-Follow-up owner authorization: publish only completed F-data logic to Git/Pi for
-internal testing, preserving existing data and applying its two additive migrations.
-Latest owner instruction (2026-10-06): finish applicable F11-F17 and outstanding
-FE/QA, fix the GitHub dependency-audit failure, and publish verified BE/FE code
-to the existing Git branches and Pi. This supersedes the earlier local-only hold.
-Codex coordinates and reviews; bounded Antigravity/subagents implement code.
-Never publish sample/test databases or overwrite Pi data. Formal handoff paperwork
-and the receiving team's website deployment remain separate.
-Publish to the existing BE/FE branches, not a separate public test branch. All
-future F/FE releases transfer verified system logic, never sample/fixture/test
-databases to Pi/server. Historical F-data follow-up: BE de466ea ran on Pi with additive
-migrations 12/13 and genuine latest readings. Raw-history validation currently
-reports invalid; live backfill coverage remains unverified. See the single release
-record in D:/IoT-web/docs/internal-release-notes.md. This scoped BE release was
-reconciled before the combined D/F/FE push, without force-push. The verified
-2026-10-06 runtime rollout is recorded in the same release notes, not another manual.
-
-> For agentic workers: use superpowers:executing-plans for coordination, one approved
-> slice at a time. Codex plans/reviews; project code follows the bounded Antigravity
-> workflow in AGENTS.md. This roadmap is not an executable handoff or blanket consent.
+The verified code is published on the existing BE/FE branches. Runtime images
+exclude sample/test databases and credentials; deployment must preserve existing
+data. The recorded Pi release applied the two additive F-data migrations and
+stored genuine latest readings. Raw-history backfill remains limited by the
+open empty-window P2. Receiving-team production acceptance is separate.
 
 ## Goal and confirmed deployment model
 
@@ -45,7 +30,7 @@ The owner chose data transfer when needed, not bidirectional Pi/cloud sync.
 Two separately deployed copies are not automatically synchronized or one database.
 
 Delivery ownership clarified 2026-10-05: the receiving team deploys the website.
-Codex completes/verifies the app and reproducible handoff assets, not their server,
+The development team completes/verifies the app and reproducible handoff assets, not their server,
 domain, TLS or infrastructure. The deployment guide is a separate deliverable.
 Earlier intent-driven automatic deployment is no longer required for this delivery.
 Do not infer permission to access or change a server from this plan.
@@ -83,15 +68,14 @@ station-data provides measurements, alert-config consumes eligible samples,
 operations owns deployment/recovery.
 
 Read the relevant existing specs before each slice:
-docs/superpowers/specs/2026-09-02-station-data-design.md and
-docs/superpowers/specs/2026-09-20-operations-design.md.
+docs/design/specs/2026-09-02-station-data-design.md and
+docs/design/specs/2026-09-20-operations-design.md.
 Station-data section 16 is the approved local F-data storage/API/collection contract
 (owner acceptance 2026-10-05). Earlier persistent-storage exclusions are superseded
 only within that approved scope; receiving-team deployment gates remain separate.
 
-B/C owner acceptance on 2026-09-30 stays closed. The single release record,
-D:/IoT-web/docs/internal-release-notes.md (2026-10-05), records BE 6262e80/FE 089a116
-on Pi and FE 181/BE 427 passing tests. These are prior evidence, not fresh live checks.
+B/C owner acceptance on 2026-09-30 stays closed. The historical 2026-10-05
+rollout used BE 6262e80/FE 089a116 on Pi, with FE 181/BE 427 passing tests. These are prior evidence, not fresh live checks.
 The four pre-existing formatting failures were cleared in 74aa0c3. Root verification
 after durable latest implementation passed pnpm verify and 436/436 tests (72 files).
 Fixture browser QA and container health do not prove complete role E2E.
@@ -138,9 +122,7 @@ unchanged. Audit success is not public deployment or production acceptance.
 - TDD per approved slice: expected failing behavioral test -> minimal code -> green
   connected tests -> repository gates -> independent review.
 - Aim for <=5 changed files per code slice; split candidate groups before dispatch.
-- Every code handoff uses both delegation skills and budget policy: 20% reserve,
-  exact paths/commands/limits/timeouts, <=4 mandatory skills, worker no commit/push/merge,
-  <=2 correction rounds. Candidate paths below are not permission grants.
+- Changes are reviewed independently and verified within their approved scope.
 - This iteration authorizes application/data work, handoff assets and a verified
   Git/Pi release; the receiving team's server is not an autonomous deploy target.
   Receiving-team deployment/acceptance remains separate; destructive restore and
@@ -151,8 +133,7 @@ unchanged. Audit success is not public deployment or production acceptance.
 ### F0 — Baseline and quality debt
 
 Depends: none. Split docs reconciliation and formatting into separate S slices.
-Candidates: tasks/plan.md, tasks/todo.md, current issue ledger; four formatting files
-named in the release record.
+Candidates: tasks/plan.md, tasks/todo.md, current issue ledger; the four previously identified formatting files.
 Acceptance: B/C remains closed; Audit implementation vs browser evidence distinguished;
 CI/config discrepancies reproduced before being declared bugs. No demo/seed rewrite.
 Verify: evidence/diff review; formatting-only slice runs pnpm verify plus connected tests.
@@ -295,7 +276,7 @@ Candidates: secret-free deployment configuration and validation in F11 assets;
 deployment-guide content is separate. No natural-language target resolver is required.
 Acceptance: team can select the server profile and validate CPU/Docker/storage/origin,
 release/migration compatibility and required secrets before writing. Missing/ambiguous
-target or existing-data conflict stops. Codex does not access/provision their host.
+target or existing-data conflict stops. The development team does not access/provision their host.
 Verify: local profile/config validation; actual target preflight belongs to the team.
 
 ### F13 — Receiving-team apply, smoke and application rollback
@@ -336,7 +317,7 @@ No multi-instance/shared limiter/Redis unless separately approved.
 ### F16 — Remaining TODO regression and live recovery
 
 Depends: data/product/deploy gates; F15 before public acceptance. S/M by role/scenario.
-Candidates: focused BE/FE/browser tests, existing issue ledger and single release record.
+Candidates: focused BE/FE/browser tests, existing issue ledger and handover report.
 Acceptance: close FE-2, FE-5 acceptance, FE-6, QA-1/QA-2 with evidence: login/password/
 refresh/logout/key lifecycle, user management/Super Admin transfer, audit scope/filter/
 cursor, grant removal, responsive/accessibility and actual existing CSV download.
@@ -352,7 +333,7 @@ remains unavailable, keep only that live gate open; do not fabricate a passing r
 ### F17 — Final technical acceptance
 
 Depends: all applicable slices. S acceptance, no new feature.
-Candidates: tasks/todo.md and existing internal release record.
+Candidates: tasks/todo.md and the current checkpoint.
 Local/Pi complete only after applicable data/product/deploy/QA gates; website complete
 only after its additional F15 target-specific security acceptance.
 Record exact version/platform/limits; unit tests and healthy containers alone do not
@@ -403,176 +384,38 @@ fixtures cannot close live/team-owned gates.
 
 ## H. Handoff documentation plan
 
-Owner request: 2026-10-06. This extends the same final-delivery plan;
-it does not replace F or reopen accepted B/C. The original acceptance criteria
-remain below; the latest authoring/review status is in `tasks/todo.md` and the
-single release record. Receiver acceptance is separate from completed writing.
-Preparation was recorded on 2026-10-07. Owner requested drafting through H7 on
-2026-10-08, all Word text black and docs published to Git.
-Codex coordinates/final-reviews. Antigravity may draft bounded code-grounded sections
-or cross-check Codex drafts in an isolated worktree; never auto-merge worker claims.
+Updated: 2026-10-08. Deliver one complete Vietnamese Word document separately.
+The handover report must not be committed or pushed to Git.
+All writing is black. The report is self-contained; repository paths identify
+the corresponding source, not a substitute for the report content.
 
-Updated: 2026-10-08. The source entry points below remain canonical; the FE
-handover report is the controlled summary/inventory and source for one Word
-export, not a duplicate API/manual contract. No Pi redeployment for docs-only edits.
-Use the receiving company's template if supplied. Otherwise use the controlled
-handover structure below; it is a project-sized practice, not a claim of ISO/OWASP
-certification or a universal company template.
+### Content and review
 
-### H-prep — Agreed handover structure and required-asset matrix
+- H0: Freeze source identity: BE `ec02462`, FE `5dbeea53`; distinguish source
+  commits from the recorded runtime image tags.
+- H1: Describe scope, architecture, asset inventory and excluded features.
+- H2: Document roles, authentication, API routes, data collection and storage.
+  Include all 27 tables, 206 scalar columns, 14 enums, 32 foreign keys and
+  13 migrations, with readable ERD panels and a data dictionary.
+- H3: Explain user workflows, units, timestamps, stale data and incomplete history.
+- H4: Provide ordinary local installation commands and separate server,
+  backup/restore, update and rollback procedures.
+- H5: Record dated test evidence, the remaining P2 history bug and accepted
+  limitations. Do not include the full fixed-issue ledger.
+- H6: Cross-check descriptions against source, schema, scripts and test paths.
+  Verify every rendered page, black text, pagination and absence of secrets.
+- H7-docs: Deliver the reviewed Word report separately and update technical docs.
+  Do not deploy runtime or change the database for documentation-only edits.
+- H7-receiver: The receiving team fills names, date, accepted exceptions and
+  sign-off, then verifies reproduction on its chosen target.
 
-Keep six content groups: summary/acceptance, technical architecture/API/database,
-installation/operation/recovery, user guide, test results/open issues, and security.
-These are content groups, not six mandatory new files or a manual per job title.
-Retain the four maintained document entry points below and link existing authoritative
-specs, OpenAPI, migrations, checkpoints and release notes instead of duplicating them.
-H0 selected one professional black-text Word report because no company template
-was supplied. FE `docs/handover/README.md` controls the export and links the four
-maintained guides. No screenshot is claimed as live-provider evidence.
+The report has ten chapters: overview; architecture; functions and permissions;
+database/ERD; API; local installation; deployment/operations; usage;
+tests/results; outstanding issues/security/acceptance.
 
-| Required asset                   | Planned authoritative location / evidence                 | Acceptance during drafting                                                                                                                                                                        |
-| -------------------------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Source code                      | Git BE/FE revisions; H7 inventory/index                   | Exact repository/branch/commit and matching runtime image digest; source and reproducible tests, not generated output, secret files or disposable fixtures/data.                                  |
-| Database                         | H2 schema/ERD/migrations; H4 recovery                     | Schema/migration order and data meaning are linked; any real-data backup transfer needs approved scope, encryption and named custodians. Never export production data merely to fill a checklist. |
-| Images, files and resources      | FE tracked public/assets and guide evidence; H7 inventory | Actual relative path, purpose and applicable ownership/license; screenshots are masked and distinguish real-source from isolated QA evidence.                                                     |
-| Configuration and environment    | Tracked example files; H4 configuration table             | Required/optional variables, safe examples and runtime requirements; real passwords/keys use a separate approved secure channel, never Git or the report.                                         |
-| Dependencies and libraries       | BE/FE package manifests and lockfiles; H0/H5              | Exact runtime/package-manager requirements, install method, third-party notices where applicable and dated dependency-audit scope.                                                                |
-| Installation and deployment      | H4 existing delivery/recovery and local runbook           | One recommended ordinary installation path per profile with verified commands, prerequisites, expected output, failure/stop conditions and safe rollback.                                         |
-| Test cases and results           | H5 linked tests/checkpoints/release record                | Requirement-to-case/result traceability, version/platform/date and pass/fail/not-run status; automated, manual, fixture and live evidence remain distinct.                                        |
-| Remaining bugs and functionality | Canonical issue ledger and scoped Trung entries; H5/H7    | Severity/impact, actual status, evidence, workaround and responsible party; distinguish defects, excluded features and pending receiving-target acceptance.                                       |
+### Delivery limits
 
-Document-control fields: title/identifier, version, applicable BE/FE revisions,
-last-reviewed date, writer/reviewer, approval status and change history. Use stable
-repo-relative links or revision-pinned repository URLs; a local Windows drive path
-is not a portable receiver link. The inventory row format is asset/document, path,
-revision/digest, scope/status, owner and receiver confirmation. Sign-off requires
-the named receiving party; a prepared checkbox or running Pi is not formal acceptance.
-Mark absent/not-applicable assets explicitly with a reason. Keep draft, reviewed
-and receiver-accepted states separate, with preparer/reviewer/receiver dates and
-accepted exceptions; unknown receiver details remain unassigned rather than invented.
-
-Writing order: H0 baseline/template/inventory -> H1 scope -> parallel bounded H2/H3
-and H4 sections -> H5 evidence/security reconciliation -> H6 cross-review -> H7
-index and receiver acceptance. Review after H1/H2, after H3/H4, and before H7 delivery.
-Codex writes/co-ordinates scope and operations and final-reviews; Antigravity may
-write independent API/data/user-guide slices or check Codex facts through the bounded
-workflow after fresh budget review. QA/SDET contributes test reproducibility;
-Security reviews access/secret/recovery limits. No worker may commit, push, merge,
-delete documents or expand code scope automatically.
-
-### H0 — Freeze evidence and choose a small document set
-
-Depends: applicable F/FE verification and Git/Pi release evidence.
-Files: `tasks/todo.md`, FE `docs/internal-release-notes.md`, latest BE checkpoint.
-Accept: exact BE/FE commits, architecture, migration list, verification commands,
-limits and unresolved receiving-team decisions are linked, without secret values.
-Read the current working diff before drafting: there are pre-existing unrelated edits.
-Released 2026-10-06 evidence does not certify those edits. Preserve them, distinguish
-the verified release from the working copy, and resolve any facts that diverge before
-using them in a document. Do not roll back or silently publish someone else's work.
-Review documents by meaning and SHA256; keep dated specs/ADRs/checkpoints as history.
-Delete only proven duplicate/obsolete files after fixing inbound links; record paths
-and Git recovery commit. Inventory found no exact duplicates, so no blanket deletion.
-
-### H1 — Scope and system overview
-
-Files: FE `README.md`, BE `CAPABILITY-MAP.md` (links, not a second module spec).
-Writer: Codex; Antigravity cross-checks page/module references.
-Include purpose, actors/role matrix, FE → API → PostgreSQL/provider flow, durable
-readings, single authoritative Pi OR server, accepted boundaries and exclusions.
-Accept: a newcomer can distinguish supported monitoring from device commands,
-SMS/email, predictive advice, multi-instance and two-way sync, which are excluded.
-Verify every capability against routes/DTOs/page navigation; use real masked screenshots
-only after source recovery, or explicitly label isolated screenshots as QA evidence.
-
-### H2 — Backend/API and database section
-
-Files: FE `docs/integration/README.md`, links to BE module specs and `prisma/schema.prisma`.
-Writer: bounded Antigravity per API/data slice; Codex reviews authorization/schema facts.
-Include endpoint/auth/error conventions, roles, API-key lifecycle, database diagram,
-13 migrations, raw 90-day retention, separate snapshot, dedup/fetch fencing,
-provenance/coverage, collector budgets and fresh-only alerts.
-Accept: each statement cites its actual controller/contract/schema/function and test;
-no database records or credentials copied into documents. Existing specs remain canonical.
-Verify with `pnpm release:check` on a non-production fixture and contract tests;
-compare field names with `/docs-json`, not handwritten alternate DTOs.
-
-### H3 — User and tester guide
-
-Files: FE `README.md` and `docs/integration/README.md` (extend existing sections).
-Writer: bounded Antigravity; Codex checks page wording and access behavior.
-Include Admin/Super Admin, Farmer, Client Developer journeys; adding/sharing sources,
-station selection, latest vs history, timezone/units, stored/stale/empty/denied states,
-CSV, Alert Center/Notifications and safe one-time secret acknowledgement.
-Accept: concrete action → expected screen/result → recovery action for each journey.
-Verify using desktop/390px browser tests and manual keyboard/visual checks; no demo
-seed is part of onboarding. Do not use User Management as the source-sharing screen.
-
-### H4 — Deployment, operation and recovery guide
-
-Files: BE `docs/operations/DELIVERY-RECOVERY.md`, `LOCAL-RUNBOOK.md`.
-Writer: Codex; Antigravity checks named script flags/container paths independently.
-Include prerequisites, explicit profile/preflight, immutable image digests, migration
-runner, initialization, HTTPS/Secure cookie boundary, same-origin reverse proxy,
-health/readiness, source outage, logs, backup encryption/key custody and isolated restore,
-one-target cutover, compatible application rollback, secret rotation and troubleshooting.
-Accept: commands have working directory, prerequisites, expected exit/status and stop
-condition; no `down -v`, reset, production fault injection or automatic restore over data.
-Use ordinary Docker/Compose and existing verified project scripts. Explain only the
-minimal normal setup/start/status/logs path first; backup/restore/update/rollback are
-separate procedures. Keep AI handoff, worktree management and internal fixture/test
-orchestration out of the receiver's installation steps. Separate local/Pi test and
-server profiles without weakening HTTPS, secret handling or data-preservation gates.
-Verify every executable block against disposable environments. Record RPO 24h/RTO 4h
-and 7 daily/4 weekly objectives as objectives until destination/owners/schedule are assigned.
-
-### H5 — QA and known limitations
-
-Files: latest BE checkpoint, canonical backend issue ledger, FE release notes.
-Writer: Codex; Antigravity checks test names and reproducibility, no invented pass counts.
-Include version/platform/date, automated vs manual vs live evidence, regression matrix,
-security audit/CI links, backup/rollback results and receiving-team open gates.
-Security is an explicit reviewed section: auth/session/scope/API keys, credential
-storage and recovery, verified audits and accepted exclusions such as MFA/SSO.
-Dependency audit is not a penetration test or ASVS certification. Retention of up to
-90 days is not evidence of 90 populated days; RPO/RTO are accepted objectives, not
-measured achievements. Carry the unobserved fresh provider-notification and target
-backup/TLS/capacity gates forward without replacing them with fixture results.
-Accept: fixed issues have RED/GREEN evidence and actual retest date; STT/status follow
-the Trung sheet's existing 15-column form (A through O). No Pi infrastructure bugs in that bug list.
-If Google Sheet cannot be verified, keep the same form locally and clearly state sync pending.
-
-### H6 — Cross-review and small corrective changes
-
-Depends: H1-H5 drafts. Review per section, not one huge context handoff.
-Codex-written facts receive independent AG checks; AG-written facts receive Codex review.
-Map suspected unused code to actual callers/contracts before touching it. Fix confirmed
-defects with RED/GREEN tests; remove code only when behavior/API/access does not change.
-Use bounded code handoffs and at most two corrections; no opportunistic broad refactor.
-Re-run affected gates, update the canonical ledger/Trung form and release notes, then
-repeat Git/Pi acceptance only if runtime code changed. Never describe a planned check as passed.
-
-### H7 — Delivery index and receiving-team acceptance
-
-Files: FE `README.md` links, BE `tasks/todo.md`, FE release notes.
-Accept: one navigation index to the four maintained documents, specs and evidence;
-receiver can build, start, read stored data, test permitted roles and rehearse recovery.
-Receiver fills target/domain/TLS/proxy, backup destination/custodian/restore owner,
-capacity limits and live-provider recovery evidence. Those decisions are not guessed
-by an intern or an agent. Formal sign-off stays unchecked until the receiving team accepts.
-
-Writing pattern for each section: purpose/audience → supported behavior → prerequisites
-→ numbered procedure with expected results → failure/recovery → code/evidence links
-→ limits/owner. Backend/Database, Frontend/UI, QA/SDET, Security and DevOps/System
-perspectives are required; Tech Lead/Solution Architect contribute the overview and
-cross-review. PM/BA/PO are acceptance stakeholders, not separate technical manuals.
-UI/UX gets a practical screen guide, not a new design-system deliverable.
-
-Primary references for command review:
-[Docker single-server Compose](https://docs.docker.com/compose/how-tos/production/) and
-[PostgreSQL 17 SQL dump/restore](https://www.postgresql.org/docs/17/backup-dump.html).
-These explain tooling; project-specific policies and actual acceptance remain above.
-Handover practice references: [Google SRE service onboarding/readiness](https://sre.google/sre-book/evolving-sre-engagement-model/)
-for service-specific review, training and responsibility transfer, and
-[Microsoft ADR/document repository guidance](https://learn.microsoft.com/en-us/azure/well-architected/architect-role/architecture-decision-record)
-for decision rationale, status and a single authoritative document repository.
+The documentation task does not fix the open P2 empty-history bug or certify
+a new live-provider notification, the receiving server or production readiness.
+Keep the existing F/live/target gates open. Do not include secrets, database dumps,
+sample data, drafts or rendering artifacts in the delivery.

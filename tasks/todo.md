@@ -17,7 +17,7 @@ manuals are separate. Owner authorized Git/Pi publication on 2026-10-06 after
 independent review and verification; the earlier local-only hold is superseded.
 Final target clarified 2026-10-05: server-hosted website; Pi/local remains development
 and team testing. Server/domain/ingress/backup gates must pass before website launch.
-The receiving team performs deployment. Codex owns app/data verification and handoff
+The receiving team performs deployment. The development team owns app/data verification and handoff
 assets; deployment instructions are separate. Infrastructure gates are team-owned,
 not reasons to claim the app is already production-ready or auto-deploy a server.
 
@@ -119,7 +119,7 @@ Evidence: [`2026-09-02-phase-a.md`](../docs/checkpoints/2026-09-02-phase-a.md).
       editor, read-only shared-access display, protected account deletion,
       Farm/Plot select-or-create and the simplified direct-entry source form.
       Follow
-      [`2026-09-28-soil-source-admin-checkpoint-design.md`](../docs/superpowers/specs/2026-09-28-soil-source-admin-checkpoint-design.md)
+      [`2026-09-28-soil-source-admin-checkpoint-design.md`](../docs/design/specs/2026-09-28-soil-source-admin-checkpoint-design.md)
       in the listed delivery order; commit FE and BE locally and do not push.
 - [x] B-alert-center-shared: Admin and Farmer now share one Alert Center with
       confirmed canonical soil field units/revisions, source-owner rule
@@ -213,7 +213,7 @@ Fresh image/restore evidence: [D revalidation](../docs/checkpoints/2026-10-05-d-
 These D and September checkpoints are retained historical evidence, not current
 F-product counts. F-product baseline: backend 89 files/557 tests and frontend
 218 tests, with verification linked below; coverage was not rerun for that checkpoint.
-Latest F/FE release evidence is maintained in FE `docs/internal-release-notes.md`.
+Latest F/FE evidence is summarized here and in the handover report.
 
 ## Frontend and tester integration order
 
@@ -266,7 +266,7 @@ and must not duplicate the full contract.
 
 1. Publish the reviewed H documentation and black-text Word report. The verified D/F/FE
    rollout and final web follow-up reached Git/Pi on 2026-10-06; smoke evidence
-   remains in the [single release record](https://github.com/Hn4785/IoT-web/blob/FE/docs/internal-release-notes.md).
+   remains in the handover report (provided separately, not in Git).
    The 2026-10-08 docs publication does not change runtime or authorize Pi access.
 2. Keep the known empty-history-window/backfill limitation visible in the
    [issue ledger](../docs/reviews/2026-09-04-backend-follow-up.md). Raw coverage
@@ -281,7 +281,7 @@ and must not duplicate the full contract.
 
 The receiving team deploys the server website using verified handoff assets.
 Pi/local supports development/team testing; data transfer is explicit and never
-bidirectional. Codex does not provision or deploy their host. The formal deployment
+bidirectional. The development team does not provision or deploy their host. The formal deployment
 guide is a separate deliverable.
 
 Detailed acceptance, candidate files, dependencies and verification are in
@@ -307,7 +307,7 @@ Detailed acceptance, candidate files, dependencies and verification are in
       Local fixture acceptance, not live-provider/Pi/server certification:
       [checkpoint evidence](../docs/checkpoints/2026-10-05-f-data-progress.md).
       Original 2026-10-05 checkpoint applied migration only to local `iot_test`
-      and did not include F7. The later combined rollout is in the release record;
+      and did not include F7. The later combined rollout is in the handover report;
       it still does not prove full live backfill.
 - [x] F7: Show exact-station last-known latest data; isolate endpoint failures.
       Independent endpoints, original timestamps, request/route fencing and
@@ -363,50 +363,33 @@ own gates pass.
 
 ## H. Handover documentation
 
-Owner approved drafting through H7 and publishing docs on 2026-10-08. Logic,
-honest QA results and remaining issues are primary; operations is a short
-reproducibility reference. Word text is black. No runtime/schema/DB change or
-Pi redeployment in this documentation task. Details:
-[handover plan](plan.md#h-handoff-documentation-plan).
+Updated: 2026-10-08. The handover is one detailed Vietnamese Word report with
+black text. This documentation update does not change runtime/schema/data or
+redeploy Pi. See the [handover plan](plan.md#h-handoff-documentation-plan).
 
-- [x] H-prep: Record the six content groups, all eight required asset categories,
-      portable links/document-control fields, ordinary installation-command policy,
-      bounded writer/reviewer roles and checkpoints. Only the plan is prepared.
-- [x] H-maintenance: Audit existing docs and disposable copies, reconcile current
-      statuses/links and preserve historical evidence before manual drafting.
-      2026-10-07: 43 tracked Markdown files, no exact duplicates or broken relative
-      file/heading links. Local ledger retains 18 rows, STT 48–65, all 15 columns.
-      No proven unused backup copies removed; protected rehearsal material and
-      other worktrees remain untouched. This is doc maintenance, not H0–H7 completion.
-- [x] H0: Reconcile current working edits against the verified release, freeze
-      revisions/evidence, and confirm receiving template/export format and inventory.
-      BE `ec02462` and FE `5dbeea53` are the frozen source baselines; image/tag
-      identity is recorded separately. No company template supplied: one controlled
-      Vietnamese Word report, all writing black, backed by maintained Markdown.
-- [x] H1: Draft scope/architecture and supported/excluded feature/role overview.
-- [x] H2: Draft linked backend/API/database content without duplicating contracts.
-- [x] Checkpoint H1/H2-docs: Review scope, schema/API facts, links and release identity.
-- [x] H3: Draft role-based user journeys, expected outcomes and recovery actions.
-- [x] H4: Draft simple installation plus operation/backup/restore/rollback guide.
-- [x] Checkpoint H3/H4-docs: Cross-check commands against scripts/Compose, page steps,
-      secret masking and local/demo versus receiving-server boundaries. Fresh
-      preflight/backup unit tests: 40/40; Compose configuration validation passes.
-      Reuse the dated isolated rehearsal/browser evidence; the entire rewritten
-      command set and receiving-host installation were not rerun during authoring.
-- [x] H5: Consolidate test traceability, security evidence, known issues and open gates.
-- [x] H6: Independently review bounded sections; reproduce suspected defects before
-      any separately scoped code correction. No broad cleanup or automatic merge.
-      Antigravity H2/H3 received one correction round and independent source review;
-      H6 cross-review addressed test paths, key/recovery wording and checkout identity.
-      No new confirmed runtime defect or runtime change in this documentation task.
-- [x] H7-docs: Complete the portable asset/document index and reviewed Word export.
-      FE `docs/handover/README.md` links four maintained guides, eight asset categories,
-      dated QA/security evidence and the canonical issue ledger. Word export is
-      9 pages, with linked contents and black text; all pages visually reviewed.
-- [ ] H7-receiver: Receiving party fills names, date, accepted exceptions and sign-off.
-- [ ] Checkpoint H-delivery: Receiver can follow the installation/user/recovery steps;
-      inventory paths/revisions match, secrets are absent and open gates stay explicit.
+- [x] H-prep: Agree on scope, required assets and a single self-contained document.
+- [x] H-maintenance: Reconcile current docs; remove internal coordination notes
+      and obsolete handover duplication while preserving technical decisions.
+- [x] H0: Record frozen BE `ec02462` and FE `5dbeea53` source baselines and
+      distinguish them from runtime image identity.
+- [x] H1: Describe scope, architecture, inventory and excluded features.
+- [x] H2: Describe API, roles, data flow, all 27 tables/206 scalar columns,
+      14 enums, 32 foreign keys and 13 migrations.
+- [x] H3: Explain role-based usage, time/units, stale data and history coverage.
+- [x] H4: Include local installation and server/backup/restore/rollback procedures.
+- [x] H5: Record dated tests, security limits and only the remaining issues.
+- [x] H6-content: Cross-check source/schema/API/scripts; correct ambiguous wording
+      about credentials, bootstrap and retention.
+- [x] H6-layout: Review all 57 rendered pages and verify black text, the full
+      schema dictionary, ERD, migration inventory and internal contents links.
+- [x] H7-docs: Prepare the reviewed single Word report and cleaned docs for delivery.
+      The updated report is delivered separately, never committed or pushed;
+      the issue ledger retains only
+      the open P2. Drafts, QA renders, sample data and internal release notes
+      are excluded from delivery.
+- [ ] H7-receiver: Receiving party fills names, date, exceptions and sign-off.
+- [ ] Checkpoint H-delivery: Receiving party verifies reproduction and accepts
+      assets on its chosen target.
 
-H documentation is prepared and reviewed, not receiver-accepted. Keep the existing
-F/live/production gates unchanged; neither a report nor a running demo closes the
-empty-history P2, fresh-provider notification evidence or receiving-target acceptance.
+Document completion does not close the empty-history P2, fresh-provider
+notification evidence or the receiving team's production gates.

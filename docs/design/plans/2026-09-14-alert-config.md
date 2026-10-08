@@ -6,7 +6,7 @@
 
 Date: 2026-09-14
 Status: Complete — Phase C-core verified locally; baseline commit pending
-Spec: `docs/superpowers/specs/2026-09-02-alert-config-design.md`
+Spec: `docs/design/specs/2026-09-02-alert-config-design.md`
 
 ## Delivery boundary
 

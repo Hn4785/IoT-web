@@ -6,11 +6,10 @@ File này là hướng dẫn thao tác nhanh cho backend `iot-api`. Chạy các 
 cd D:\IoT-api
 ```
 
-Đường dẫn trên là ví dụ sau khi clone. Chọn checkout có `package.json`;
-checkout final trên máy hiện tại là `D:/IoT-api-final-release-local`.
-Không phụ thuộc vào thư mục worktree cũ. Đối chiếu phiên bản và phạm vi kiểm chứng
+Đường dẫn trên là ví dụ sau khi clone. Chọn thư mục backend có `package.json`.
+Có thể đặt source ở vị trí khác, không cần dùng đường dẫn của máy phát triển. Đối chiếu phiên bản và phạm vi kiểm chứng
 tại [task index](../../tasks/todo.md) và
-[release record](https://github.com/Hn4785/IoT-web/blob/FE/docs/internal-release-notes.md).
+tài liệu bàn giao gửi riêng (không lưu trong Git).
 
 ## 1. Chuẩn bị lần đầu
 

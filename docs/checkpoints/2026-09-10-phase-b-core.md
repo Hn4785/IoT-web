@@ -8,7 +8,6 @@ Initial core evidence: 2026-09-10
 
 Local completion accepted: 2026-09-30
 
-Branch: `codex/integration-core`  
 Implementation commits: `5802f1e..eeadfb4`  
 Status: **complete locally**. The product owner accepted the integrated
 Admin/Super Admin → Farmer → Client Developer flows on 2026-09-30. Deployment

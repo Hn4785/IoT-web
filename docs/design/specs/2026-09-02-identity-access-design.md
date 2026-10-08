@@ -472,7 +472,7 @@ test/
   integration/auth/
   integration/api-keys/
 docs/
-  superpowers/specs/
+  design/specs/
 ```
 
 Exact task-level files and commit boundaries belong to the implementation plan.

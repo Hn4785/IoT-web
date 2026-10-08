@@ -4,15 +4,13 @@
 > checkpoint/plan's dated scope. Current completion and release applicability
 > are in [the task index](../../../tasks/todo.md); do not rerun old seed or rollout steps.
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
-
 **Goal:** Build a secure NestJS integration foundation with validated configuration, a public health contract, normalized errors, and a private Weather API client.
 
 **Architecture:** A NestJS 12 application runs on Fastify 5. Configuration is validated once at startup; the Weather client accepts typed queries, calls only its configured upstream origin, validates every response, and returns typed safe failures. No station data is publicly exposed in this module.
 
 **Tech Stack:** Node.js 24, TypeScript 6, pnpm 11, NestJS 12, Fastify 5, Zod 4, Vitest 4, ESLint 10, Prettier 3.
 
-**Spec:** `docs/superpowers/specs/2026-08-30-integration-core-design.md`
+**Spec:** `docs/design/specs/2026-08-30-integration-core-design.md`
 
 ## Global Constraints
 
@@ -1319,7 +1317,7 @@ git commit -m "docs: publish integration-core contract"
 **Files:**
 
 - Modify only if verification finds an evidenced defect: files owned by Tasks 1-9.
-- Modify: `docs/superpowers/specs/2026-08-30-integration-core-design.md` status after every gate passes.
+- Modify: `docs/design/specs/2026-08-30-integration-core-design.md` status after every gate passes.
 
 **Interfaces:**
 
@@ -1390,11 +1388,11 @@ Change spec status from `Approved by user` to `Implemented and verified` only
 after Steps 1-4 pass.
 
 ```powershell
-git add docs/superpowers/specs/2026-08-30-integration-core-design.md
+git add docs/design/specs/2026-08-30-integration-core-design.md
 git commit -m "docs: record integration-core verification"
 git status --short --branch
 ```
 
-Expected: clean `codex/integration-core` worktree. Integration into the base branch
+Expected: clean working tree. Integration into the base branch
 is a separate user decision. The next implementation action is to brainstorm and
 approve `identity-access`; do not expose station data as a shortcut.

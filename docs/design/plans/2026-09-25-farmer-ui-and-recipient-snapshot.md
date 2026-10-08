@@ -4,15 +4,13 @@
 > checkpoint/plan's dated scope. Current completion and release applicability
 > are in [the task index](../../../tasks/todo.md); do not rerun old seed or rollout steps.
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
-
 **Goal:** Finish the local Farmer integration, make shared search and responsive layouts honest and usable, and freeze notification recipients at delivery start without deploying to Pi.
 
 **Architecture:** Preserve the existing dirty Farmer work and treat backend DTOs as the source of truth. The shared topbar reads the authenticated inbox and authorized station hierarchy, never static notifications or device mocks. The delivery worker stores a recipient snapshot atomically on first dispatch and then processes that immutable set in bounded batches; current authorization still gates inbox reads.
 
 **Tech Stack:** React 19, TypeScript, Vite, Node test runner; NestJS, Prisma, PostgreSQL, Vitest.
 
-**Spec:** `docs/superpowers/specs/2026-09-02-alert-config-design.md` and `D:/IoT-web/docs/integration/README.md`.
+**Spec:** `docs/design/specs/2026-09-02-alert-config-design.md` and `D:/IoT-web/docs/integration/README.md`.
 
 ## Global constraints
 
@@ -59,7 +57,7 @@
 
 ### Task 4: Recipient snapshot at first dispatch
 
-**Files:** `prisma/schema.prisma`, one migration, `src/notifications/notification-delivery.worker.ts`, `test/integration/alert-config/notification-delivery.spec.ts`, `docs/superpowers/specs/2026-09-02-alert-config-design.md`, issue ledger.
+**Files:** `prisma/schema.prisma`, one migration, `src/notifications/notification-delivery.worker.ts`, `test/integration/alert-config/notification-delivery.spec.ts`, `docs/design/specs/2026-09-02-alert-config-design.md`, issue ledger.
 
 **Interfaces:** Consume existing delivery job and eligible active Admin/Farmer scope; produce persisted `(lifecycleEventId, recipientUserId)` snapshot and resume-safe bounded delivery.
 
@@ -71,7 +69,7 @@
 
 ### Task 5: Cross-role review and handoff
 
-**Files:** `D:/IoT-web/docs/internal-release-notes.md`, backend `tasks/todo.md`, backend issue ledger, only as required by verified outcomes.
+**Files:** `tasks/todo.md`, backend `tasks/todo.md`, backend issue ledger, only as required by verified outcomes.
 
 - [ ] Run the Farmer browser matrix for Dashboard, Soil Dashboard, Historical Analysis, History Report, Alerts/Alert Center, Notifications; test scope loss, stale session, empty/error data, and refresh.
 - [ ] Recheck Admin/Super Admin and Developer boundaries affected by the shared topbar; do not mark any role browser-verified without evidence.
