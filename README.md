@@ -27,7 +27,7 @@ tham khảo để bên nhận tái tạo, không phải yêu cầu triển khai 
 | Tạo/sửa/xóa Farm, Plot, Station trên UI   | Chưa triển khai                                                                  |
 | Khôi phục mật khẩu bằng email             | Chưa triển khai; hiện liên hệ Admin                                              |
 
-Trạng thái và bằng chứng mới nhất ở [release notes](docs/internal-release-notes.md).
+Trạng thái và bằng chứng mới nhất ở tài liệu bàn giao gửi riêng (không lưu trong Git).
 Các số test/checkpoint cũ là lịch sử, không phải kết quả hiện tại. Pi là môi
 trường team test; bên nhận tự triển khai website và nghiệm thu hạ tầng của họ.
 
@@ -180,13 +180,13 @@ Mỗi lỗi cần ghi: role, URL, bước tái hiện, kết quả mong đợi, 
 ## 10. Tài liệu liên quan
 
 - [Hướng dẫn nối frontend–backend](./docs/integration/README.md)
-- [Ghi nhận cập nhật duy nhất](./docs/internal-release-notes.md)
+- tài liệu bàn giao gửi riêng (không lưu trong Git)
 - [Báo cáo và danh mục bàn giao](./docs/handover/README.md)
 
 ## 11. Hướng dẫn theo vai trò
 
 Áp dụng code FE `5dbeea53` và BE `ec02462`. Chi tiết kỹ thuật ở hướng dẫn tích hợp;
-môi trường/giới hạn kiểm chứng ở release record. Kiểm thử reset/transfer/quyền
+môi trường/giới hạn kiểm chứng trong tài liệu bàn giao. Kiểm thử reset/transfer/quyền
 phải dùng database riêng, không dùng dữ liệu đang vận hành.
 
 ### Đăng nhập và tài khoản

@@ -14,7 +14,7 @@
 - Backend contracts and authorization are authoritative; do not invent routes,
   DTO fields, permissions, device state, or sample production data.
 - Keep the single project update record in
-  `docs/internal-release-notes.md`. Add each version there; do not create another
+  `tasks/todo.md`. Record verified scope and evidence there; do not create another
   changelog or per-version update file.
 - Before marking a change complete, check connected API contracts, role routing,
   session behavior, shared UI and relevant tests. Browser-only claims require

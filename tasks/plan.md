@@ -1,8 +1,8 @@
 # Implementation Plan: Client Developer checkpoint
 
 This preserves the completed Client Developer checkpoint, not the current global
-work queue. Current F/FE/release evidence is in
-[the release record](../docs/internal-release-notes.md); remaining work is in the
+work queue. Current F/FE/release evidence is in the
+handover report (provided separately, not in Git); remaining work is in the
 [BE task index](https://github.com/Hn4785/IoT-web/blob/BE/tasks/todo.md).
 
 ## Overview
@@ -47,9 +47,9 @@ Verification: focused Explorer/docs tests, security assertions, and build.
 
 ### Checkpoint: independent audit
 
-- [x] Antigravity performs a read-only review of routing, security, API contracts, empty/error/loading states, accessibility, and design consistency.
-- [x] Codex independently inspects the diff and runs the focused Client test set plus lint/build.
-- [x] Record the checkpoint in `docs/internal-release-notes.md` and commit local only.
+- [x] Perform an independent read-only review of routing, security, API contracts, empty/error/loading states, accessibility, and design consistency.
+- [x] Independently inspect the diff and run the focused Client test set plus lint/build.
+- [x] Record the checkpoint in `tasks/todo.md` and commit local only.
 
 ## Risks and mitigations
 

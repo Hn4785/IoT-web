@@ -202,7 +202,7 @@ trace hoặc raw exception.
 8. Chạy test/build/lint cả hai phía.
 9. Dùng DevTools kiểm tra request thực tế không chứa secret ngoài header/cookie
    đã thiết kế.
-10. Cập nhật `docs/internal-release-notes.md`; chỉ đánh dấu hoàn thành khi có
+10. Cập nhật `tasks/todo.md`; chỉ đánh dấu hoàn thành khi có
     bằng chứng browser hoặc test tự động.
 
 ## 7. Lệnh kiểm tra
@@ -232,7 +232,7 @@ Sau gate tĩnh, chạy browser matrix cho Admin, Farmer và Client Developer tr�
 ## 8. Trạng thái tích hợp hiện tại
 
 Đối chiếu release 2026-10-06 và follow-up CI/docs tại
-[release record](../internal-release-notes.md): FE docs `5dbeea53`, web runtime
+tài liệu bàn giao gửi riêng (không lưu trong Git): FE docs `5dbeea53`, web runtime
 `aea78f5-arm64`, API runtime `26df9dd`. Các chỉnh docs chuẩn bị bàn giao không đổi
 runtime. Nhãn phiên bản docs không phải phiên bản image đang triển khai.
 
@@ -256,18 +256,18 @@ Phase B được đánh dấu hoàn tất local ngày 2026-09-30. Điều hướ
 - Ngưỡng cảnh báo thuộc Alert Center và không điều khiển thiết bị. Các màn hình
   không có contract thật tiếp tục fail-closed, không dựng số liệu hay toggle giả.
 
-Lịch sử phiên bản chỉ ghi tại
-[`docs/internal-release-notes.md`](../internal-release-notes.md); checklist backend
-chỉ ghi tại [task index nhánh BE](https://github.com/Hn4785/IoT-web/blob/BE/tasks/todo.md).
+Phạm vi và kết quả kiểm thử được tổng hợp trong
+tài liệu bàn giao gửi riêng (không lưu trong Git).
+Công việc còn lại được theo dõi tại
+[checklist backend](https://github.com/Hn4785/IoT-web/blob/BE/tasks/todo.md).
 Raw-history backfill vẫn có giới hạn cửa sổ rỗng; notification mới từ provider,
 target/TLS/proxy/backup custody và measured capacity còn chờ bằng chứng bên nhận.
 Pi rollout đã được ghi nhận, không còn là công việc chưa triển khai toàn bộ.
 
 ## 9. Kiến trúc dữ liệu bền vững để bàn giao
 
-Áp dụng BE `ec02462` và FE `5dbeea53`. Antigravity đối chiếu module/schema/page;
-Codex review và rút gọn tại đây. Nội dung này giải thích code hiện hành, không
-thay thế controller/contracts/OpenAPI hoặc module specification đã được duyệt.
+Áp dụng BE `ec02462` và FE `5dbeea53`. Nội dung dưới đây đối chiếu với module,
+schema và trang hiện hành; không thay thế controller/contracts/OpenAPI hoặc module specification đã được duyệt.
 
 ### API và ranh giới quyền
 
@@ -341,4 +341,4 @@ không thay bằng chứng notification mới trên provider thật.
 P2 còn mở: upstream `data: []` không có station khớp bị `normalizeRawHistory`
 từ chối; watermark không tiến qua cửa sổ cũ rỗng. Latest vẫn lưu được nhưng không
 thể kết luận raw history đủ 90 ngày. Xem [sổ lỗi](https://github.com/Hn4785/IoT-web/blob/BE/docs/reviews/2026-09-04-backend-follow-up.md)
-và [báo cáo bàn giao](../handover/README.md#6-tồn-đọng-và-ghi-chú-bảo-mật).
+và tài liệu bàn giao gửi riêng (không lưu trong Git).
