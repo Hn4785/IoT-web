@@ -13,6 +13,49 @@ Với mỗi thay đổi:
 3. Ghi rõ kết quả test; không đánh dấu hoàn thành nếu chưa có bằng chứng kiểm tra.
 4. Không ghi secret, mật khẩu, access token, refresh token hoặc API key vào file này.
 
+## Handover documentation — 2026-10-08 (docs-only)
+
+- Hoàn thiện nội dung H0–H6 và H7-docs: [báo cáo bàn giao](handover/README.md)
+  cùng một bản Word 1.0, 9 trang, toàn bộ chữ/tiêu đề/liên kết màu đen. Đã render
+  và kiểm tra từng trang; không dùng ảnh fixture làm bằng chứng provider thật.
+- Cập nhật hướng dẫn vai trò ở README FE, kiến trúc/API/ERD ở integration guide,
+  hai runbook BE và checklist H. Giữ bốn đầu mối kỹ thuật; báo cáo là bản tổng hợp
+  có kiểm soát, không tạo API contract hay hướng dẫn vận hành thứ hai.
+- Antigravity viết H2/H3 có giới hạn trong worktree cô lập, một vòng sửa;
+  Codex đối chiếu nguồn/review cuối. Cross-review độc lập đã sửa đường dẫn test,
+  phạm vi reveal key/recovery, checkout revision và lệnh backup/restore fail-closed.
+- Fresh: 40/40 tests preflight/backup, Compose config, `pnpm verify` BE,
+  lint/typecheck/build FE, BE secret scan và audit production BE/FE đạt.
+  Đây không phải chạy lại toàn bộ 621/242 tests hoặc browser;
+  các kết quả release 06/10 được giữ đúng ngày/phạm vi. Kiểm tra 44 Markdown/
+  120 link không lỗi hoặc trùng hoàn toàn; format/diff đạt. Sổ lỗi vẫn giữ STT
+  48–65 và 15 cột, không tạo lỗi sản phẩm từ sửa văn bản.
+- Không đổi runtime/schema/dependency, không truy cập hoặc triển khai lại Pi/DB,
+  không chuyển secret/database/dữ liệu mẫu. Không có bản sao thừa được chứng minh
+  an toàn để xoá; giữ spec/checkpoint lịch sử, không phát hành draft/QA artifact.
+- P2 cửa sổ raw history rỗng, notification provider mới tự nhiên, asset license,
+  target/TLS/backup custody/capacity và chữ ký bên nhận còn mở. H7-receiver và
+  H-delivery chưa nghiệm thu; hoàn thiện tài liệu không được gọi là production-ready.
+
+## Documentation maintenance — 2026-10-07 (local, chưa commit/push)
+
+- Rà soát docs BE/FE; cập nhật README/runbook, task index, sổ lỗi và các liên kết
+  hiện hành. Giữ nguyên hợp đồng đã duyệt và số liệu của từng checkpoint lịch sử;
+  dùng chú thích thay thế để không hiểu nhầm lệnh giữ local hoặc chưa làm F/FE.
+- Chuẩn bị H: sáu nhóm nội dung, tám loại tài sản, đường dẫn portable, kiểm soát
+  phiên bản/người viết/review và lệnh cài đặt thông thường. Chưa viết manual/báo cáo
+  mới; không sửa runtime, dependency, database, Pi hoặc Sheet trong đợt này.
+- Sổ local giữ 15 cột và STT riêng. Các lỗi logic đã chọn đã đối chiếu tại Trung
+  48–57; map nằm trong sổ lỗi BE, không coi mọi dòng local đều đã đồng bộ.
+- Rà soát bản sao: không có Markdown trùng hoàn toàn hoặc backup/copy thừa đã
+  chứng minh an toàn để xoá trong hai checkout final. Giữ công cụ backup,
+  rehearsal được bảo vệ, spec và checkpoint; không xoá các worktree khác.
+- Baseline tham chiếu: BE `ec02462`, FE `5dbeea53`; API/Pi/web runtime vẫn như
+  release dưới đây. Kiểm tra docs riêng, không gọi đó là chạy lại toàn bộ test.
+- Kiểm tra docs: 43 Markdown, 81 link file/heading tương đối không lỗi, không
+  trùng SHA256; sổ local 18 dòng STT 48–65 đủ 15 cột. Diff/format và review BE/FE
+  đạt; hash 546 file ngoài Markdown giữ nguyên so với đầu lượt bảo trì.
+
 ## F/FE verified runtime release — 2026-10-06
 
 - Hoàn thiện đóng gói runtime/tools non-root, Compose cùng-origin cho Pi/server,
@@ -55,8 +98,9 @@ Với mỗi thay đổi:
   khởi tạo tạm. Regression RED/GREEN 6/6 và Docker tái hiện/khôi phục đạt;
   giữ 30 lần chờ, migration/audit/architecture gates. Không đổi runtime hay DB Pi.
   Thêm một regression so với baseline CI 605 + 15 test Windows ở trên.
-- Sổ lỗi local theo đúng 15 cột A–O, STT 48–65, retest 06/10/2026. Chưa xác nhận
-  đồng bộ Google Sheet. Không đưa lỗi mạng/build Pi vào danh sách lỗi ứng dụng.
+- Sổ lỗi local theo đúng 15 cột A–O, STT 48–65, retest 06/10/2026. Các lỗi logic
+  đã chọn đã ghi tại Trung 48–57; mapping riêng ở sổ local, không đổi STT local
+  hoặc coi mọi dòng đều đã đồng bộ. Không thêm lỗi mạng/build Pi vào Sheet logic.
 - Chỉ chuẩn bị kế hoạch viết/review tài liệu tại BE `tasks/plan.md` mục H,
   chưa tạo tài liệu bàn giao. Không xoá spec/checkpoint lịch sử; inventory không
   tìm thấy file Markdown trùng hoàn toàn. Target/domain/TLS/backup custody và

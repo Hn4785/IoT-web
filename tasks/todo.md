@@ -1,5 +1,9 @@
 # Client Developer checkpoint
 
+This is the completed checkpoint index. Current F/FE evidence is in
+[the release record](../docs/internal-release-notes.md); remaining work is in the
+[BE task index](https://github.com/Hn4785/IoT-web/blob/BE/tasks/todo.md).
+
 - [x] Slice 1: canonical routes, legacy redirects, and navigation.
 - [x] Slice 2: API Access tabs, behavior, security, and responsive design.
 - [x] Slice 3: API Tools tabs, Explorer/docs contract, and responsive design.

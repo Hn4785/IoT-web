@@ -1,5 +1,10 @@
 # Implementation Plan: Client Developer checkpoint
 
+This preserves the completed Client Developer checkpoint, not the current global
+work queue. Current F/FE/release evidence is in
+[the release record](../docs/internal-release-notes.md); remaining work is in the
+[BE task index](https://github.com/Hn4785/IoT-web/blob/BE/tasks/todo.md).
+
 ## Overview
 
 Complete the Client Developer portal using only approved backend contracts. Consolidate duplicated navigation into API Access and API Tools, preserve legacy URLs with redirects, keep metrics fail-closed, align the visual frame with Admin/Farmer, and verify API-key security and real client API requests.
@@ -48,13 +53,13 @@ Verification: focused Explorer/docs tests, security assertions, and build.
 
 ## Risks and mitigations
 
-| Risk | Impact | Mitigation |
-| --- | --- | --- |
-| API key leaks into storage, URL, logs, or examples | High | Keep secrets in component memory; test source and request config; never include real credentials in evidence. |
-| Redirects weaken role protection | High | Canonical and legacy routes retain `CLIENT_DEVELOPER` guards; test route map. |
-| Consolidation changes API behavior | Medium | Reuse existing services and DTOs; no endpoint changes. |
-| Metrics page suggests unavailable telemetry | Medium | Hide from navigation and keep truthful unavailable copy only. |
-| Visual consolidation breaks mobile | Medium | Use native controls, tokenized layout, and test 390px/desktop behavior during final browser matrix. |
+| Risk                                               | Impact | Mitigation                                                                                                    |
+| -------------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------- |
+| API key leaks into storage, URL, logs, or examples | High   | Keep secrets in component memory; test source and request config; never include real credentials in evidence. |
+| Redirects weaken role protection                   | High   | Canonical and legacy routes retain `CLIENT_DEVELOPER` guards; test route map.                                 |
+| Consolidation changes API behavior                 | Medium | Reuse existing services and DTOs; no endpoint changes.                                                        |
+| Metrics page suggests unavailable telemetry        | Medium | Hide from navigation and keep truthful unavailable copy only.                                                 |
+| Visual consolidation breaks mobile                 | Medium | Use native controls, tokenized layout, and test 390px/desktop behavior during final browser matrix.           |
 
 ## Open questions
 

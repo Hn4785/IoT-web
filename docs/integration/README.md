@@ -12,7 +12,7 @@ theo giao diện; contract runtime từ backend là nguồn sự thật.
 
 - API prefix: `/api/v1`.
 - Development OpenAPI: `http://localhost:3000/docs-json`.
-- Swagger UI chỉ tồn tại ở development: `http://localhost:3000/docs`.
+- Swagger UI chỉ tồn tại ở development/test: `http://localhost:3000/docs`.
 - Success envelope: `{ "success": true, "data": ... }`.
 - Error envelope:
   `{ "success": false, "error": { "code": "...", "message": "..." }, "requestId": "..." }`.
@@ -22,8 +22,9 @@ theo giao diện; contract runtime từ backend là nguồn sự thật.
   portal thay thế API key.
 - Frontend không được tự suy ra quyền từ sidebar. Backend quyết định `401`,
   `403` và phạm vi Farm/Station.
-- Không fallback sang dữ liệu mẫu khi API lỗi. Hiển thị loading, empty state hoặc
-  lỗi có nút thử lại.
+- Không fallback sang dữ liệu mẫu khi API lỗi. Chỉ giữ dữ liệu thật đã lưu theo
+  đúng trạm/query và quyền hiện tại, cùng timestamp/nhãn cũ; nếu không có thì
+  hiển thị loading, empty state hoặc lỗi có nút thử lại. Mất quyền phải purge.
 - Không ghi access token, refresh cookie, temporary password hoặc API key vào
   source, localStorage, log, ảnh hay tài liệu.
 
@@ -49,7 +50,7 @@ Trong chế độ Vite local, `/api/v1/*` được proxy tới
 đang chạy ở cổng 3000. Chỉ đặt `DEV_API_PROXY_TARGET` trên tiến trình Vite khi
 backend local chạy tại địa chỉ khác.
 
-### Pi/ngrok
+### Website và Pi demo
 
 Frontend và backend nên đi qua cùng một origin. Trình duyệt gọi `/api/v1`; reverse
 proxy chuyển `/api/v1/*` vào container API, còn các route khác trả SPA. Không
@@ -76,23 +77,25 @@ Page/Hook -> Service -> apiClient -> Backend controller
 - `withCredentials: true` cho cookie refresh.
 - Chỉ một refresh chạy tại một thời điểm; các request 401 còn lại chờ chung.
 - Refresh thất bại thì xóa session local và chuyển về `/login`.
+- Retry vẫn 401 phải kết thúc đúng phiên; phản hồi restore/logout cũ không được
+  ghi đè hoặc xóa phiên mới. Logout chờ server kết thúc trước khi điều hướng.
 - Không retry vô hạn các request state-changing.
 
 ## 4. Thứ tự tích hợp theo phase
 
 ### Phase A - tài khoản và quyền
 
-| Luồng frontend | Backend contract | Trạng thái |
-| --- | --- | --- |
-| Login | `POST /auth/login` | Đã nối |
-| Khôi phục phiên | `POST /auth/refresh`, `GET /auth/me` | Đã nối |
-| Logout | `POST /auth/logout` | Đã nối |
-| Đổi mật khẩu | `POST /auth/change-password` | Đã nối |
-| Danh sách/tạo/sửa user | `GET/POST /admin/users`, `PATCH /admin/users/:id` | Đã nối |
-| Reset mật khẩu | `POST /admin/users/:id/reset-password` | Đã nối |
-| Quyền Farm/Station | `PUT/DELETE /admin/users/:id/farm-memberships/:farmId`, `PUT/DELETE /admin/users/:id/station-grants/:stationId` | Contract backend còn giữ; UI cấp/thu hồi hiện hành ở API Sources, User Management chỉ đọc scope |
-| Chuyển Super Admin | `POST /admin/super-admin/transfer` | Đã nối |
-| API key | `/developer/api-keys/*` | Đã nối |
+| Luồng frontend         | Backend contract                                                                                                | Trạng thái                                                                                      |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| Login                  | `POST /auth/login`                                                                                              | Đã nối                                                                                          |
+| Khôi phục phiên        | `POST /auth/refresh`, `GET /auth/me`                                                                            | Đã nối                                                                                          |
+| Logout                 | `POST /auth/logout`                                                                                             | Đã nối                                                                                          |
+| Đổi mật khẩu           | `POST /auth/change-password`                                                                                    | Đã nối                                                                                          |
+| Danh sách/tạo/sửa user | `GET/POST /admin/users`, `PATCH /admin/users/:id`                                                               | Đã nối                                                                                          |
+| Reset mật khẩu         | `POST /admin/users/:id/reset-password`                                                                          | Đã nối                                                                                          |
+| Quyền Farm/Station     | `PUT/DELETE /admin/users/:id/farm-memberships/:farmId`, `PUT/DELETE /admin/users/:id/station-grants/:stationId` | Contract backend còn giữ; UI cấp/thu hồi hiện hành ở API Sources, User Management chỉ đọc scope |
+| Chuyển Super Admin     | `POST /admin/super-admin/transfer`                                                                              | Đã nối                                                                                          |
+| API key                | `/developer/api-keys/*`                                                                                         | Đã nối                                                                                          |
 
 Điều kiện nghiệm thu Phase A trên trình duyệt:
 
@@ -104,14 +107,14 @@ Page/Hook -> Service -> apiClient -> Backend controller
 
 ### Phase B - Station và dữ liệu đất
 
-| Màn hình | Contract | Trạng thái |
-| --- | --- | --- |
-| Farm -> Plot -> Station | `GET /farms`, `/farms/:id/plots`, `/plots/:id/stations` | Dùng chung `stationBrowserService` |
-| Soil Dashboard | `GET /stations/:id/data/latest`, `/history` | Đã nối; giữ polling hữu hạn |
-| Historical Analysis | `GET /stations/:id/data/history` | Đã nối |
-| Farmer Dashboard | Cùng hierarchy/latest | Đã nối; không fallback dữ liệu mẫu |
-| History Report | Cùng hierarchy/history | Đã nối; có empty/error và CSV từ dữ liệu đã tải |
-| Client API Explorer | `/client/stations`, `/client/data/latest`, `/client/data/history` | Đã nối bằng `X-API-Key` |
+| Màn hình                | Contract                                                          | Trạng thái                                      |
+| ----------------------- | ----------------------------------------------------------------- | ----------------------------------------------- |
+| Farm -> Plot -> Station | `GET /farms`, `/farms/:id/plots`, `/plots/:id/stations`           | Dùng chung `stationBrowserService`              |
+| Soil Dashboard          | `GET /stations/:id/data/latest`, `/history`                       | Đã nối; giữ polling hữu hạn                     |
+| Historical Analysis     | `GET /stations/:id/data/history`                                  | Đã nối                                          |
+| Farmer Dashboard        | Cùng hierarchy/latest                                             | Đã nối; không fallback dữ liệu mẫu              |
+| History Report          | Cùng hierarchy/history                                            | Đã nối; có empty/error và CSV từ dữ liệu đã tải |
+| Client API Explorer     | `/client/stations`, `/client/data/latest`, `/client/data/history` | Đã nối bằng `X-API-Key`                         |
 
 Quy tắc dữ liệu:
 
@@ -159,7 +162,8 @@ Trạng thái frontend hiện tại:
    Reason code hiện tại được giữ để tương thích, không phải cam kết sẽ bổ sung
    remote write.
 5. Product owner đã nghiệm thu luồng local Admin/Farmer ngày 2026-09-30. Ma trận
-   tự động về mất membership, stale session và recovery tiếp tục là release gate.
+   fixture về mất quyền, stale session/recovery và HTTP/browser local đã được
+   kiểm chứng trong release 2026-10-06; provider/receiving-target vẫn là gate riêng.
 
 ### Phase D - audit và vận hành
 
@@ -172,16 +176,16 @@ Trạng thái frontend hiện tại:
 
 ## 5. Ánh xạ lỗi sang giao diện
 
-| HTTP/code | Hành vi frontend |
-| --- | --- |
-| `400 VALIDATION_ERROR` | Giữ form, chỉ rõ trường/input sai |
-| `401 UNAUTHENTICATED` | Thử single-flight refresh một lần; thất bại thì login |
-| `403 FORBIDDEN` | Trang không có quyền; không giả thành dữ liệu rỗng |
-| `404 NOT_FOUND` | Resource không tồn tại hoặc ngoài scope; không tiết lộ khác biệt |
-| `409 CONFLICT` | Thông báo dữ liệu/thao tác đã thay đổi, tải lại trạng thái |
-| `429 RATE_LIMITED` | Khóa gửi lại tạm thời, đọc rate-limit header nếu có |
-| `502 UPSTREAM_UNAVAILABLE` | Giữ dữ liệu cache hợp lệ nếu response cung cấp; cho thử lại |
-| `503 DATABASE_UNAVAILABLE` | Báo dịch vụ tạm thời không sẵn sàng, không xóa session tùy tiện |
+| HTTP/code                  | Hành vi frontend                                                 |
+| -------------------------- | ---------------------------------------------------------------- |
+| `400 VALIDATION_ERROR`     | Giữ form, chỉ rõ trường/input sai                                |
+| `401 UNAUTHENTICATED`      | Thử single-flight refresh một lần; thất bại thì login            |
+| `403 FORBIDDEN`            | Trang không có quyền; không giả thành dữ liệu rỗng               |
+| `404 NOT_FOUND`            | Resource không tồn tại hoặc ngoài scope; không tiết lộ khác biệt |
+| `409 CONFLICT`             | Thông báo dữ liệu/thao tác đã thay đổi, tải lại trạng thái       |
+| `429 RATE_LIMITED`         | Khóa gửi lại tạm thời, đọc rate-limit header nếu có              |
+| `502 UPSTREAM_UNAVAILABLE` | Giữ dữ liệu cache hợp lệ nếu response cung cấp; cho thử lại      |
+| `503 DATABASE_UNAVAILABLE` | Báo dịch vụ tạm thời không sẵn sàng, không xóa session tùy tiện  |
 
 Luôn giữ `requestId` để tester đối chiếu log backend, nhưng không hiển thị stack
 trace hoặc raw exception.
@@ -227,6 +231,11 @@ Sau gate tĩnh, chạy browser matrix cho Admin, Farmer và Client Developer tr�
 
 ## 8. Trạng thái tích hợp hiện tại
 
+Đối chiếu release 2026-10-06 và follow-up CI/docs tại
+[release record](../internal-release-notes.md): FE docs `5dbeea53`, web runtime
+`aea78f5-arm64`, API runtime `26df9dd`. Các chỉnh docs chuẩn bị bàn giao không đổi
+runtime. Nhãn phiên bản docs không phải phiên bản image đang triển khai.
+
 F-data/F-product: `dataOrigin` phân biệt `upstream` và `stored`; `isStale` cùng
 timestamp gốc cho biết độ mới. Coverage không đủ phải ghi lịch sử thiếu, không
 gọi là đầy đủ chỉ vì request thành công. Latest chỉ được giữ cho đúng station;
@@ -249,5 +258,87 @@ Phase B được đánh dấu hoàn tất local ngày 2026-09-30. Điều hướ
 
 Lịch sử phiên bản chỉ ghi tại
 [`docs/internal-release-notes.md`](../internal-release-notes.md); checklist backend
-chỉ ghi tại `D:/IoT-api/tasks/todo.md`. Production/Pi deployment và ma trận QA
-recovery rộng hơn được theo dõi như release gate riêng.
+chỉ ghi tại [task index nhánh BE](https://github.com/Hn4785/IoT-web/blob/BE/tasks/todo.md).
+Raw-history backfill vẫn có giới hạn cửa sổ rỗng; notification mới từ provider,
+target/TLS/proxy/backup custody và measured capacity còn chờ bằng chứng bên nhận.
+Pi rollout đã được ghi nhận, không còn là công việc chưa triển khai toàn bộ.
+
+## 9. Kiến trúc dữ liệu bền vững để bàn giao
+
+Áp dụng BE `ec02462` và FE `5dbeea53`. Antigravity đối chiếu module/schema/page;
+Codex review và rút gọn tại đây. Nội dung này giải thích code hiện hành, không
+thay thế controller/contracts/OpenAPI hoặc module specification đã được duyệt.
+
+### API và ranh giới quyền
+
+Browser gọi `/stations/:stationId/data/latest|history` với header Bearer và UUID
+station. Cookie refresh không trực tiếp xác thực endpoint station. Client gọi
+`/client/stations`, `/client/data/latest|history` bằng `X-API-Key`, chọn `station`
+theo code có quyền. Client limiter là cửa sổ phút cố định, process-local theo
+key; không phải sliding window/shared limiter. Backend kiểm tra quyền trước cả
+đọc bản lưu, không chỉ trước gọi provider.
+
+Tham chiếu source BE đã chốt:
+[browser controller](https://github.com/Hn4785/IoT-web/blob/ec02462bdb0050e05778e32c1cd03bfec8d86b29/src/station-data/browser.controller.ts),
+[client controller](https://github.com/Hn4785/IoT-web/blob/ec02462bdb0050e05778e32c1cd03bfec8d86b29/src/station-data/client.controller.ts),
+[guard](https://github.com/Hn4785/IoT-web/blob/ec02462bdb0050e05778e32c1cd03bfec8d86b29/src/authorization/access-token.guard.ts),
+[limiter](https://github.com/Hn4785/IoT-web/blob/ec02462bdb0050e05778e32c1cd03bfec8d86b29/src/station-data/client-rate-limit.guard.ts).
+
+### Database và ERD rút gọn
+
+| Bảng                       | Vai trò và khóa                                                                      |
+| -------------------------- | ------------------------------------------------------------------------------------ |
+| `SoilReading`              | Raw; PK `(dataSourceId, stationId, field, observedAt)`                               |
+| `SoilLatestReading`        | Snapshot cuối mỗi chỉ số; PK `(dataSourceId, stationId, field)`                      |
+| `SoilHistoryCoverage`      | Dải đã thu thập theo chỉ số; PK `(dataSourceId, stationId, field, begin)`            |
+| `SoilCollectionCheckpoint` | Watermark/retry/result theo trạm; PK `stationId`, unique `(stationId, dataSourceId)` |
+
+```mermaid
+erDiagram
+    DataSource ||--o{ Station : cung_cap
+    Station ||--o{ SoilReading : raw
+    Station ||--o{ SoilLatestReading : snapshot
+    Station ||--o{ SoilHistoryCoverage : coverage
+    Station ||--o| SoilCollectionCheckpoint : checkpoint
+```
+
+Bốn bảng có FK ghép `(stationId, dataSourceId)` tới `Station`. Schema định nghĩa
+cascade khi hard-delete station; thao tác Remove Source hiện hành là xóa mềm,
+không xóa toàn bộ số đo. Danh sách 13 migration và quan hệ identity/source/alert
+đọc từ [schema](https://github.com/Hn4785/IoT-web/blob/ec02462bdb0050e05778e32c1cd03bfec8d86b29/prisma/schema.prisma)
+và [migration có thứ tự](https://github.com/Hn4785/IoT-web/tree/ec02462bdb0050e05778e32c1cd03bfec8d86b29/prisma/migrations).
+Không tự sửa migration đã phát hành hay nhập DB fixture.
+
+### Thu thập và cách đọc trạng thái
+
+Collector mỗi 120 giây, tối đa 2 trạm đồng thời, batch 20, budget 10 trang;
+retry/backoff và lease fencing chặn job cũ ghi sau khi mất lease. Raw giữ tối đa
+90 ngày; prune theo lô, snapshot cuối giữ riêng. Trần 2 triệu raw/trạm và 10 triệu
+tổng dừng nạp mới khi đạt giới hạn, không xóa sớm dữ liệu còn trong retention.
+
+Dedup dựa khóa nguồn/trạm/chỉ số/thời điểm đo. `lastFetchedAt` chặn thế hệ fetch
+cũ ghi đè mới; `fetchedAt` ban đầu giữ khi giá trị không đổi, correction tăng
+revision. [Repository](https://github.com/Hn4785/IoT-web/blob/ec02462bdb0050e05778e32c1cd03bfec8d86b29/src/station-data/soil-reading.repository.ts)
+và [collector](https://github.com/Hn4785/IoT-web/blob/ec02462bdb0050e05778e32c1cd03bfec8d86b29/src/station-data/soil-collection.service.ts)
+là nguồn mô tả thực thi; test tương ứng nằm trong `test/integration/station-data/`.
+
+`dataOrigin` upstream/stored mô tả xuất xứ; `isFromCache` và `isStale` bổ sung
+cache/độ cũ. Không hiểu upstream là chắc chắn vừa có HTTP fetch mới. History
+coverage có status complete/partial/unknown và `fields[].ranges[]`; chưa có
+bằng chứng coverage thì ghi unknown/partial, không dựng đầy đủ từ số điểm.
+
+Mapper latest/history hiện trả `unit: null` khi provider không cung cấp metadata.
+Alert metadata có canonical units; card FE có cấu hình đơn vị đã chốt. Hai thứ
+này không chứng minh DTO đã có metadata cảm biến/depth/sensor. Thời điểm UTC ở
+API; chart theo browser timezone, một số Last fetch/Last Checked theo UTC+7.
+
+Evaluator bỏ qua stored/stale; kiểm tra lại READY, revision/unit/metadata trong
+lock trước ghi lifecycle. Backfill không biến thành fresh latest để mở thêm
+cảnh báo. [Fresh-binding regression](https://github.com/Hn4785/IoT-web/blob/ec02462bdb0050e05778e32c1cd03bfec8d86b29/test/integration/alert-config/fresh-binding.spec.ts)
+và [notification delivery](https://github.com/Hn4785/IoT-web/blob/ec02462bdb0050e05778e32c1cd03bfec8d86b29/test/integration/alert-config/notification-delivery.spec.ts)
+không thay bằng chứng notification mới trên provider thật.
+
+P2 còn mở: upstream `data: []` không có station khớp bị `normalizeRawHistory`
+từ chối; watermark không tiến qua cửa sổ cũ rỗng. Latest vẫn lưu được nhưng không
+thể kết luận raw history đủ 90 ngày. Xem [sổ lỗi](https://github.com/Hn4785/IoT-web/blob/BE/docs/reviews/2026-09-04-backend-follow-up.md)
+và [báo cáo bàn giao](../handover/README.md#6-tồn-đọng-và-ghi-chú-bảo-mật).
