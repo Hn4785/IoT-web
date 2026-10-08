@@ -1,5 +1,9 @@
 # F-product local progress — 2026-10-05
 
+> Historical record: counts, pending steps and deployment holds describe this
+> checkpoint/plan's dated scope. Current completion and release applicability
+> are in [the task index](../../tasks/todo.md); do not rerun old seed or rollout steps.
+
 Owner scope: F7-F10 and local F-product, no GitHub push or Pi change until the
 owner's F publishing gate. No fixture/sample database is delivery data.
 Canonical issue status: [backend issue ledger](../reviews/2026-09-04-backend-follow-up.md).

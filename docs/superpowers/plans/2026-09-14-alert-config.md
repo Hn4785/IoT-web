@@ -1,5 +1,9 @@
 # Phase C implementation plan — alerts and in-app notifications
 
+> Historical record: counts, pending steps and deployment holds describe this
+> checkpoint/plan's dated scope. Current completion and release applicability
+> are in [the task index](../../../tasks/todo.md); do not rerun old seed or rollout steps.
+
 Date: 2026-09-14
 Status: Complete — Phase C-core verified locally; baseline commit pending
 Spec: `docs/superpowers/specs/2026-09-02-alert-config-design.md`

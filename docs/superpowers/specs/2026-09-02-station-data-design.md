@@ -5,6 +5,14 @@ Status: Approved for implementation planning
 Module: `station-data`
 Depends on: `integration-core`, `identity-access`
 
+Applicability note — 2026-10-07: the initial B-core/on-demand and unavailable-provider
+descriptions below preserve the approved September design context. B local was
+accepted on 2026-09-30 ([checkpoint](../../checkpoints/2026-09-10-phase-b-core.md)).
+Approved section 16 governs the later durable F-data contract; it supersedes the
+original no-persistence boundary. Provider-source confirmation does not invent
+missing units/metadata or prove full backfill. Current live/target gates are in
+[the task index](../../../tasks/todo.md); do not rerun historical demo seed steps.
+
 ## 1. Purpose
 
 Phase B exposes authorized farm, plot, station and soil-measurement data to the

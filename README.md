@@ -1,9 +1,14 @@
 # IoT Soil Monitoring Backend
 
-Backend Role 3 cho hệ thống quan trắc đất IoT. Nền tảng hiện tại cung cấp health
-check, Weather API client riêng tư và Phase A `identity-access`: tài khoản lưu ở
-PostgreSQL, ba role, một Super Admin, browser session xoay vòng, phân quyền theo
-nông trại/trạm và API key có scope cho Client Developer.
+Backend Role 3 cho hệ thống quan trắc đất IoT: tài khoản/session, phân quyền,
+API key, nguồn dữ liệu thật, số đo và snapshot bền vững trong PostgreSQL,
+cảnh báo tự động, thông báo trong ứng dụng và công cụ vận hành. Weather API
+client và credential luôn nằm phía backend.
+
+Trạng thái hiện hành nằm tại [task index](./tasks/todo.md), kế hoạch còn lại tại
+[implementation/handover plan](./tasks/plan.md), và lịch sử phát hành duy nhất tại
+[release record của nhánh FE](https://github.com/Hn4785/IoT-web/blob/FE/docs/internal-release-notes.md).
+Các checkpoint có ngày là bằng chứng của đợt đó, không thay thế task index.
 
 ## Phạm vi hiện tại
 
@@ -48,8 +53,10 @@ phân biệt dữ liệu mới, dữ liệu cũ và lịch sử chưa đủ. Kh�
 Snapshot/backfill cũ không được phát cảnh báo tự động như số đo mới.
 Nguồn CENTER/NODE đã được bên cung cấp xác nhận là dữ liệu cảm biến thật ngày
 2026-09-28; Phase B được đánh dấu `live-verified` và hoàn tất local ngày
-2026-09-30. Việc triển khai thay đổi local mới nhất lên Pi và ma trận recovery
-tự động vẫn là release gate riêng.
+2026-09-30. Bản D/F/FE đã triển khai Git/Pi ngày 2026-10-06 theo release record.
+Giới hạn 90 ngày là thời gian giữ dữ liệu, không chứng minh đã backfill đủ 90 ngày:
+cửa sổ history rỗng còn chặn backfill. Notification tự động mới từ provider sau
+phục hồi và nghiệm thu server bên nhận vẫn là gate riêng.
 
 ## Chạy local
 
@@ -62,8 +69,10 @@ Copy-Item .env.example .env
 ```
 
 Trong `.env`, đặt Weather key, mật khẩu PostgreSQL và hai secret khác nhau dài tối
-thiểu 32 ký tự cho JWT/credential hashing. `.env` đã được Git ignore; không commit
-hoặc gửi các giá trị này cho frontend.
+thiểu 32 ký tự cho JWT/credential hashing. Cấu hình khóa mã hóa 32 byte base64
+`DATA_SOURCE_ENCRYPTION_KEY` và danh sách HTTPS origin `DATA_SOURCE_ALLOWED_ORIGINS`
+theo [local runbook](./docs/operations/LOCAL-RUNBOOK.md). `.env` đã được Git ignore;
+không commit hoặc gửi các giá trị này cho frontend.
 
 Tạo thư mục dữ liệu đúng ổ E, khởi động PostgreSQL và áp migration:
 
@@ -177,7 +186,10 @@ authority không bị anonymize; audit linkage bằng user ID được giữ l�
 
 - [Integration-core design spec](./docs/superpowers/specs/2026-08-30-integration-core-design.md)
 - [Identity-access design spec](./docs/superpowers/specs/2026-09-02-identity-access-design.md)
+- [Station-data design và hợp đồng F-data, mục 16](./docs/superpowers/specs/2026-09-02-station-data-design.md)
+- [Alert/notification design](./docs/superpowers/specs/2026-09-02-alert-config-design.md)
 - [Backend capability map](./CAPABILITY-MAP.md)
 - [Threat model](./docs/security/integration-core-threat-model.md)
-- [Backend completion roadmap](./docs/roadmaps/2026-09-02-backend-completion-roadmap.md)
+- [Backend completion roadmap — lịch sử](./docs/roadmaps/2026-09-02-backend-completion-roadmap.md)
 - [Delivery, recovery and frontend release gate](./docs/operations/DELIVERY-RECOVERY.md)
+- [Local runbook](./docs/operations/LOCAL-RUNBOOK.md)

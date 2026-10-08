@@ -1,5 +1,9 @@
 # Station Data B-core Implementation Plan
 
+> Historical record: counts, pending steps and deployment holds describe this
+> checkpoint/plan's dated scope. Current completion and release applicability
+> are in [the task index](../../../tasks/todo.md); do not rerun old seed or rollout steps.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Expose authorized farm, plot, station, latest-soil and bounded history APIs to browser and Client Developer callers without persisting measurements or leaking the Weather API boundary.

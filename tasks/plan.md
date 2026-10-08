@@ -1,12 +1,14 @@
 # Implementation Plan: Final portable soil monitoring
 
-Updated: 2026-10-06
-Status: D app/local and local Checkpoint F-data complete on 2026-10-05.
-F7-F10 and Checkpoint F-product-local are also complete with 557 backend and 218
-frontend tests plus isolated role/browser data-state evidence. See
-[F-product evidence](../docs/checkpoints/2026-10-05-f-product-progress.md).
-F11-F14 local implementation/rehearsals and bounded FE/QA acceptance are verified
-on 2026-10-06; live recovery and receiving-team target gates remain separate.
+Updated: 2026-10-08
+Status: D app/local, F-data/F-product, F11-F14 local and bounded FE/QA acceptance
+are verified. Recorded 2026-10-06 release: backend 93 files/621 tests, frontend
+242 tests and isolated HTTP/browser acceptance. BE source/CI follow-up `ec02462`;
+API runtime `26df9ddc20c41aee250d7be3ef4815908ed4ebf4`, web runtime `aea78f5-arm64`.
+Source/docs revisions and deployed runtime identities are intentionally distinct.
+See the [single release record](https://github.com/Hn4785/IoT-web/blob/FE/docs/internal-release-notes.md),
+[task index](todo.md) and [issue ledger](../docs/reviews/2026-09-04-backend-follow-up.md).
+Live recovery/backfill and receiving-team target gates remain separate.
 Follow-up owner authorization: publish only completed F-data logic to Git/Pi for
 internal testing, preserving existing data and applying its two additive migrations.
 Latest owner instruction (2026-10-06): finish applicable F11-F17 and outstanding
@@ -391,29 +393,72 @@ No delivery-date promises before F0/F1 resolve the actual risks.
 
 ## Current execution
 
-D app/local revalidation is complete on 2026-10-05: 510/510 backend tests with
-coverage, static/migration/secret gates, zero production advisories, isolated restore/
-recovery and patched non-root image smoke. Frontend 181/181 tests, lint/build/audit
-also pass. Evidence: docs/checkpoints/2026-10-05-d-local.md. This is local application
-acceptance, not receiving-team staging/production deployment acceptance.
-The owner subsequently resumed work through F-data. F2-F6 and local F-data are now
-fixture-verified with fresh full-suite, OpenAPI, migration and capacity evidence:
-[F-data checkpoint](../docs/checkpoints/2026-10-05-f-data-progress.md).
-Live-provider recovery, actual Pi/server capacity and public deployment remain
-separate gates. F7-F10 and local F-product acceptance are now complete with linked
-evidence. F11-F17/FE and verified Git/Pi publishing were explicitly resumed on
-2026-10-06. Do not alter Pi schema beyond separately approved migrations or transfer
-fixture data. Receiving-team deployment remains outside this execution.
-Team-owned target gates cannot be checked off with local substitute evidence.
+The applicable D/F/FE baseline and Git/Pi smoke were recorded on 2026-10-06;
+older counts and no-push instructions in dated checkpoints are historical evidence.
+The current task is H0–H7 documentation authoring/review and Git publication,
+authorized on 2026-10-08. Logic, dated QA evidence and outstanding issues take
+priority; operations is a short reproducibility reference. No runtime/schema/DB
+change or Pi access. Receiving-team deployment/sign-off remain separate;
+fixtures cannot close live/team-owned gates.
 
-## H. Handoff documentation plan — planning only, no document drafting yet
+## H. Handoff documentation plan
 
-Owner request: 2026-10-06. This extends the same unfinished final-delivery plan;
-it does not replace F, reopen accepted B/C, or claim the manuals are already written.
-Latest clarification: prepare this plan only; do not create or draft the handoff
-documents until the owner explicitly starts that workstream.
+Owner request: 2026-10-06. This extends the same final-delivery plan;
+it does not replace F or reopen accepted B/C. The original acceptance criteria
+remain below; the latest authoring/review status is in `tasks/todo.md` and the
+single release record. Receiver acceptance is separate from completed writing.
+Preparation was recorded on 2026-10-07. Owner requested drafting through H7 on
+2026-10-08, all Word text black and docs published to Git.
 Codex coordinates/final-reviews. Antigravity may draft bounded code-grounded sections
 or cross-check Codex drafts in an isolated worktree; never auto-merge worker claims.
+
+Updated: 2026-10-08. The source entry points below remain canonical; the FE
+handover report is the controlled summary/inventory and source for one Word
+export, not a duplicate API/manual contract. No Pi redeployment for docs-only edits.
+Use the receiving company's template if supplied. Otherwise use the controlled
+handover structure below; it is a project-sized practice, not a claim of ISO/OWASP
+certification or a universal company template.
+
+### H-prep — Agreed handover structure and required-asset matrix
+
+Keep six content groups: summary/acceptance, technical architecture/API/database,
+installation/operation/recovery, user guide, test results/open issues, and security.
+These are content groups, not six mandatory new files or a manual per job title.
+Retain the four maintained document entry points below and link existing authoritative
+specs, OpenAPI, migrations, checkpoints and release notes instead of duplicating them.
+H0 selected one professional black-text Word report because no company template
+was supplied. FE `docs/handover/README.md` controls the export and links the four
+maintained guides. No screenshot is claimed as live-provider evidence.
+
+| Required asset                   | Planned authoritative location / evidence                 | Acceptance during drafting                                                                                                                                                                        |
+| -------------------------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Source code                      | Git BE/FE revisions; H7 inventory/index                   | Exact repository/branch/commit and matching runtime image digest; source and reproducible tests, not generated output, secret files or disposable fixtures/data.                                  |
+| Database                         | H2 schema/ERD/migrations; H4 recovery                     | Schema/migration order and data meaning are linked; any real-data backup transfer needs approved scope, encryption and named custodians. Never export production data merely to fill a checklist. |
+| Images, files and resources      | FE tracked public/assets and guide evidence; H7 inventory | Actual relative path, purpose and applicable ownership/license; screenshots are masked and distinguish real-source from isolated QA evidence.                                                     |
+| Configuration and environment    | Tracked example files; H4 configuration table             | Required/optional variables, safe examples and runtime requirements; real passwords/keys use a separate approved secure channel, never Git or the report.                                         |
+| Dependencies and libraries       | BE/FE package manifests and lockfiles; H0/H5              | Exact runtime/package-manager requirements, install method, third-party notices where applicable and dated dependency-audit scope.                                                                |
+| Installation and deployment      | H4 existing delivery/recovery and local runbook           | One recommended ordinary installation path per profile with verified commands, prerequisites, expected output, failure/stop conditions and safe rollback.                                         |
+| Test cases and results           | H5 linked tests/checkpoints/release record                | Requirement-to-case/result traceability, version/platform/date and pass/fail/not-run status; automated, manual, fixture and live evidence remain distinct.                                        |
+| Remaining bugs and functionality | Canonical issue ledger and scoped Trung entries; H5/H7    | Severity/impact, actual status, evidence, workaround and responsible party; distinguish defects, excluded features and pending receiving-target acceptance.                                       |
+
+Document-control fields: title/identifier, version, applicable BE/FE revisions,
+last-reviewed date, writer/reviewer, approval status and change history. Use stable
+repo-relative links or revision-pinned repository URLs; a local Windows drive path
+is not a portable receiver link. The inventory row format is asset/document, path,
+revision/digest, scope/status, owner and receiver confirmation. Sign-off requires
+the named receiving party; a prepared checkbox or running Pi is not formal acceptance.
+Mark absent/not-applicable assets explicitly with a reason. Keep draft, reviewed
+and receiver-accepted states separate, with preparer/reviewer/receiver dates and
+accepted exceptions; unknown receiver details remain unassigned rather than invented.
+
+Writing order: H0 baseline/template/inventory -> H1 scope -> parallel bounded H2/H3
+and H4 sections -> H5 evidence/security reconciliation -> H6 cross-review -> H7
+index and receiver acceptance. Review after H1/H2, after H3/H4, and before H7 delivery.
+Codex writes/co-ordinates scope and operations and final-reviews; Antigravity may
+write independent API/data/user-guide slices or check Codex facts through the bounded
+workflow after fresh budget review. QA/SDET contributes test reproducibility;
+Security reviews access/secret/recovery limits. No worker may commit, push, merge,
+delete documents or expand code scope automatically.
 
 ### H0 — Freeze evidence and choose a small document set
 
@@ -421,6 +466,10 @@ Depends: applicable F/FE verification and Git/Pi release evidence.
 Files: `tasks/todo.md`, FE `docs/internal-release-notes.md`, latest BE checkpoint.
 Accept: exact BE/FE commits, architecture, migration list, verification commands,
 limits and unresolved receiving-team decisions are linked, without secret values.
+Read the current working diff before drafting: there are pre-existing unrelated edits.
+Released 2026-10-06 evidence does not certify those edits. Preserve them, distinguish
+the verified release from the working copy, and resolve any facts that diverge before
+using them in a document. Do not roll back or silently publish someone else's work.
 Review documents by meaning and SHA256; keep dated specs/ADRs/checkpoints as history.
 Delete only proven duplicate/obsolete files after fixing inbound links; record paths
 and Git recovery commit. Inventory found no exact duplicates, so no blanket deletion.
@@ -469,6 +518,11 @@ health/readiness, source outage, logs, backup encryption/key custody and isolate
 one-target cutover, compatible application rollback, secret rotation and troubleshooting.
 Accept: commands have working directory, prerequisites, expected exit/status and stop
 condition; no `down -v`, reset, production fault injection or automatic restore over data.
+Use ordinary Docker/Compose and existing verified project scripts. Explain only the
+minimal normal setup/start/status/logs path first; backup/restore/update/rollback are
+separate procedures. Keep AI handoff, worktree management and internal fixture/test
+orchestration out of the receiver's installation steps. Separate local/Pi test and
+server profiles without weakening HTTPS, secret handling or data-preservation gates.
 Verify every executable block against disposable environments. Record RPO 24h/RTO 4h
 and 7 daily/4 weekly objectives as objectives until destination/owners/schedule are assigned.
 
@@ -478,6 +532,12 @@ Files: latest BE checkpoint, canonical backend issue ledger, FE release notes.
 Writer: Codex; Antigravity checks test names and reproducibility, no invented pass counts.
 Include version/platform/date, automated vs manual vs live evidence, regression matrix,
 security audit/CI links, backup/rollback results and receiving-team open gates.
+Security is an explicit reviewed section: auth/session/scope/API keys, credential
+storage and recovery, verified audits and accepted exclusions such as MFA/SSO.
+Dependency audit is not a penetration test or ASVS certification. Retention of up to
+90 days is not evidence of 90 populated days; RPO/RTO are accepted objectives, not
+measured achievements. Carry the unobserved fresh provider-notification and target
+backup/TLS/capacity gates forward without replacing them with fixture results.
 Accept: fixed issues have RED/GREEN evidence and actual retest date; STT/status follow
 the Trung sheet's existing 15-column form (A through O). No Pi infrastructure bugs in that bug list.
 If Google Sheet cannot be verified, keep the same form locally and clearly state sync pending.
@@ -512,3 +572,7 @@ Primary references for command review:
 [Docker single-server Compose](https://docs.docker.com/compose/how-tos/production/) and
 [PostgreSQL 17 SQL dump/restore](https://www.postgresql.org/docs/17/backup-dump.html).
 These explain tooling; project-specific policies and actual acceptance remain above.
+Handover practice references: [Google SRE service onboarding/readiness](https://sre.google/sre-book/evolving-sre-engagement-model/)
+for service-specific review, training and responsibility transfer, and
+[Microsoft ADR/document repository guidance](https://learn.microsoft.com/en-us/azure/well-architected/architect-role/architecture-decision-record)
+for decision rationale, status and a single authoritative document repository.

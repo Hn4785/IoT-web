@@ -1,5 +1,9 @@
 # Báo cáo tổng kết kiểm thử production-like
 
+> Historical record: counts, pending steps and deployment holds describe this
+> checkpoint/plan's dated scope. Current completion and release applicability
+> are in [the task index](../../tasks/todo.md); do not rerun old seed or rollout steps.
+
 Đợt kiểm thử: 2026-09-10 đến 2026-09-11
 Checkout: `D:\IoT-api\.worktrees\integration-core`
 Runtime: Node.js 24.17.0, pnpm 11.19.0, PostgreSQL Docker `iot_test`

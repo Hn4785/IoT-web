@@ -1,5 +1,9 @@
 # Identity and Access Implementation Plan
 
+> Historical record: counts, pending steps and deployment holds describe this
+> checkpoint/plan's dated scope. Current completion and release applicability
+> are in [the task index](../../../tasks/todo.md); do not rerun old seed or rollout steps.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Build PostgreSQL-backed accounts, secure rotating sessions, the three-role/Super Admin policy, resource-scope authorization, and scoped Client Developer API keys.

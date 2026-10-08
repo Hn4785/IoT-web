@@ -1,6 +1,6 @@
 # Sổ lỗi Backend
 
-Cập nhật gần nhất: 2026-10-06. Đây là file theo dõi lỗi chính của backend. Lỗi chưa hoàn thành luôn đặt ở trên; lỗi đã sửa được chuyển xuống cuối file sau khi có test hoặc bằng chứng kiểm chứng.
+Cập nhật gần nhất: 2026-10-08. Đây là file theo dõi lỗi chính của backend. Lỗi chưa hoàn thành luôn đặt ở trên; lỗi đã sửa được chuyển xuống cuối file sau khi có test hoặc bằng chứng kiểm chứng.
 
 ## Gate hiện tại
 
@@ -10,8 +10,8 @@ Cập nhật gần nhất: 2026-10-06. Đây là file theo dõi lỗi chính c�
   Browser HTTP thật dùng fixture cô lập; kết quả phát hành cuối ghi duy nhất ở
   FE `docs/internal-release-notes.md`. Không chuyển fixture/database thử sang Pi.
 - Owner đã duyệt publish BE/FE và Pi ngày 2026-10-06, thay thế lệnh giữ local trước
-  đó. Chỉ chuẩn bị kế hoạch viết tài liệu bàn giao tại `tasks/plan.md` mục H;
-  chưa tạo bộ tài liệu bàn giao mới. Các gate target/live còn mở không bị tích thay.
+  đó. Đợt 08/10 viết/review tài liệu H, không sửa runtime hoặc tích thay target/live.
+  P2 cửa sổ history rỗng vẫn còn; không phát sinh lỗi logic mới từ lượt review docs.
 
 - Gate D local lịch sử ngày 2026-10-05: 85/85 file, 510/510 test đạt; `pnpm verify`
   đạt format/typecheck/lint/Prisma generate/build; coverage 88.69% statements,
@@ -22,11 +22,12 @@ Cập nhật gần nhất: 2026-10-06. Đây là file theo dõi lỗi chính c�
   kiểm tra image mới được ghi riêng tại
   [D revalidation](../checkpoints/2026-10-05-d-local.md).
 - Các gate tháng 9 là bằng chứng lịch sử, không phải số liệu hiện tại. D-production
-  vẫn cần bên nhận dự án nghiệm thu trên hạ tầng của họ; không đổi DB Pi đợt này.
+  vẫn cần bên nhận dự án nghiệm thu trên hạ tầng của họ. Đợt bảo trì docs này
+  không truy cập hoặc thay đổi DB/Pi.
 - Baseline trước F-product ngày 2026-10-05: 88/88 file, 550/550 backend tests và
   `pnpm verify` đạt; frontend 181/181 tests đạt. Đây là baseline, không chứng minh
   các lỗi mới dưới đây đã được sửa hoặc đã qua browser acceptance.
-- Gate F-product local mới nhất: 89/89 file, 557/557 backend tests và `pnpm verify`
+- Gate F-product local lịch sử ngày 2026-10-05: 89/89 file, 557/557 backend tests và `pnpm verify`
   đạt; frontend 218/218 tests, lint và TypeScript/build đạt. Không chạy lại coverage
   cho F-product; không dùng số liệu coverage D cũ như số liệu mới.
   Sheet 40–47 đã có regression, review và bằng chứng phù hợp, chuyển xuống Đã sửa;
@@ -45,8 +46,9 @@ Cập nhật gần nhất: 2026-10-06. Đây là file theo dõi lỗi chính c�
 Các chỉ dẫn dưới đây ghi lại tình trạng 2026-09-25, không còn là lệnh thực thi.
 B/C đã được chủ dự án chấp nhận ngày 2026-09-30; Farm/Plot Demo đã được xoá theo
 thoả thuận. Nguồn và station thật được thêm qua API Sources, chia sẻ theo station.
-Không seed lại hoặc gán Farm Demo để thoả văn bản cũ. Browser QA mở rộng vẫn được
-theo dõi ở FE-2/FE-5/FE-6/QA-1 và F16, không mở lại B/C hoặc giả nhận đã chạy E2E.
+Không seed lại hoặc gán Farm Demo để thoả văn bản cũ. FE/QA local đã có bằng chứng
+ngày 2026-10-06; F16-live và target vẫn riêng, không mở lại B/C hoặc giả nhận
+fixture là nghiệm thu nguồn thật.
 
 Nội dung lịch sử (chỉ để đối chiếu):
 
@@ -73,6 +75,17 @@ Quy tắc bằng chứng vẫn áp dụng cho QA còn mở: test/build xanh khô
 kiểm chứng browser/nguồn thật theo phạm vi nghiệm thu hiện tại.
 
 ## Chưa sửa
+
+### [ ] [P2, Backend/Data] Cửa sổ history cũ rỗng chặn backfill
+
+- Đã tái hiện response hợp lệ theo schema nhưng `data: []` bị normalizer từ chối;
+  watermark không tiến qua cửa sổ này. Latest thật vẫn được lưu, không chứng minh
+  đã có raw-history coverage đầy đủ. Release 2026-10-06 vẫn ghi nhận sáu checkpoint invalid.
+- Bằng chứng, đường dẫn ảnh hưởng và regression cần có nằm tại
+  [F-data follow-up](2026-10-05-pi-f-data.md#open-p2-empty-old-history-window-blocks-backfill).
+  Đây là lỗi logic xử lý response/history, không phải lỗi mạng hoặc database Pi.
+- Chưa sửa trong đợt docs. Cần chốt cách bỏ qua cửa sổ rỗng an toàn mà không giả
+  readings/coverage, rồi kiểm tra traversal, scope, retry/restart và cửa sổ có dữ liệu.
 
 ### [ ] [F16/FE acceptance] Kiểm chứng browser/API thật còn lại
 
@@ -152,10 +165,14 @@ kiểm chứng browser/nguồn thật theo phạm vi nghiệm thu hiện tại.
 
 ### [x] Lỗi xác nhận 2026-10-06 — form Trung giữ tại local
 
-Đúng 15 cột A–O theo form đã gửi. STT 48–65 là số tiếp nối **trong sổ local** sau
-40–47; chưa xác nhận/ghi các dòng này trên Google Sheet. Khi đồng bộ phải đọc STT
-cuối của tab Trung, đối chiếu mô tả và cập nhật dòng đã có, không tạo trùng hoặc
-ghi đè tab khác. Đây là lỗi code/đóng gói ứng dụng, không phải lỗi mạng/DB của Pi.
+Đúng 15 cột A–O theo form đã gửi. STT 48–65 bên dưới là số **trong sổ local**;
+không đổi số để ép khớp bảng bên ngoài. Các lỗi logic đã chọn đã ghi và đối chiếu
+giá trị tại tab Trung, STT 48–57; owner đã chấp nhận, không chỉnh Sheet thêm trong đợt này.
+Map local → Sheet: 48–52 → 48–52, 54 → 53, 55 → 54, 63 → 55. Hai lỗi DB F-data
+được ghi tại 56–57; không tuyên bố toàn bộ 18 dòng local đều đã đồng bộ.
+Các dòng giao diện/đóng gói/CI ngoài phạm vi lọc lỗi logic vẫn giữ ở local.
+Khi đồng bộ tiếp, đọc STT cuối và đối chiếu mô tả, không tạo trùng hoặc ghi đè tab khác.
+Đây không phải danh sách lỗi mạng/DB của Pi.
 
 | STT | Ngày yêu cầu | Người yêu cầu | Sprint  | Chức năng            | Phân loại     | Mô tả bug                                                                     | Kết quả mong muốn                                                   | Phân loại | Mức độ ưu tiên            | Trạng thái xử lý | Ngày test lại | Chịu trách nhiệm xử lý | Ghi chú của test                                                              | Ghi chú của dev                                                              |
 | --- | ------------ | ------------- | ------- | -------------------- | ------------- | ----------------------------------------------------------------------------- | ------------------------------------------------------------------- | --------- | ------------------------- | ---------------- | ------------- | ---------------------- | ----------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |

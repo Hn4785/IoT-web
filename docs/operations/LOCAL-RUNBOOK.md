@@ -6,6 +6,12 @@ File này là hướng dẫn thao tác nhanh cho backend `iot-api`. Chạy các 
 cd D:\IoT-api
 ```
 
+Đường dẫn trên là ví dụ sau khi clone. Chọn checkout có `package.json`;
+checkout final trên máy hiện tại là `D:/IoT-api-final-release-local`.
+Không phụ thuộc vào thư mục worktree cũ. Đối chiếu phiên bản và phạm vi kiểm chứng
+tại [task index](../../tasks/todo.md) và
+[release record](https://github.com/Hn4785/IoT-web/blob/FE/docs/internal-release-notes.md).
+
 ## 1. Chuẩn bị lần đầu
 
 Yêu cầu: Node.js `>=24.17.0 <25`, pnpm `11.19.0` và Docker Desktop đang hoạt động.
@@ -15,6 +21,10 @@ pnpm install --frozen-lockfile
 Copy-Item .env.example .env
 New-Item -ItemType Directory -Force E:\IoT-data\postgres
 ```
+
+Nếu không có ổ E, đổi `POSTGRES_DATA_DIR` trong `.env` sang thư mục riêng trên
+ổ hiện có và tạo thư mục đó trước khi chạy Compose. Không trỏ vào source hoặc
+thư mục dữ liệu của hệ thống khác.
 
 Sau khi copy, mở `.env` và thay các giá trị mẫu. Cần đặt mật khẩu PostgreSQL,
 Weather API key, `JWT_SECRET`, `CREDENTIAL_PEPPER` và
@@ -91,7 +101,7 @@ Invoke-RestMethod http://localhost:3000/api/v1/health
 
 Swagger chỉ được bật trong môi trường `development` và `test`.
 
-## 5. Chạy bản production đã build
+## 5. Chạy bản đã build trên local
 
 ```powershell
 pnpm build
@@ -99,6 +109,9 @@ pnpm start
 ```
 
 `pnpm start` không tự build. Nếu source vừa thay đổi, luôn chạy `pnpm build` trước.
+Các lệnh này dùng môi trường local đã cấu hình, không tự đặt production.
+Để chạy website với cookie HTTPS và cấu hình được kiểm tra, dùng
+[`DELIVERY-RECOVERY.md`](./DELIVERY-RECOVERY.md), không chỉ đổi tên lệnh start.
 
 ## 6. Kiểm tra trước khi commit
 
@@ -157,7 +170,7 @@ Hướng dẫn build image, diễn tập restore và kiểm tra contract nối f
 ## Trình tự chạy hằng ngày
 
 ```powershell
-cd D:\IoT-api\.worktrees\integration-core
+cd D:\IoT-api
 docker compose up -d postgres
 docker compose ps
 pnpm dev

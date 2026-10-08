@@ -1,5 +1,9 @@
 # F-data — local checkpoint complete
 
+> Historical record: counts, pending steps and deployment holds describe this
+> checkpoint/plan's dated scope. Current completion and release applicability
+> are in [the task index](../../tasks/todo.md); do not rerun old seed or rollout steps.
+
 Date: 2026-10-05. The owner resumed work through F-data, superseding the earlier
 F1 hold. F2-F6 and Checkpoint F-data are complete for the approved local contract
 in station-data section 16. This is fixture acceptance, not a production claim.

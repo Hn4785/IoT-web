@@ -1,6 +1,6 @@
 # Backend delivery checklist
 
-Updated: 2026-10-06
+Updated: 2026-10-08
 
 This is the single short status index for the project. Detailed acceptance
 criteria for the original modules remain in the
@@ -259,29 +259,23 @@ and must not duplicate the full contract.
       Isolated integration/failure/recovery tests only; never fault-inject on Pi.
 - [x] QA-2: Record reproducible failures in the backend issue ledger and move an
       item to fixed only after regression evidence exists.
-      Local 15-column form and verified retest dates; Google Sheet sync unverified.
+      Local 15-column form and verified retest dates. Selected confirmed logic
+      entries are recorded in Trung 48–57; the ledger preserves the local/Sheet mapping.
 
 ## Immediate next action
 
-1. Local F2-F6 and Checkpoint F-data are complete with fresh regression and measured
-   fixture evidence. D app/local stays complete; team-owned deployment stays open.
-   The earlier scoped F-data Git/Pi test rollout is historical:
-   only real-reading storage/collection logic, backup and additive migrations;
-   preserve existing data and never seed/import fixtures or restore local test DB.
-   Verified D/F/FE updates and the final web-only follow-up reached Git/Pi on
-   2026-10-06; smoke evidence is in the release notes. Live/team gates remain open.
-   Use the existing BE/FE branches; do not create a public test-release branch.
-   No fixture/sample/test database is deployed or imported on Pi.
-   At the historical F-data rollout, BE `de466ea` reached Git/Pi; smoke passed and genuine
-   latest readings persist. Raw-history backfill remains `invalid`/unverified;
-   this rollout does not close F-product, F7 or production gates. All future F/FE
-   releases transfer verified logic only, never sample/test databases.
-   The local-only hold above was superseded on 2026-10-06: verified F/FE code may
-   publish to existing BE/FE and Pi. Never publish fixture databases or seed data.
-2. Finish final Git/Pi smoke and record applicable F/FE evidence; retain the
-   separate live-provider and receiving-team gates below.
-3. Preserve the no-device-write scope and B/C owner acceptance.
-4. Keep local/Pi acceptance distinct from website/public production acceptance.
+1. Publish the reviewed H documentation and black-text Word report. The verified D/F/FE
+   rollout and final web follow-up reached Git/Pi on 2026-10-06; smoke evidence
+   remains in the [single release record](https://github.com/Hn4785/IoT-web/blob/FE/docs/internal-release-notes.md).
+   The 2026-10-08 docs publication does not change runtime or authorize Pi access.
+2. Keep the known empty-history-window/backfill limitation visible in the
+   [issue ledger](../docs/reviews/2026-09-04-backend-follow-up.md). Raw coverage
+   remains unverified; do not describe retention capacity as 90 populated days.
+3. Obtain natural fresh-provider notification/recovery evidence when available;
+   do not trigger genuine rules artificially or mark F16-live/F17 complete from fixtures.
+4. Receiving-team server/TLS/backup/capacity acceptance stays separate. Preserve
+   accepted B/C and no-device-write scope. Future authorized releases use existing
+   BE/FE branches and verified logic only, never sample/test databases or seed data.
 
 ## F. Final portable monitoring — applicable final execution approved
 
@@ -312,8 +306,9 @@ Detailed acceptance, candidate files, dependencies and verification are in
 - [x] Checkpoint F-data: Restart/outage/history/scope acceptance with durable readings.
       Local fixture acceptance, not live-provider/Pi/server certification:
       [checkpoint evidence](../docs/checkpoints/2026-10-05-f-data-progress.md).
-      Original checkpoint applied migration only to local `iot_test`. Later Pi
-      follow-up is recorded above; no F7 UI changes or full live-backfill claim.
+      Original 2026-10-05 checkpoint applied migration only to local `iot_test`
+      and did not include F7. The later combined rollout is in the release record;
+      it still does not prove full live backfill.
 - [x] F7: Show exact-station last-known latest data; isolate endpoint failures.
       Independent endpoints, original timestamps, request/route fencing and
       empty/denied purging verified locally; FE commit `d405a64`.
@@ -332,13 +327,14 @@ Detailed acceptance, candidate files, dependencies and verification are in
       `pnpm verify`. Browser F-product and live-provider/target gates remain separate.
       [evidence](../docs/checkpoints/2026-10-05-f-product-progress.md).
 - [x] Checkpoint F-product-local: Role/browser acceptance for online/stored/empty/denied states.
-      Isolated browser fixtures exercise actual pages for Admin/Super Admin,
+      Original 2026-10-05 evidence: isolated browser fixtures exercise pages for Admin/Super Admin,
       Farmer and Client Developer; backend 557/557 and frontend 218/218 tests,
       typecheck/lint/build and backend format/audit pass. No provider/DB/Pi calls
       in the browser fixture and no authentication E2E/live-target certification.
-      FE-2/FE-5/FE-6/QA-1/F16 remain separate, including native CSV download.
+      At that checkpoint FE-2/FE-5/FE-6/QA-1/F16 were separate, including native CSV download.
       [evidence](../docs/checkpoints/2026-10-05-f-product-progress.md).
-      Local commits only; no GitHub push, Pi change or fixture/sample delivery.
+      The original local-only hold was superseded by the verified 2026-10-06
+      release and F16-local HTTP/CSV checks. No fixture/sample delivery occurred.
 - [x] F11: Reproducible full-app packaging, migration runner and ARM64/server gates.
       Runtime/tools separated; native amd64/ARM64 CI and same-origin full-stack smoke.
 - [x] F12-local: Implement and verify read-only explicit-profile deployment preflight.
@@ -361,5 +357,56 @@ Detailed acceptance, candidate files, dependencies and verification are in
 - [ ] F17-web: Accept the website target only after F15 and its target-specific tests.
 
 No item above is complete merely because this plan was written. Formal report and
-operator/user manual work is excluded; existing in-app CSV/report functionality
-still receives regression checks. D-production stays open until its own gates pass.
+operator/user manual work is tracked separately in H; existing in-app CSV/report
+functionality still receives regression checks. D-production stays open until its
+own gates pass.
+
+## H. Handover documentation
+
+Owner approved drafting through H7 and publishing docs on 2026-10-08. Logic,
+honest QA results and remaining issues are primary; operations is a short
+reproducibility reference. Word text is black. No runtime/schema/DB change or
+Pi redeployment in this documentation task. Details:
+[handover plan](plan.md#h-handoff-documentation-plan).
+
+- [x] H-prep: Record the six content groups, all eight required asset categories,
+      portable links/document-control fields, ordinary installation-command policy,
+      bounded writer/reviewer roles and checkpoints. Only the plan is prepared.
+- [x] H-maintenance: Audit existing docs and disposable copies, reconcile current
+      statuses/links and preserve historical evidence before manual drafting.
+      2026-10-07: 43 tracked Markdown files, no exact duplicates or broken relative
+      file/heading links. Local ledger retains 18 rows, STT 48–65, all 15 columns.
+      No proven unused backup copies removed; protected rehearsal material and
+      other worktrees remain untouched. This is doc maintenance, not H0–H7 completion.
+- [x] H0: Reconcile current working edits against the verified release, freeze
+      revisions/evidence, and confirm receiving template/export format and inventory.
+      BE `ec02462` and FE `5dbeea53` are the frozen source baselines; image/tag
+      identity is recorded separately. No company template supplied: one controlled
+      Vietnamese Word report, all writing black, backed by maintained Markdown.
+- [x] H1: Draft scope/architecture and supported/excluded feature/role overview.
+- [x] H2: Draft linked backend/API/database content without duplicating contracts.
+- [x] Checkpoint H1/H2-docs: Review scope, schema/API facts, links and release identity.
+- [x] H3: Draft role-based user journeys, expected outcomes and recovery actions.
+- [x] H4: Draft simple installation plus operation/backup/restore/rollback guide.
+- [x] Checkpoint H3/H4-docs: Cross-check commands against scripts/Compose, page steps,
+      secret masking and local/demo versus receiving-server boundaries. Fresh
+      preflight/backup unit tests: 40/40; Compose configuration validation passes.
+      Reuse the dated isolated rehearsal/browser evidence; the entire rewritten
+      command set and receiving-host installation were not rerun during authoring.
+- [x] H5: Consolidate test traceability, security evidence, known issues and open gates.
+- [x] H6: Independently review bounded sections; reproduce suspected defects before
+      any separately scoped code correction. No broad cleanup or automatic merge.
+      Antigravity H2/H3 received one correction round and independent source review;
+      H6 cross-review addressed test paths, key/recovery wording and checkout identity.
+      No new confirmed runtime defect or runtime change in this documentation task.
+- [x] H7-docs: Complete the portable asset/document index and reviewed Word export.
+      FE `docs/handover/README.md` links four maintained guides, eight asset categories,
+      dated QA/security evidence and the canonical issue ledger. Word export is
+      9 pages, with linked contents and black text; all pages visually reviewed.
+- [ ] H7-receiver: Receiving party fills names, date, accepted exceptions and sign-off.
+- [ ] Checkpoint H-delivery: Receiver can follow the installation/user/recovery steps;
+      inventory paths/revisions match, secrets are absent and open gates stay explicit.
+
+H documentation is prepared and reviewed, not receiver-accepted. Keep the existing
+F/live/production gates unchanged; neither a report nor a running demo closes the
+empty-history P2, fresh-provider notification evidence or receiving-target acceptance.

@@ -1,5 +1,9 @@
 # Phase A Whole-Code Review
 
+> Historical record: counts, pending steps and deployment holds describe this
+> checkpoint/plan's dated scope. Current completion and release applicability
+> are in [the task index](../../tasks/todo.md); do not rerun old seed or rollout steps.
+
 Date: 2026-09-02
 Scope: all hand-written backend code, Prisma schema and migration, integration tests,
 runtime configuration, Docker persistence, OpenAPI and operator documentation. Generated

@@ -1,5 +1,9 @@
 # Integration Core Implementation Plan
 
+> Historical record: counts, pending steps and deployment holds describe this
+> checkpoint/plan's dated scope. Current completion and release applicability
+> are in [the task index](../../../tasks/todo.md); do not rerun old seed or rollout steps.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Build a secure NestJS integration foundation with validated configuration, a public health contract, normalized errors, and a private Weather API client.

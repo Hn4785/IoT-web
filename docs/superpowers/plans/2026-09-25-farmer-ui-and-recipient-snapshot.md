@@ -1,5 +1,9 @@
 # Farmer integration and three deferred fixes implementation plan
 
+> Historical record: counts, pending steps and deployment holds describe this
+> checkpoint/plan's dated scope. Current completion and release applicability
+> are in [the task index](../../../tasks/todo.md); do not rerun old seed or rollout steps.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Finish the local Farmer integration, make shared search and responsive layouts honest and usable, and freeze notification recipients at delivery start without deploying to Pi.

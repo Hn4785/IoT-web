@@ -1,131 +1,176 @@
-# Delivery, recovery and frontend release gate
+# Cài đặt và khôi phục AgriSense
 
-Updated: 2026-10-06
+Cập nhật: 08/10/2026. Tài liệu giúp bên nhận tái tạo ứng dụng trên server hoặc Pi.
+Chỉ một máy giữ dữ liệu chính tại một thời điểm; không có đồng bộ hai chiều.
+Pi nội bộ là môi trường demo, không phải yêu cầu nghiệm thu.
+Logic và tồn đọng nằm trong [báo cáo bàn giao](https://github.com/Hn4785/IoT-web/blob/FE/docs/handover/README.md);
+phiên bản/kết quả chỉ ghi tại [release record](https://github.com/Hn4785/IoT-web/blob/FE/docs/internal-release-notes.md).
 
-This is the canonical Phase D operator checklist. It prepares a local release
-candidate; it does not replace staging, live-device or production infrastructure
-approval.
+## 1. Chọn cách chạy
 
-Full handoff-writing/review sequencing is in `tasks/plan.md`, section H. This file
-is the canonical deployment/recovery procedure, not another acceptance checklist.
+- Phát triển/kiểm tra Windows: dùng [LOCAL-RUNBOOK.md](LOCAL-RUNBOOK.md) và README frontend.
+- Website: dùng Compose, ba image bất biến đúng CPU amd64/arm64, database riêng và HTTPS do bên nhận cấu hình.
+- Pi dùng cùng Compose và image ARM64. Không sao chép fixture, seed hoặc database thử sang máy chạy thật.
 
-## 1. Immutable verification
+Lệnh dưới đây dùng Bash tại thư mục backend nhánh `BE`, project Compose `iot`.
+Giữ nguyên project, database và volume khi cập nhật. Chỉ tiếp tục sau mỗi lệnh
+thành công; nếu lỗi thì dừng và xem log, không thử bootstrap/migration/restore
+trên dữ liệu thật để sửa theo phỏng đoán.
 
-Use Node `24.17.x` and pnpm `11.19.0`:
+## 2. Chuẩn bị cấu hình
 
-```powershell
-pnpm install --frozen-lockfile
-pnpm verify
-pnpm test:coverage
-pnpm audit --prod --audit-level=high
-pnpm security:secrets
-pnpm db:status
-git diff --check
+Yêu cầu Docker từ 25, Compose từ 2.24; Node.js `>=24.17.0 <25`, pnpm `11.19.0`
+cho script kiểm tra host. Chạy `pnpm install --frozen-lockfile`. Preflight kiểm
+tra tối thiểu 2 GiB trống, không phải cam kết đủ dung lượng lưu 90 ngày.
+
+```bash
+cp deploy/.env.example server.env
+chmod 600 server.env
 ```
 
-`pnpm verify` runs format, typecheck, lint and production build. CI repeats these
-checks against isolated PostgreSQL databases, then builds and smoke-tests the
-non-root production image. CI and local scripts never run `down -v`, overwrite a
-database or print credentials.
+Mở `server.env`, thay toàn bộ placeholder, không commit file này:
 
-## 2. Container smoke test
+| Nhóm     | Cấu hình cần chuẩn bị                                                                                                |
+| -------- | -------------------------------------------------------------------------------------------------------------------- |
+| Image    | `API_IMAGE`, `API_TOOLS_IMAGE`, `WEB_IMAGE` dạng `registry/name@sha256:...`; đúng CPU, không dùng `latest` trong mẫu |
+| Database | PostgreSQL user/password/db và hai URL trỏ database chính/test tách biệt; hostname container `postgres`              |
+| Website  | `NODE_ENV=production`, `PORT=3000`, origin HTTPS của bên nhận, `WEB_PORT=8080` mặc định                              |
+| Secret   | JWT và pepper khác nhau, đủ ngẫu nhiên, ít nhất 32 ký tự; khóa mã hóa nguồn đúng 32 byte base64                      |
+| Nguồn    | Allowed origins HTTPS không có path; Weather API theo template; không gửi key ra frontend                            |
+| Thu thập | 120 giây, tối đa 2 trạm đồng thời; raw tối đa 2 triệu/trạm, 10 triệu tổng nếu chưa đo năng lực máy                   |
+| Demo     | `ALERT_DEMO_METADATA_ENABLED=false`; không chạy seed demo                                                            |
 
-Build the exact supported Node runtime:
+`TEST_DATABASE_URL` vẫn cần để kiểm tra cấu hình, không phải database nghiệp vụ.
+Giữ khóa giải mã nguồn riêng: mất khóa thì credential đã mã hóa không đọc được.
 
-```powershell
-docker build --pull -t iot-api:local .
+Chuẩn bị `release.json`: `schemaVersion: 1`, commit BE ở `releaseRevision`,
+`migrationIds` có thứ tự từ `prisma/migrations`, `existingData` là boolean.
+Nếu có dữ liệu, cần `databaseMigrations` thực tế là tiền tố đúng của release và
+`backupVerified: true` chỉ sau diễn tập thành công, không khai báo để vượt gate.
+
+```bash
+node scripts/operations/deployment-preflight.mjs --profile server --manifest release.json --env-file server.env
 ```
 
-Provide runtime values through the deployment secret store or `--env-file`; do
-not bake `.env` into the image. A successful smoke test must show:
+Mã thoát 0/`valid: true` chỉ xác nhận cấu hình/cú pháp; chưa chứng minh restore,
+image hay nghiệm thu server. Profile `pi` cho phép HTTP loopback; production
+đăng nhập từ xa vẫn cần HTTPS vì Secure cookie.
 
-- `/api/v1/health` returns `healthy` without probing dependencies;
-- `/api/v1/readiness` returns `ready` only while PostgreSQL is reachable;
-- the container user is `node`; and
-- the production image does not expose `/docs` or `/docs-json`.
+## 3. Cài đặt lần đầu
 
-## 3. Backup and restore rehearsal
-
-The local rehearsal creates a new database whose name starts with
-`iot_restore_`. It refuses an existing or primary database and deliberately
-leaves both the restored database and backup artifact for review.
-
-```powershell
-.\scripts\operations\backup-restore-rehearsal.ps1 `
-  -RestoreDatabase iot_restore_<timestamp>
+```bash
+docker compose -p iot --env-file server.env -f deploy/compose.yaml up -d --wait postgres
+docker compose -p iot --env-file server.env -f deploy/compose.yaml --profile maintenance run --rm migration
 ```
 
-Acceptance evidence:
+PostgreSQL phải healthy; migration phải kết thúc 0. Nếu database chưa có người
+dùng/authority, tạo Super Admin. Gán biến tools bằng đúng digest được cấp:
 
-1. `pg_dump` succeeds and the ignored artifact exists under
-   `artifacts/backup-rehearsal/`.
-2. `pg_restore --exit-on-error` succeeds into the new database.
-3. At least one completed Prisma migration exists in the restore.
-4. The production image starts against that restore and `/api/v1/readiness`
-   reports `ready`.
-
-Do not call this a production backup until the owner approves RPO/RTO,
-off-machine destination, encryption key, retention and restore responsibility.
-Rollback is forward-fix first: do not reverse a deployed migration unless its
-explicit down procedure and data-loss impact were reviewed.
-
-## 4. Frontend contract handoff
-
-Run the backend in `development` or `test`, then:
-
-```powershell
-$env:RELEASE_BASE_URL = 'http://127.0.0.1:3000'
-pnpm release:check
+```bash
+TOOLS_IMAGE='registry/name@sha256:DIGEST_DA_DUOC_CAP'
+docker run --rm -it --network iot_private --env-file server.env "$TOOLS_IMAGE" pnpm db:bootstrap-super-admin -- --email admin@example.com
+docker compose -p iot --env-file server.env -f deploy/compose.yaml --profile maintenance up -d --wait api web
+docker compose -p iot --env-file server.env -f deploy/compose.yaml ps
 ```
 
-The check requires healthy liveness, ready PostgreSQL and the OpenAPI paths used
-by frontend Phase A–C. Production deliberately has no Swagger endpoint, so an
-image-only smoke uses:
+Thay email bằng người giữ quyền thực tế; mật khẩu nhập hai lần qua prompt ẩn.
+Cài đặt đã có tài khoản bỏ qua bootstrap. Tools image có source/Prisma/tsx;
+runtime chỉ có mã đã build và dependency chạy thật, không có test/fixture.
 
-```powershell
-pnpm release:check -- --skip-openapi
+Web chỉ bind `127.0.0.1:8080`. Bên nhận cấu hình reverse proxy HTTPS tới đây.
+Nginx trong web image chuyển `/api/v1` vào API; dùng cùng origin cho session/cookie.
+Không mở PostgreSQL/API trực tiếp ra Internet.
+
+## 4. Kiểm tra và sử dụng
+
+```bash
+curl --fail http://127.0.0.1:8080/healthz
+curl --fail http://127.0.0.1:8080/api/v1/health
+curl --fail http://127.0.0.1:8080/api/v1/readiness
+docker compose -p iot --env-file server.env -f deploy/compose.yaml logs --tail 100 api web
 ```
 
-Before accepting frontend integration, test these flows in a browser:
+Liveness không kiểm tra dependency; readiness chỉ ready khi PostgreSQL đáp ứng.
+Hai endpoint không xác nhận provider đang online. Đăng nhập bằng domain HTTPS,
+thêm nguồn thật tại API Sources, chia sẻ station rồi kiểm tra đúng vai trò.
+Production không mở Swagger; contract đọc ở môi trường dev/test.
 
-- login, forced password change, refresh single-flight and logout;
-- Super Admin user management, authority transfer and audit list;
-- Farmer-scoped farm/plot/station latest and history views;
-- Client Developer key create/copy/use/rotate/revoke with station scope;
-- alert-rule validation, open/acknowledge/resolve and in-app notifications; and
-- the retained device-capability screen does not offer a hardware write: alert
-  thresholds are managed in Alert Center, while calibration or intervention is
-  performed directly at the device.
+Provider nghỉ: đọc bản đã lưu nếu có và còn quyền, giữ timestamp/nguồn và nhãn
+cũ/thiếu. Không có bản lưu thì trả empty/lỗi, không dựng số mẫu. Cửa sổ history
+cũ rỗng chặn backfill vẫn là lỗi P2 trong [sổ lỗi](../reviews/2026-09-04-backend-follow-up.md#chưa-sửa).
+Lưu tối đa 90 ngày không chứng minh đã backfill đủ 90 ngày.
 
-Latest/history is `live-verified` as of 2026-09-28 because the issued API reads
-directly from operating observation stations, values are updating, and the
-provider confirmed all CENTER/NODE data is real sensor data and the final
-acceptance input. This status confirms data provenance; it does not close the
-separate registry, browser-role or production checkpoints. Never record the
-credential in evidence.
+## 5. Sao lưu và khôi phục riêng
 
-## 5. Production decisions still requiring an owner
+Chưa có lịch backup ngoài máy được nghiệm thu. RPO 24 giờ, RTO 4 giờ, giữ 7 bản
+ngày/4 bản tuần là mục tiêu, không phải kết quả đo. Dùng tên artifact mới mỗi lần,
+thư mục được bảo vệ; không redirect dump nhị phân qua PowerShell:
 
-- selected single-instance ingress, TLS, trusted proxy hops and limiter policy;
-- private metrics transport (shared aggregation only for future multi-instance use);
-- encrypted off-machine backup destination, key custodian and restore owner;
-  RPO 24h, RTO 4h and 7 daily/4 weekly copies were accepted on 2026-10-05;
-- Super Admin recovery and credential rotation; MFA/SSO was excluded from this
-  delivery by the owner/team on 2026-10-05, not implemented or certified;
-- staging URL/credentials and complete browser-role evidence.
+```bash
+set -e
+mkdir -p backups
+chmod 700 backups
+test ! -e backups/handover.dump
+docker compose -p iot --env-file server.env -f deploy/compose.yaml exec -T postgres sh -ec 'test ! -e /tmp/handover.dump; umask 077; pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc -f /tmp/handover.dump'
+docker compose -p iot --env-file server.env -f deploy/compose.yaml cp postgres:/tmp/handover.dump backups/handover.dump
+chmod 600 backups/handover.dump
+```
 
-These block receiving-team public-target acceptance, not the verified local/Pi
-application baseline. Do not guess them or mark them done from local tests.
+Envelope AES-256-GCM xác thực và từ chối output đã tồn tại. Tạo thư mục `/secure`
+với quyền hạn chế trước; tạo khóa một lần, không tạo lại khóa đang sử dụng:
 
-## 6. Raspberry Pi staging network
+```bash
+node scripts/operations/backup-envelope.mjs keygen --key-file /secure/backup.key
+node scripts/operations/backup-envelope.mjs encrypt --input backups/handover.dump --output backups/handover.iotbkp --key-file /secure/backup.key --manifest backup-manifest.json
+node scripts/operations/backup-envelope.mjs decrypt --input backups/handover.iotbkp --output backups/isolated.dump --key-file /secure/backup.key
+```
 
-- Keep Ethernet/Windows ICS as the recovery path while changing Wi-Fi.
-- Store the `VJU Student` PSK only in NetworkManager with mode `600`; never put
-  it in Git, compose files, screenshots or issue reports.
-- Activate Wi-Fi, then verify address, default route, DNS, container health and
-  the public tunnel before removing the Ethernet fallback.
-- A successful Wi-Fi association does not prove Internet access: campus captive
-  portal or IP policy must be checked separately. Do not weaken firewall, TLS or
-  application authentication to bypass campus filtering.
-- If Wi-Fi fails, return to the ICS address, inspect `nmcli`/journal evidence and
-  restore service before changing application configuration.
+Backup manifest KHÁC release manifest: chỉ `releaseRevision`, `migrationIds`,
+tùy chọn `secretNames` (tên, không phải giá trị). Chuyển khóa và secret ứng dụng
+qua kênh bảo vệ riêng; nếu xác thực/hash lỗi thì dừng, không dùng dump.
+
+Restore chỉ vào database mới chưa tồn tại. Không chạy `pg_restore` nếu `createdb`
+thất bại. Ví dụ không đụng database đang chạy:
+
+```bash
+set -e
+docker compose -p iot --env-file server.env -f deploy/compose.yaml cp backups/isolated.dump postgres:/tmp/isolated.dump
+docker compose -p iot --env-file server.env -f deploy/compose.yaml exec -T postgres sh -ec 'createdb -U "$POSTGRES_USER" iot_restore_handover; pg_restore -U "$POSTGRES_USER" -d iot_restore_handover --exit-on-error /tmp/isolated.dump'
+```
+
+Kiểm tra migration, quyền, giải mã nguồn, latest/history và lifecycle trên bản
+restore trước cutover; chỉ một collector chạy trên dữ liệu chính sau chuyển máy.
+Không restore đè máy nguồn. Windows có [script diễn tập bảo vệ database](../../scripts/operations/backup-restore-rehearsal.ps1).
+
+## 6. Cập nhật và phục hồi
+
+Backup có thể restore; giữ digest cũ, đối chiếu schema/cấu hình và chạy preflight.
+Áp dụng migration rồi khởi động như mục 3, không bootstrap lại. Rollback ứng dụng
+chỉ khi image cũ tương thích schema hiện tại. `previous-release.env` giữ nguyên
+database/project/secret, chỉ chọn image đã được duyệt:
+
+```bash
+docker compose -p iot --env-file previous-release.env -f deploy/compose.yaml up -d --no-deps --wait api web
+```
+
+Không đảo migration hay restore vào database đang chạy. Người quản trị máy
+khôi phục Super Admin bằng tools invocation ở mục 3, thay lệnh thành
+`pnpm db:recover-super-admin -- --email ...`. Lệnh đổi mật khẩu đúng người giữ
+quyền, mở khóa, thu hồi phiên và ghi audit; không truyền mật khẩu bằng tham số.
+Không tự đổi key/pepper nếu chưa đánh giá ciphertext/phiên; không có tự xoay khóa
+nguồn trong phạm vi này.
+
+## 7. Xử lý lỗi
+
+| Tình huống                         | Hành động                                                                     |
+| ---------------------------------- | ----------------------------------------------------------------------------- |
+| Database không ready               | Xem ps/log PostgreSQL, URL và migration; không reset/xóa volume               |
+| Cookie đăng nhập từ xa lỗi         | Kiểm tra HTTPS/origin; không tắt Secure cookie                                |
+| Provider nghỉ                      | Xem API Sources và timestamp; giữ bản lưu có quyền, không seed                |
+| Đạt giới hạn số đo                 | Xem collection health, dừng thu mới theo giới hạn; đo năng lực trước khi tăng |
+| Secret nguồn không đọc sau restore | Kiểm tra đúng khóa bằng kênh bảo vệ; không in key/ciphertext                  |
+
+Không dùng `down -v`, reset schema, seed hay thử lỗi trên dữ liệu thật. Domain,
+TLS/proxy, backup ngoài máy, người giữ khóa và capacity do bên nhận xác nhận.
+Chúng chưa được điền không thay đổi kết quả logic local, cũng không có nghĩa
+production đã được nghiệm thu.

@@ -8,6 +8,14 @@ Module: `alert-config`
 Depends on: verified `station-data` B-core for implementation and B-device field
 metadata for production activation
 
+Applicability note — 2026-10-07: the fake-metadata/B-device status above records
+the initial design dependency, not the current implementation status. Accepted
+[B evidence](../../checkpoints/2026-09-10-phase-b-core.md) and the
+[real-source amendment](2026-09-28-soil-source-admin-checkpoint-design.md) govern
+confirmed-field activation. Keep the metadata/revision and no-device-write
+boundaries below; F10 verifies fresh-only evaluation. Current live-notification
+and receiving-target acceptance remain separate in [the task index](../../../tasks/todo.md).
+
 ## 1. Objective
 
 Phase C-core detects sustained soil-threshold breaches without requiring the

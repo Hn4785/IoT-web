@@ -1,5 +1,9 @@
 # Backend Completion Roadmap
 
+> Historical record: counts, pending steps and deployment holds describe this
+> checkpoint/plan's dated scope. Current completion and release applicability
+> are in [the task index](../../tasks/todo.md); do not rerun old seed or rollout steps.
+
 Date: 2026-09-02
 
 Status: Proposed for user review. No future module in this document is approved

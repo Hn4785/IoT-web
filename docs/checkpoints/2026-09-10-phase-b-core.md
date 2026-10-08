@@ -1,5 +1,9 @@
 # Phase B — authorized station data checkpoint
 
+> Historical record: counts, pending steps and deployment holds describe this
+> checkpoint/plan's dated scope. Current completion and release applicability
+> are in [the task index](../../tasks/todo.md); do not rerun old seed or rollout steps.
+
 Initial core evidence: 2026-09-10
 
 Local completion accepted: 2026-09-30
