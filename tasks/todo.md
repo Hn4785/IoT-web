@@ -1,6 +1,18 @@
 # Backend delivery checklist
 
-Updated: 2026-10-08
+Updated: 2026-10-11
+
+## Release v3.0
+
+- [x] Add optional validated email filtering to the owner-only grant-candidates
+      endpoint before cursor pagination; preserve the existing unfiltered contract.
+- [x] Keep database schema, authentication and station/source permissions unchanged.
+- [x] Set package, health and OpenAPI version to 3.0.0.
+- [x] Verify 93/93 files and 622/622 tests against isolated `iot_test`; pass
+      format, typecheck, lint, build, production audit and secret scan.
+- [x] Publish backend `12f27ad` with frontend `1f310a7` and deploy v3.0 on Pi.
+      Health/readiness and anonymous-request denial passed; database and tunnel
+      remained running. No schema migration, seed or sample-data transfer.
 
 This is the single short status index for the project. Detailed acceptance
 criteria for the original modules remain in the
