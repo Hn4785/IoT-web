@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 
+const accessManager = readFileSync(new URL("../src/components/data-sources/SourceAccessManager.tsx", import.meta.url), "utf8");
+
 const sidebar = readFileSync(new URL("../src/components/layout/Sidebar.tsx", import.meta.url), "utf8");
 const routeConfig = readFileSync(new URL("../src/routes/routeConfig.tsx", import.meta.url), "utf8");
 const routeComponents = readFileSync(new URL("../src/routes/routeComponents.tsx", import.meta.url), "utf8");
@@ -16,7 +18,7 @@ test("Farmer navigation and routing expose API Sources with FARMER role protecti
 });
 
 test("Farmer API Sources page presents owned and shared sources, owner actions, and truthful copy without N/A", () => {
-  const page = readFileSync(new URL("../src/pages/farm-owner/ApiSources.tsx", import.meta.url), "utf8");
+  const page = readFileSync(new URL("../src/pages/farm-owner/ApiSources.tsx", import.meta.url), "utf8") + accessManager;
   assert.match(page, /Visible Accounts/);
   assert.match(page, /canManageAccess/);
   assert.match(page, /canRevealKey/);
@@ -38,7 +40,7 @@ test("Farmer API Sources page presents owned and shared sources, owner actions, 
 });
 
 test("Farmer source creation supports explicit fields without paste or curl parsing", () => {
-  const page = readFileSync(new URL("../src/pages/farm-owner/ApiSources.tsx", import.meta.url), "utf8");
+  const page = readFileSync(new URL("../src/pages/farm-owner/ApiSources.tsx", import.meta.url), "utf8") + accessManager;
   assert.match(page, /farmName/);
   assert.match(page, /plotName/);
   assert.match(page, /baseUrl/);
@@ -56,14 +58,14 @@ test("Farmer API Sources page follows the standard centered content frame and de
 });
 
 test("Farmer API Sources Manage Access uses grant-candidates instead of userService or admin routes", () => {
-  const page = readFileSync(new URL("../src/pages/farm-owner/ApiSources.tsx", import.meta.url), "utf8");
+  const page = readFileSync(new URL("../src/pages/farm-owner/ApiSources.tsx", import.meta.url), "utf8") + accessManager;
   assert.match(page, /listGrantCandidates/);
   assert.doesNotMatch(page, /userService/);
   assert.doesNotMatch(page, /\/admin\/users/);
 });
 
 test("Farmer API Sources Manage Access presents role-neutral candidate accounts with visible role labels", () => {
-  const page = readFileSync(new URL("../src/pages/farm-owner/ApiSources.tsx", import.meta.url), "utf8");
+  const page = readFileSync(new URL("../src/pages/farm-owner/ApiSources.tsx", import.meta.url), "utf8") + accessManager;
   assert.doesNotMatch(page, /setFarmers/);
   assert.match(page, /Client Developer/);
   assert.match(page, /Farmer/);

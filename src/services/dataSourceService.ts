@@ -82,10 +82,10 @@ export function createDataSourceService(client: HttpClient) {
       );
       return unwrapApiResponse(response.data);
     },
-    async listGrants(sourceId: string): Promise<CursorPage<DataSourceGrant>> {
+    async listGrants(sourceId: string, cursor?: string): Promise<CursorPage<DataSourceGrant>> {
       const response = await client.get<ApiSuccessEnvelope<CursorPage<DataSourceGrant>>>(
         API_ENDPOINTS.dataSources.grants(sourceId),
-        { params: { limit: 100 } },
+        { params: { limit: 100, ...(cursor ? { cursor } : {}) } },
       );
       return unwrapApiResponse(response.data);
     },
@@ -95,10 +95,10 @@ export function createDataSourceService(client: HttpClient) {
       );
       return unwrapApiResponse(response.data);
     },
-    async listGrantCandidates(sourceId: string, cursor?: string): Promise<CursorPage<DataSourceGrantCandidate>> {
+    async listGrantCandidates(sourceId: string, cursor?: string, email?: string): Promise<CursorPage<DataSourceGrantCandidate>> {
       const response = await client.get<ApiSuccessEnvelope<CursorPage<DataSourceGrantCandidate>>>(
         API_ENDPOINTS.dataSources.grantCandidates(sourceId),
-        { params: cursor ? { cursor, limit: 100 } : { limit: 100 } },
+        { params: { limit: 100, ...(cursor ? { cursor } : {}), ...(email?.trim() ? { email: email.trim() } : {}) } },
       );
       return unwrapApiResponse(response.data);
     },

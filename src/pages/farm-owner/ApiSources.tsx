@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { BarChart3, Copy, Eye, KeyRound, Plus, RefreshCw, Share2, TestTube2, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 import Button from "@/components/common/Button";
+import SourceAccessManager from "@/components/data-sources/SourceAccessManager";
 import EmptyState from "@/components/common/EmptyState";
 import ErrorState from "@/components/common/ErrorState";
 import Loading from "@/components/common/Loading";
@@ -13,9 +14,6 @@ import { useApiSources } from "@/hooks/useApiSources";
 import {
   dataSourceService,
   type DataSource,
-  type DataSourceGrant,
-  type DataSourceGrantCandidate,
-  type DataSourceStation,
   type ResourceChoice,
 } from "@/services/dataSourceService";
 import { normalizeApiError } from "@/utils/apiError";
@@ -40,11 +38,6 @@ export default function ApiSources() {
   const [plotName, setPlotName] = useState("");
 
   const [accessSource, setAccessSource] = useState<DataSource | null>(null);
-  const [grants, setGrants] = useState<DataSourceGrant[]>([]);
-  const [candidates, setCandidates] = useState<DataSourceGrantCandidate[]>([]);
-  const [sourceStations, setSourceStations] = useState<DataSourceStation[]>([]);
-  const [grantDrafts, setGrantDrafts] = useState<Record<string, string[]>>({});
-  const [accessLoading, setAccessLoading] = useState(false);
   const [removeSource, setRemoveSource] = useState<DataSource | null>(null);
 
   const [revealSource, setRevealSource] = useState<DataSource | null>(null);
@@ -56,7 +49,6 @@ export default function ApiSources() {
     if (revealTimer.current) clearTimeout(revealTimer.current);
   }, []);
 
-  const grantByUserId = useMemo(() => new Map(grants.map((grant) => [grant.user.id, grant])), [grants]);
 
   const clearAddForm = () => {
     setName("");
@@ -114,53 +106,6 @@ export default function ApiSources() {
       const message = normalizeApiError(reason).message;
       await loadSources();
       setError(message);
-    } finally {
-      setBusyId("");
-    }
-  };
-
-  const openAccess = async (source: DataSource) => {
-    setAccessSource(source);
-    setAccessLoading(true);
-    setError("");
-    try {
-      const [grantPage, stationPage, candidatePage] = await Promise.all([
-        dataSourceService.listGrants(source.id),
-        dataSourceService.listStations(source.id),
-        dataSourceService.listGrantCandidates(source.id),
-      ]);
-      setGrants(grantPage.items);
-      setSourceStations(stationPage.items);
-      setGrantDrafts(Object.fromEntries(grantPage.items.map((grant) => [grant.user.id, [...grant.stationIds]])));
-      setCandidates(candidatePage.items);
-    } catch (reason) {
-      setError(normalizeApiError(reason).message);
-    } finally {
-      setAccessLoading(false);
-    }
-  };
-
-  const toggleStation = (userId: string, stationId: string) => {
-    setGrantDrafts((current) => {
-      const selected = new Set(current[userId] ?? []);
-      if (selected.has(stationId)) selected.delete(stationId);
-      else selected.add(stationId);
-      return { ...current, [userId]: [...selected] };
-    });
-  };
-
-  const saveGrant = async (userId: string) => {
-    if (!accessSource) return;
-    setBusyId(userId);
-    setError("");
-    try {
-      const stationIds = grantDrafts[userId] ?? [];
-      if (stationIds.length > 0) await dataSourceService.setGrantStations(accessSource.id, userId, stationIds);
-      else await dataSourceService.revoke(accessSource.id, userId);
-      setGrants((await dataSourceService.listGrants(accessSource.id)).items);
-      await loadSources();
-    } catch (reason) {
-      setError(normalizeApiError(reason).message);
     } finally {
       setBusyId("");
     }
@@ -250,7 +195,7 @@ export default function ApiSources() {
                   <td>{formatVietnamDateTime(source.lastCheckedAt)}</td>
                   <td><div className={styles.actions}>
                     <Button size="sm" variant="ghost" icon={<BarChart3 size={14} />} onClick={() => navigate("/farm-owner/soil-dashboard")}>View Data</Button>
-                    {source.canManageAccess && <Button size="sm" variant="ghost" icon={<Share2 size={14} />} onClick={() => void openAccess(source)}>Manage Access</Button>}
+                    {source.canManageAccess && <Button size="sm" variant="ghost" icon={<Share2 size={14} />} onClick={() => setAccessSource(source)}>Manage Access</Button>}
                     {source.canManageAccess && <Button size="sm" variant="ghost" icon={<TestTube2 size={14} />} disabled={refreshing} loading={busyId === source.id} onClick={() => void testConnection(source)}>Test</Button>}
                     {source.canRevealKey && <Button size="sm" variant="ghost" icon={<Eye size={14} />} onClick={() => setRevealSource(source)}>Reveal Key</Button>}
                     {source.canManageAccess && <Button size="sm" variant="ghost" icon={<Trash2 size={14} />} onClick={() => setRemoveSource(source)}>Remove Source</Button>}
@@ -281,32 +226,7 @@ export default function ApiSources() {
       </Modal>
 
       <Modal isOpen={Boolean(accessSource)} onClose={() => setAccessSource(null)} title={`Manage Access${accessSource ? ` — ${accessSource.name}` : ""}`} description="Shared accounts can view station data but cannot reveal or revoke the source key." size="md">
-        {accessLoading ? <Loading label="Loading accounts..." /> : (
-          <div className={styles.accountList}>
-            {candidates.length === 0 && <p>No eligible accounts found.</p>}
-            {candidates.map((candidate) => {
-              const selected = new Set(grantDrafts[candidate.id] ?? []);
-              const existing = grantByUserId.get(candidate.id)?.stationIds ?? [];
-              const changed = selected.size !== existing.length || existing.some((id) => !selected.has(id));
-              return <div key={candidate.id} className={styles.accountCard}>
-                <div className={styles.accountHeading}>
-                  <div>
-                    <strong>{candidate.displayName}</strong>
-                    <span>{candidate.email}</span>
-                    <span>{candidate.role === "FARMER" ? "Farmer" : "Client Developer"}</span>
-                  </div>
-                  <span>{selected.size} selected</span>
-                </div>
-                {sourceStations.length === 0 && <p className={styles.help}>No soil stations were found for this source.</p>}
-                <div className={styles.stationChecks}>{sourceStations.map((station) => <label key={station.id}>
-                  <input type="checkbox" checked={selected.has(station.id)} onChange={() => toggleStation(candidate.id, station.id)} />
-                  <span><strong>{station.name}</strong><small>{station.code}</small></span>
-                </label>)}</div>
-                <div className={styles.accountActions}><Button size="sm" variant={selected.size === 0 && existing.length > 0 ? "danger" : "outline"} disabled={!changed} loading={busyId === candidate.id} onClick={() => void saveGrant(candidate.id)}>{selected.size === 0 && existing.length > 0 ? "Revoke Access" : "Save Access"}</Button></div>
-              </div>;
-            })}
-          </div>
-        )}
+        {accessSource && <SourceAccessManager key={accessSource.id} sourceId={accessSource.id} onSaved={() => { void loadSources(); }} />}
       </Modal>
 
       <ConfirmDialog

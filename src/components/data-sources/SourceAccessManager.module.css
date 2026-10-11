@@ -1,0 +1,27 @@
+.manager { display: flex; flex-direction: column; gap: var(--spacing-5); }
+.search { display: flex; flex-direction: column; gap: var(--spacing-2); }
+.search label { font-weight: var(--font-weight-semibold); }
+.searchRow { display: flex; gap: var(--spacing-2); }
+.searchRow input { flex: 1; min-width: 0; padding: 10px 12px; border: 1px solid var(--color-border-default); border-radius: var(--radius-md); background: var(--color-bg-surface); color: var(--color-text-primary); font: inherit; }
+.searchRow input::placeholder { color: var(--color-text-secondary); }
+.searchRow input:focus-visible, .result:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+.help, .email, .manager small { color: var(--color-text-secondary); font-size: var(--font-size-body-sm); }
+.help { margin: 0; }
+.email { display: block; overflow-wrap: anywhere; margin-block: 4px; }
+.error { color: var(--color-error-dark); }
+.results { display: flex; flex-direction: column; gap: var(--spacing-2); }
+.result { display: flex; flex-direction: column; gap: 4px; padding: 12px; text-align: left; border: 1px solid var(--color-border-default); border-radius: var(--radius-md); background: var(--color-bg-surface); color: var(--color-text-primary); font: inherit; cursor: pointer; overflow-wrap: anywhere; }
+.result:hover { background: var(--color-bg-subtle); }
+.editor { min-width: 0; margin: 0; padding: var(--spacing-4); border: 1px solid var(--color-border-default); border-radius: var(--radius-lg); }
+.editor legend { padding-inline: 6px; font-weight: var(--font-weight-semibold); }
+.editor .help { margin-top: 12px; }
+.stationChecks { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--spacing-2); margin-block: var(--spacing-3); }
+.stationChecks label { display: flex; align-items: flex-start; gap: var(--spacing-2); padding: 10px; border-radius: var(--radius-md); background: var(--color-bg-subtle); cursor: pointer; overflow-wrap: anywhere; }
+.stationChecks input { margin-top: 3px; accent-color: var(--color-primary); }
+.stationChecks span, .stationChecks small { display: block; }
+.actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--spacing-2); }
+.shared h3 { margin: 0 0 var(--spacing-2); font-size: var(--font-size-body-lg); }
+.shared h3 span { color: var(--color-text-secondary); font-weight: normal; }
+.sharedRow { display: flex; justify-content: space-between; align-items: center; gap: var(--spacing-3); padding-block: var(--spacing-3); border-bottom: 1px solid var(--color-border-subtle); }
+.sharedRow > div { min-width: 0; }
+@media (max-width: 540px) { .searchRow { flex-direction: column; } .stationChecks { grid-template-columns: 1fr; } .sharedRow { align-items: flex-start; flex-direction: column; } }
