@@ -14,6 +14,22 @@ Updated: 2026-10-11
       Health/readiness and anonymous-request denial passed; database and tunnel
       remained running. No schema migration, seed or sample-data transfer.
 
+## v3.0 authentication and source privacy correction — 2026-10-11
+
+- [x] Limit ordinary Admin access to another owner's source to connectivity metadata.
+      Return a generic name, null counts/key preview and `canReadData: false`.
+- [x] Enforce the same current station boundary for hierarchy, readings, history,
+      alert rules, alert lifecycle and notifications. Preserve SYSTEM access,
+      source ownership, Farmer station grants and read-only Super Admin oversight.
+- [x] Keep delivered notifications in storage but hide them when source access is
+      revoked; restore visibility if access is granted again.
+- [x] Keep Reveal owner-only with current-password confirmation. Distinguish a
+      rejected password from an expired login session in the frontend.
+- [x] Verify 93/93 files and 626/626 tests against isolated `iot_test`; pass format,
+      typecheck, lint, build, production audit and secret scan. No schema change.
+- [ ] Publish and deploy the correction on Pi. Use only the selected ngrok login
+      origin, retain exact Origin checks and verify the database/tunnel are unchanged.
+
 This is the single short status index for the project. Detailed acceptance
 criteria for the original modules remain in the
 [original module roadmap](../docs/roadmaps/2026-09-02-backend-completion-roadmap.md),

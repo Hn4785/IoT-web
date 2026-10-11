@@ -4,6 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createApp } from '../../../src/app/create-app.js';
 import { PasswordService } from '../../../src/auth/password.service.js';
 import { SourceSecretService } from '../../../src/data-sources/source-secret.service.js';
+import type { DataSourceDto } from '../../../src/data-sources/data-source.contracts.js';
 import { issueAccessToken } from '../../helpers/access-token.js';
 import { createTestPrismaClient, prepareTestDatabase } from '../../helpers/database.js';
 import { makeTestRuntimeConfig } from '../../helpers/runtime-config.js';
@@ -25,6 +26,8 @@ describe('API source access management', () => {
   let adminStationId: string;
   let secondAdminStationId: string;
   let centerStationId: string;
+  let farmId: string;
+  let plotId: string;
   const ownerPassword = 'owner-password-123';
   const providerSecret = 'provider-secret-value';
 
@@ -130,6 +133,8 @@ describe('API source access management', () => {
     const plot = await prisma.plot.create({
       data: { farmId: farm.id, name: 'Shared Source Plot' },
     });
+    farmId = farm.id;
+    plotId = plot.id;
     const [station, secondStation, centerStation] = await Promise.all([
       prisma.station.create({
         data: {
@@ -165,6 +170,168 @@ describe('API source access management', () => {
       issueAccessToken({ prisma, config, userId: farmer.id }),
     ]);
     app = await createApp(config);
+  });
+
+  it('limits another Admin to source health metadata instead of counts, key preview or data', async () => {
+    for (const url of ['/api/v1/data-sources', `/api/v1/data-sources/${adminSourceId}`]) {
+      const response = await app.inject({
+        method: 'GET',
+        url,
+        headers: { authorization: `Bearer ${otherAdminToken}` },
+      });
+      expect(response.statusCode).toBe(200);
+      const data = response.json<{ data: DataSourceDto | { items: DataSourceDto[] } }>().data;
+      const source = 'items' in data ? data.items.find((item) => item.id === adminSourceId) : data;
+      expect(source).toMatchObject({
+        name: 'API source',
+        stationCount: null,
+        visibleAccountCount: null,
+        keyPreview: null,
+        canReadData: false,
+        canManageAccess: false,
+        canRevealKey: false,
+        connectionStatus: 'CONNECTED',
+      });
+    }
+    const owned = await app.inject({
+      method: 'GET',
+      url: `/api/v1/data-sources/${adminSourceId}`,
+      headers: { authorization: `Bearer ${ownerToken}` },
+    });
+    expect(owned.json<{ data: DataSourceDto }>().data).toMatchObject({
+      stationCount: 2,
+      canReadData: true,
+      canManageAccess: true,
+    });
+  });
+
+  it('blocks cross-owner Admin hierarchy and station data routes', async () => {
+    const farms = await app.inject({
+      method: 'GET',
+      url: '/api/v1/farms',
+      headers: { authorization: `Bearer ${otherAdminToken}` },
+    });
+    expect(farms.json<{ data: { items: unknown[] } }>().data.items).toEqual([]);
+    for (const path of [
+      `/farms/${farmId}/plots`,
+      `/plots/${plotId}/stations`,
+      `/stations/${adminStationId}`,
+      `/stations/${adminStationId}/field-metadata`,
+      `/stations/${adminStationId}/alert-rules`,
+      `/stations/${adminStationId}/data/latest`,
+      `/stations/${adminStationId}/data/history?fields=moisture&begin=2026-10-01T00:00:00Z&end=2026-10-02T00:00:00Z`,
+    ]) {
+      const response = await app.inject({
+        method: 'GET',
+        url: `/api/v1${path}`,
+        headers: { authorization: `Bearer ${otherAdminToken}` },
+      });
+      expect(response.statusCode, path).toBe(404);
+    }
+  });
+
+  it('rechecks current Super Admin authority for read-only cross-owner oversight', async () => {
+    await prisma.systemAuthority.create({
+      data: { authority: 'SUPER_ADMIN', holderUserId: otherAdminId },
+    });
+    try {
+      const detail = await app.inject({
+        method: 'GET',
+        url: `/api/v1/stations/${adminStationId}`,
+        headers: { authorization: `Bearer ${otherAdminToken}` },
+      });
+      expect(detail.statusCode).toBe(200);
+      const source = await app.inject({
+        method: 'GET',
+        url: `/api/v1/data-sources/${adminSourceId}`,
+        headers: { authorization: `Bearer ${otherAdminToken}` },
+      });
+      expect(source.json<{ data: DataSourceDto }>().data).toMatchObject({
+        stationCount: 2,
+        canReadData: true,
+        canManageAccess: false,
+        canRevealKey: false,
+      });
+      const reveal = await app.inject({
+        method: 'POST',
+        url: `/api/v1/data-sources/${adminSourceId}/reveal`,
+        headers: { authorization: `Bearer ${otherAdminToken}` },
+        payload: { currentPassword: ownerPassword },
+      });
+      expect(reveal.statusCode).toBe(403);
+    } finally {
+      await prisma.systemAuthority.delete({ where: { authority: 'SUPER_ADMIN' } });
+    }
+    const lost = await app.inject({
+      method: 'GET',
+      url: `/api/v1/stations/${adminStationId}`,
+      headers: { authorization: `Bearer ${otherAdminToken}` },
+    });
+    expect(lost.statusCode).toBe(404);
+  });
+
+  it('hides cross-owner alerts and retained notifications from an ordinary Admin', async () => {
+    const rule = await prisma.alertRule.create({
+      data: {
+        stationId: adminStationId,
+        field: 'MOISTURE',
+        unit: '%',
+        metadataRevision: 'soil-contract:v1:moisture',
+        condition: { operator: 'BELOW', threshold: 20 },
+        severity: 'WARNING',
+        activeKey: `${adminStationId}:moisture`,
+      },
+    });
+    const alert = await prisma.alert.create({
+      data: {
+        ruleId: rule.id,
+        unresolvedRuleId: rule.id,
+        status: 'OPEN',
+        openedValue: 10,
+        latestValue: 10,
+        openedObservedAt: new Date(),
+        latestObservedAt: new Date(),
+      },
+    });
+    const event = await prisma.alertLifecycleEvent.create({
+      data: { alertId: alert.id, type: 'OPENED', revision: 1, requestId: 'privacy-fixture' },
+    });
+    const notification = await prisma.inAppNotification.create({
+      data: { lifecycleEventId: event.id, recipientUserId: otherAdminId },
+    });
+    const get = (path: string, token = otherAdminToken) =>
+      app.inject({
+        method: 'GET',
+        url: `/api/v1${path}`,
+        headers: { authorization: `Bearer ${token}` },
+      });
+    expect((await get('/alerts')).json<{ data: { items: unknown[] } }>().data.items).toEqual([]);
+    expect((await get(`/alerts/${alert.id}`)).statusCode).toBe(404);
+    expect((await get(`/alert-rules/${rule.id}`)).statusCode).toBe(404);
+    expect(
+      (await get('/notifications')).json<{ data: { items: unknown[]; unreadCount: number } }>()
+        .data,
+    ).toMatchObject({ items: [], unreadCount: 0 });
+    const patch = await app.inject({
+      method: 'PATCH',
+      url: `/api/v1/notifications/${notification.id}`,
+      headers: { authorization: `Bearer ${otherAdminToken}` },
+      payload: { isRead: true },
+    });
+    expect(patch.statusCode).toBe(404);
+    expect((await get(`/alerts/${alert.id}`, ownerToken)).statusCode).toBe(200);
+    expect(await prisma.inAppNotification.count({ where: { id: notification.id } })).toBe(1);
+    await prisma.systemAuthority.create({
+      data: { authority: 'SUPER_ADMIN', holderUserId: otherAdminId },
+    });
+    try {
+      expect((await get(`/alerts/${alert.id}`)).statusCode).toBe(200);
+      expect(
+        (await get('/notifications')).json<{ data: { unreadCount: number } }>().data,
+      ).toMatchObject({ unreadCount: 1 });
+    } finally {
+      await prisma.systemAuthority.delete({ where: { authority: 'SUPER_ADMIN' } });
+    }
   });
 
   it('lists source stations only for the owner', async () => {

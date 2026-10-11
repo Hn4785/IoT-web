@@ -131,7 +131,8 @@ token.
 
 | Caller                             | Credential          | Effective station scope                                   |
 | ---------------------------------- | ------------------- | --------------------------------------------------------- |
-| Admin                              | Bearer access token | Every station in the current registry                     |
+| Admin                              | Bearer access token | Live SYSTEM stations and owned managed-source stations    |
+| Super Admin                        | Bearer access token | Every live source station; no cross-owner mutation rights |
 | Farmer                             | Bearer access token | Stations inherited from current farm memberships          |
 | Client Developer browser principal | Bearer access token | No station-data access                                    |
 | Client Developer integration       | `X-API-Key`         | Intersection of active account grant and active key scope |
@@ -442,7 +443,9 @@ IDs and safe error codes, not upstream bodies, credentials or raw exceptions.
 
 ### Hierarchy and browser scope
 
-- Admin receives the full registry.
+- Updated 2026-10-11: ordinary Admin receives SYSTEM and owned managed-source
+  stations only; Super Admin receives the full live registry. Non-owned source
+  connectivity is available separately without measurement/hierarchy disclosure.
 - Farmer receives only currently assigned farms and descendants.
 - Cross-farm ID manipulation returns the same 404 as an unknown resource.
 - Client Developer Bearer principals cannot use browser station-data routes.

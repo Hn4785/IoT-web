@@ -130,8 +130,10 @@ latest/history, alerts and notifications intersects the current station grant.
 - Revoking one station closes access to that station immediately without
   changing other station grants.
 - Revoking the account removes all grants for that source.
-- Admin oversight does not increase `visibleAccountCount` and never exposes the
-  upstream key.
+- Updated 2026-10-11: only Super Admin retains cross-owner data oversight.
+  Ordinary non-owner Admins see connectivity only, with station/account counts
+  and key preview withheld. Oversight never exposes the upstream key or grants
+  mutation rights; it does not increase `visibleAccountCount`.
 - A credential independently entered and owned by a Farmer is not revocable by
   another Admin.
 
@@ -162,7 +164,7 @@ require two distinct breach samples and two recovery samples.
 
 The station metadata response also supplies `canManageRules`. It is `true`
 only for the source owner (and for Admin on the immutable system source), so
-Admin oversight and shared Farmer views never render rule mutation controls
+Super Admin oversight and shared Farmer views never render rule mutation controls
 that the backend would reject.
 
 The source owner and active accounts currently granted the rule's station are

@@ -52,12 +52,13 @@ export type DataSourceDto = Readonly<{
   owner: Readonly<{ id: string; displayName: string; role: 'ADMIN' | 'FARMER' }>;
   baseUrl: string;
   keyPreview: string | null;
-  stationCount: number;
-  visibleAccountCount: number;
+  stationCount: number | null;
+  visibleAccountCount: number | null;
   connectionStatus: 'CONNECTED' | 'FAILED';
   lastCheckedAt: string;
   canManageAccess: boolean;
   canRevealKey: boolean;
+  canReadData: boolean;
   createdAt: string;
   updatedAt: string;
 }>;
@@ -191,6 +192,7 @@ export const dataSourceOpenApiSchema: SchemaObject = {
     'lastCheckedAt',
     'canManageAccess',
     'canRevealKey',
+    'canReadData',
     'createdAt',
     'updatedAt',
   ],
@@ -209,12 +211,13 @@ export const dataSourceOpenApiSchema: SchemaObject = {
     },
     baseUrl: { type: 'string', format: 'uri' },
     keyPreview: { type: 'string', nullable: true, maxLength: 4 },
-    stationCount: { type: 'integer', minimum: 0 },
-    visibleAccountCount: { type: 'integer', minimum: 1 },
+    stationCount: { type: 'integer', minimum: 0, nullable: true },
+    visibleAccountCount: { type: 'integer', minimum: 1, nullable: true },
     connectionStatus: { type: 'string', enum: ['CONNECTED', 'FAILED'] },
     lastCheckedAt: { type: 'string', format: 'date-time' },
     canManageAccess: { type: 'boolean' },
     canRevealKey: { type: 'boolean' },
+    canReadData: { type: 'boolean' },
     createdAt: { type: 'string', format: 'date-time' },
     updatedAt: { type: 'string', format: 'date-time' },
   },

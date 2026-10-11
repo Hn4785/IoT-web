@@ -18,7 +18,7 @@ Depends on: `integration-core`, `identity-access`, `station-data`
 Allow an Admin or Farmer to connect a real observation API using its base URL
 and upstream `X-API-Key`, discover the real `CENTER`/`NODE` stations, and share
 station-scoped access without exposing the upstream credential. Admins can
-monitor every connected source. The same `Manage Access` surface grants Farmer
+monitor connectivity of every connected source. The same `Manage Access` surface grants Farmer
 browser visibility and Client Developer API-key scope; account administration
 does not provide a second station-grant editor.
 
@@ -40,8 +40,17 @@ integrations with chat providers are out of scope.
 
 - Only active `ADMIN` and `FARMER` browser principals may create a source.
 - The creator is the immutable source owner.
-- An Admin may list every source and read its station measurements for
-  operational monitoring.
+- Updated and approved 2026-10-11: an ordinary Admin may list every source and
+  check connectivity, but may read managed-source station data only when they
+  own that source. Super Admin retains read-only oversight of all live sources.
+  The existing Admin access to immutable SYSTEM stations is unchanged.
+- This boundary covers hierarchy, station detail/metadata/latest/history,
+  rules, alerts, notifications and exports. Previously delivered notifications
+  remain stored but are hidden when current station access is lost.
+- Source DTOs expose `canReadData`. Health-only Admin views use the generic
+  name `API source` so existing names cannot disclose station details, and receive null
+  `stationCount`, `visibleAccountCount` and `keyPreview`; owner metadata and
+  connectivity remain visible. Owner-only mutation and reveal checks do not change.
 - A Farmer may list and read sources they own or that have an active explicit
   grant.
 - Only the owner may add or remove source grants.
@@ -160,12 +169,13 @@ type DataSourceDto = {
   owner: { id: string; displayName: string; role: 'ADMIN' | 'FARMER' };
   baseUrl: string;
   keyPreview: string | null;
-  stationCount: number;
-  visibleAccountCount: number;
+  stationCount: number | null;
+  visibleAccountCount: number | null;
   connectionStatus: 'CONNECTED' | 'FAILED';
   lastCheckedAt: string;
   canManageAccess: boolean;
   canRevealKey: boolean;
+  canReadData: boolean;
   createdAt: string;
   updatedAt: string;
 };
@@ -175,6 +185,11 @@ Reveal input is `{ currentPassword: string }`; output is
 `{ xApiKey: string; expiresInSeconds: 30 }`. Invalid credentials use the same
 safe authentication error wording and are rate limited by the existing browser
 authentication boundary.
+`401 INVALID_CREDENTIALS` on this endpoint means password confirmation failed,
+not session expiry: the browser must show the error without refreshing or
+invalidating a valid session. Authentication-guard failures still refresh or
+end the session normally. Submission reads the actual password form value so
+browser/password-manager autofill cannot leave the submitted React state stale.
 
 ## Monitoring integration
 

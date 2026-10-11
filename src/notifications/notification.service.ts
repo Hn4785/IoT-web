@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
 import type { CurrentPrincipalValue } from '../authorization/current-principal.js';
+import { stationReadScope } from '../authorization/station-read-scope.js';
 import { AppError } from '../common/errors/app-error.js';
 import { PrismaService } from '../database/prisma.service.js';
 import { decodeNotificationCursor, encodeNotificationCursor } from './notification-cursor.js';
@@ -104,19 +105,7 @@ export class NotificationService {
   private scope(principal: CurrentPrincipalValue) {
     return {
       recipientUserId: principal.userId,
-      ...(principal.role === 'FARMER'
-        ? {
-            lifecycleEvent: {
-              alert: {
-                rule: {
-                  station: {
-                    plot: { farm: { memberships: { some: { userId: principal.userId } } } },
-                  },
-                },
-              },
-            },
-          }
-        : {}),
+      lifecycleEvent: { alert: { rule: { station: stationReadScope(principal) } } },
     };
   }
 

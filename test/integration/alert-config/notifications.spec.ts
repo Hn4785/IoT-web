@@ -297,7 +297,7 @@ describeDb('Phase C in-app notifications', () => {
     ).toBe(2);
   });
 
-  it('denies Client Developer and preserves already delivered notifications after revoke', async () => {
+  it('denies Client Developer and hides preserved notifications after source access is revoked', async () => {
     expect((await list(clientToken)).statusCode).toBe(403);
     expect((await list(outsiderToken)).json<{ data: { items: unknown[] } }>().data.items).toEqual(
       [],
@@ -335,7 +335,32 @@ describeDb('Phase C in-app notifications', () => {
     ).toEqual([]);
     expect(
       (await list(farmerToken)).json<{ data: { items: unknown[]; unreadCount: number } }>().data,
-    ).toMatchObject({ unreadCount: 3 });
+    ).toMatchObject({ items: [], unreadCount: 0 });
+    const preserved = await prisma.inAppNotification.findMany({
+      where: { recipientUserId: farmerId },
+    });
+    expect(preserved).toHaveLength(3);
+    const firstNotification = preserved[0];
+    if (!firstNotification) throw new Error('Expected preserved notification');
+    const deniedPatch = await app.inject({
+      method: 'PATCH',
+      url: `/api/v1/notifications/${firstNotification.id}`,
+      headers: { authorization: `Bearer ${farmerToken}` },
+      payload: { isRead: true },
+    });
+    expect(deniedPatch.statusCode).toBe(404);
+    const stationId = (await prisma.alertRule.findUniqueOrThrow({ where: { id: ruleId } }))
+      .stationId;
+    await prisma.dataSourceGrant.create({
+      data: {
+        dataSourceId: sourceId,
+        userId: farmerId,
+        stations: { create: { stationId } },
+      },
+    });
+    expect(
+      (await list(farmerToken)).json<{ data: { unreadCount: number } }>().data.unreadCount,
+    ).toBe(3);
   });
 
   it('marks a notification read and unread idempotently', async () => {

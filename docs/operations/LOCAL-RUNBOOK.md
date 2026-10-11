@@ -32,6 +32,13 @@ thiểu 32 ký tự. Khóa mã hóa nguồn dữ liệu phải là đúng 32 byt
 base64. `DATA_SOURCE_ALLOWED_ORIGINS` là danh sách origin HTTPS phân cách bằng
 dấu phẩy; không gồm path. Không gửi hoặc commit file `.env`.
 
+`FRONTEND_ORIGIN` phải đúng địa chỉ trình duyệt dùng để đăng nhập, gồm giao thức,
+hostname và cổng nếu có; không thêm path hoặc dấu `/` cuối. Khi truy cập qua
+ngrok/HTTPS, đặt origin HTTPS công khai, không dùng địa chỉ IP nội bộ. Nếu login
+thành công nhưng refresh/logout trả `403 FORBIDDEN`, kiểm tra giá trị này và
+khởi động lại riêng dịch vụ backend sau khi sửa. Không bỏ kiểm tra Origin hoặc
+đổi sang wildcard để khắc phục. Cookie production vẫn phải dùng `Secure`.
+
 Có thể tạo khóa mã hóa cục bộ bằng Node.js rồi dán kết quả vào `.env`:
 
 ```powershell

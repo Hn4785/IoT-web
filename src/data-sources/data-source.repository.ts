@@ -161,7 +161,7 @@ export class DataSourceRepository {
           requestId: input.requestId,
           metadata: { stationCount: input.stationCodes.length },
         });
-        return this.toDto(source, input.principal.userId);
+        return this.toDto(source, input.principal);
       },
       { isolationLevel: 'Serializable' },
     );
@@ -277,7 +277,7 @@ export class DataSourceRepository {
     });
     const page = rows.slice(0, query.limit);
     return {
-      items: page.map((source) => this.toDto(source, principal.userId)),
+      items: page.map((source) => this.toDto(source, principal)),
       nextCursor: rows.length > query.limit ? (page.at(-1)?.id ?? null) : null,
     };
   }
@@ -300,7 +300,7 @@ export class DataSourceRepository {
       select: sourceSelect,
     });
     if (!source) throw new AppError('NOT_FOUND', 404, 'Resource not found');
-    return this.toDto(source, principal.userId);
+    return this.toDto(source, principal);
   }
 
   async setGrant(input: {
@@ -883,28 +883,35 @@ export class DataSourceRepository {
     );
   }
 
-  private toDto(source: SourceRecord, principalId: string): DataSourceDto {
+  private toDto(source: SourceRecord, principal: CurrentPrincipalValue): DataSourceDto {
     if (!source.owner || !['ADMIN', 'FARMER'].includes(source.owner.role)) {
       throw new AppError('INTERNAL_ERROR', 500, 'Data source owner is invalid');
     }
-    const isOwner = source.owner.id === principalId;
-    const principalGrant = source.grants.find((grant) => grant.userId === principalId);
+    const isOwner = source.owner.id === principal.userId;
+    const principalGrant = source.grants.find((grant) => grant.userId === principal.userId);
+    const canReadData =
+      isOwner ||
+      (principal.role === 'ADMIN' && principal.isSuperAdmin) ||
+      (principal.role === 'FARMER' && Boolean(principalGrant));
     return {
       id: source.id,
-      name: source.name,
+      name: canReadData ? source.name : 'API source',
       owner: {
         id: source.owner.id,
         displayName: source.owner.displayName,
         role: source.owner.role as 'ADMIN' | 'FARMER',
       },
       baseUrl: source.baseUrl,
-      keyPreview: source.keyPreview,
-      stationCount: principalGrant?._count.stations ?? source._count.stations,
-      visibleAccountCount: 1 + source._count.grants,
+      keyPreview: canReadData ? source.keyPreview : null,
+      stationCount: canReadData
+        ? (principalGrant?._count.stations ?? source._count.stations)
+        : null,
+      visibleAccountCount: canReadData ? 1 + source._count.grants : null,
       connectionStatus: source.connectionStatus,
       lastCheckedAt: source.lastCheckedAt.toISOString(),
       canManageAccess: isOwner,
       canRevealKey: isOwner,
+      canReadData,
       createdAt: source.createdAt.toISOString(),
       updatedAt: source.updatedAt.toISOString(),
     };

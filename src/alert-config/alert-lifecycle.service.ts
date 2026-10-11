@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 
 import type { CurrentPrincipalValue } from '../authorization/current-principal.js';
+import { stationReadScope } from '../authorization/station-read-scope.js';
 import { AppError } from '../common/errors/app-error.js';
 import { RUNTIME_CONFIG } from '../config/runtime-config.module.js';
 import type { RuntimeConfig } from '../config/runtime-config.js';
@@ -70,7 +71,7 @@ export class AlertLifecycleService {
         rule: {
           ...(query.stationId ? { stationId: query.stationId } : {}),
           ...(query.severity ? { severity: query.severity } : {}),
-          ...(principal.role === 'FARMER' ? { station: this.stationReadScope(principal) } : {}),
+          station: stationReadScope(principal),
         },
       },
       orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
@@ -271,9 +272,7 @@ export class AlertLifecycleService {
     const row = await this.prisma.alert.findFirst({
       where: {
         id: alertId,
-        ...(principal.role === 'FARMER'
-          ? { rule: { station: this.stationReadScope(principal) } }
-          : {}),
+        rule: { station: stationReadScope(principal) },
       },
       include: alertInclude,
     });
@@ -293,20 +292,6 @@ export class AlertLifecycleService {
     if (!mutable) {
       throw new AppError('FORBIDDEN', 403, 'Only the source owner can change alerts');
     }
-  }
-
-  private stationReadScope(principal: CurrentPrincipalValue): Prisma.StationWhereInput {
-    return {
-      dataSource: { removedAt: null },
-      OR: [
-        {
-          dataSource: { kind: 'SYSTEM' },
-          plot: { farm: { memberships: { some: { userId: principal.userId } } } },
-        },
-        { dataSource: { ownerUserId: principal.userId } },
-        { sourceGrants: { some: { userId: principal.userId } } },
-      ],
-    };
   }
 
   private stationMutationScope(principal: CurrentPrincipalValue): Prisma.StationWhereInput {

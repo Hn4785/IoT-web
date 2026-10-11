@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 
 import type { ApiKeyPrincipal } from '../api-keys/api-key.service.js';
 import type { CurrentPrincipalValue } from '../authorization/current-principal.js';
+import { stationReadScope } from '../authorization/station-read-scope.js';
 import { AppError } from '../common/errors/app-error.js';
 import { PrismaService } from '../database/prisma.service.js';
 import type { Prisma } from '../generated/prisma/client.js';
@@ -14,8 +15,6 @@ import type {
   StationDto,
 } from './station-data.contracts.js';
 
-const NO_ACCESS_ID = '00000000-0000-4000-8000-000000000000';
-
 export type AuthorizedStation = Readonly<
   StationDto & { upstreamCode: string; dataSourceId: string }
 >;
@@ -25,6 +24,7 @@ const keyset = (name: string, id: string) => ({
 });
 
 const notFound = (): AppError => new AppError('NOT_FOUND', 404, 'Resource not found');
+const NO_ACCESS_ID = '00000000-0000-4000-8000-000000000000';
 
 @Injectable()
 export class StationRepository {
@@ -289,103 +289,15 @@ export class StationRepository {
   }
 
   private farmScope(principal: CurrentPrincipalValue): Prisma.FarmWhereInput {
-    return principal.role === 'ADMIN'
-      ? { plots: { some: { stations: { some: { dataSource: { removedAt: null } } } } } }
-      : principal.role === 'FARMER'
-        ? {
-            OR: [
-              {
-                AND: [
-                  { memberships: { some: { userId: principal.userId } } },
-                  {
-                    plots: {
-                      some: {
-                        stations: {
-                          some: { dataSource: { kind: 'SYSTEM', removedAt: null } },
-                        },
-                      },
-                    },
-                  },
-                ],
-              },
-              {
-                plots: {
-                  some: {
-                    stations: {
-                      some: {
-                        dataSource: { ownerUserId: principal.userId, removedAt: null },
-                      },
-                    },
-                  },
-                },
-              },
-              {
-                plots: {
-                  some: {
-                    stations: {
-                      some: {
-                        dataSource: { removedAt: null },
-                        sourceGrants: { some: { userId: principal.userId } },
-                      },
-                    },
-                  },
-                },
-              },
-            ],
-          }
-        : { id: NO_ACCESS_ID };
+    return { plots: { some: { stations: { some: stationReadScope(principal) } } } };
   }
 
   private plotScope(principal: CurrentPrincipalValue): Prisma.PlotWhereInput {
-    return principal.role === 'ADMIN'
-      ? { stations: { some: { dataSource: { removedAt: null } } } }
-      : principal.role === 'FARMER'
-        ? {
-            OR: [
-              {
-                AND: [
-                  { farm: { memberships: { some: { userId: principal.userId } } } },
-                  {
-                    stations: {
-                      some: { dataSource: { kind: 'SYSTEM', removedAt: null } },
-                    },
-                  },
-                ],
-              },
-              {
-                stations: {
-                  some: { dataSource: { ownerUserId: principal.userId, removedAt: null } },
-                },
-              },
-              {
-                stations: {
-                  some: {
-                    dataSource: { removedAt: null },
-                    sourceGrants: { some: { userId: principal.userId } },
-                  },
-                },
-              },
-            ],
-          }
-        : { id: NO_ACCESS_ID };
+    return { stations: { some: stationReadScope(principal) } };
   }
 
   private stationScope(principal: CurrentPrincipalValue): Prisma.StationWhereInput {
-    return principal.role === 'ADMIN'
-      ? { dataSource: { removedAt: null } }
-      : principal.role === 'FARMER'
-        ? {
-            dataSource: { removedAt: null },
-            OR: [
-              {
-                dataSource: { kind: 'SYSTEM' },
-                plot: { farm: { memberships: { some: { userId: principal.userId } } } },
-              },
-              { dataSource: { ownerUserId: principal.userId } },
-              { sourceGrants: { some: { userId: principal.userId } } },
-            ],
-          }
-        : { id: NO_ACCESS_ID };
+    return stationReadScope(principal);
   }
 
   private toStationDto(station: {

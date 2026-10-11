@@ -75,7 +75,9 @@ provider device-intervention decision
 - `OPEN`, `ACKNOWLEDGED` and `RESOLVED` alert states.
 - In-app notifications for open, acknowledge and resolve transitions.
 - Cursor-paginated browser APIs and OpenAPI contracts.
-- Admin global scope and Farmer farm-membership scope.
+- Current source-aware scope: ordinary Admin reads SYSTEM and owned managed
+  stations; Super Admin retains read-only oversight. Farmer reads SYSTEM farm
+  memberships, managed ownership and active station grants (updated 2026-10-11).
 - A device-configuration capability response that reports the feature as
   unavailable pending the hardware contract.
 - An explicit local demo metadata provider for configured seed station codes.
@@ -104,11 +106,12 @@ provider device-intervention decision
 
 ## 4. Roles and authorization
 
-| Actor            | Rules                                     | Alerts and notifications                     | Device configuration             |
-| ---------------- | ----------------------------------------- | -------------------------------------------- | -------------------------------- |
-| Admin            | Manage rules for every registered station | View and act across the current registry     | View unavailable capability only |
-| Farmer           | Manage rules in currently assigned farms  | View and act within currently assigned farms | View unavailable capability only |
-| Client Developer | No access                                 | No access                                    | No access                        |
+| Actor            | Rules                                    | Alerts and notifications                     | Device configuration             |
+| ---------------- | ---------------------------------------- | -------------------------------------------- | -------------------------------- |
+| Admin            | Manage SYSTEM and owned-source rules     | View/act on SYSTEM and owned-source stations | View unavailable capability only |
+| Super Admin      | Same owner-only mutation boundary        | Read live registry; act only as owner/SYSTEM | View unavailable capability only |
+| Farmer           | Manage rules in currently assigned farms | View and act within currently assigned farms | View unavailable capability only |
+| Client Developer | No access                                | No access                                    | No access                        |
 
 Every request re-evaluates current account status, role and resource scope from
 PostgreSQL. A notification row naming a user is not sufficient authorization:
@@ -658,7 +661,9 @@ uses the existing isolated `iot_test` safety boundary.
 
 ### HTTP and authorization
 
-- Admin operates across the registry.
+- Ordinary Admin reads only SYSTEM and owned managed sources; Super Admin may
+  read the live registry. Alert and notification reads re-check the same current
+  station scope, including after grant removal or authority transfer.
 - Farmer operates only within current memberships.
 - Client Developer receives no Phase C access.
 - Unknown and cross-scope IDs are indistinguishable.
