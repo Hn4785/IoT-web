@@ -8,12 +8,13 @@ export interface DataSource {
   owner: { id: string; displayName: string; role: "ADMIN" | "FARMER" };
   baseUrl: string;
   keyPreview: string | null;
-  stationCount: number;
-  visibleAccountCount: number;
+  stationCount: number | null;
+  visibleAccountCount: number | null;
   connectionStatus: "CONNECTED" | "FAILED";
   lastCheckedAt: string;
   canManageAccess: boolean;
   canRevealKey: boolean;
+  canReadData: boolean;
   createdAt: string;
   updatedAt: string;
 }

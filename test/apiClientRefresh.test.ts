@@ -11,6 +11,7 @@ let refreshGate: Promise<void> | null = null;
 let onRefreshStarted: (() => void) | null = null;
 let late401Gate: Promise<void> | null = null;
 let onLate401Started: (() => void) | null = null;
+let rejectPasswordConfirmation = false;
 axios.defaults.adapter = async (config: InternalAxiosRequestConfig) => {
   const response = { data: {}, status: 401, statusText: "Unauthorized", headers: {}, config };
   if (config.url === "/auth/refresh") {
@@ -28,6 +29,11 @@ axios.defaults.adapter = async (config: InternalAxiosRequestConfig) => {
     return { ...response, status: 200, data: { success: true, data: { accessToken: "test-fresh-token", expiresIn: 900 } } };
   }
   dataRequests += 1;
+  if (rejectPasswordConfirmation && config.url === "/data-sources/owned-source/reveal") {
+    throw new AxiosError("Unauthorized", "ERR_BAD_REQUEST", config, undefined, {
+      ...response, data: { success: false, error: { code: "INVALID_CREDENTIALS", message: "Current password is invalid" }, requestId: "fixture" },
+    });
+  }
   if (late401Gate && config.url === "/late-original" && config.headers.Authorization === "Bearer test-expired-token") {
     onLate401Started?.();
     await late401Gate;
@@ -85,6 +91,21 @@ test("failed login is not retried through refresh", async () => {
   authStorage.clearAccessToken();
   await assert.rejects(apiClient.post("/auth/login", {}));
   assert.equal(refreshes, 0);
+});
+
+test("rejected source password confirmation preserves the valid session without replay", async () => {
+  refreshes = 0;
+  dataRequests = 0;
+  rejectPasswordConfirmation = true;
+  useAuthStore.getState().login(makeUser("source-owner"));
+  authStorage.setAccessToken("test-fresh-token");
+  try {
+    await assert.rejects(apiClient.post("/data-sources/owned-source/reveal", { currentPassword: "wrong-password-123" }));
+    assert.equal(refreshes, 0);
+    assert.equal(dataRequests, 1);
+    assert.equal(authStorage.getAccessToken(), "test-fresh-token");
+    assert.equal(useAuthStore.getState().user?.id, "source-owner");
+  } finally { rejectPasswordConfirmation = false; }
 });
 
 test("concurrent expired requests with failed refresh invalidate token and Zustand user exactly once", async () => {

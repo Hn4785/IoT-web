@@ -47,3 +47,18 @@ unchanged; no Pi redeployment or sample-data transfer was performed.
       Health/readiness, protected-endpoint denial and deployed asset hash passed.
       PostgreSQL and ngrok retained their existing containers and start times.
       No handover document, credentials, database dump or sample data was published.
+
+## v3.0 authentication and source privacy correction — 2026-10-11
+
+- [x] Keep the session when Reveal rejects the current password; genuine expired
+      tokens still refresh and revoked sessions still return to login.
+- [x] Submit the password currently present in the form, including password-manager
+      autofill. Keep errors in the dialog for both Admin and Farmer.
+- [x] Discard late Reveal results after closing the dialog; clear the key and
+      password on close and retain the existing 30-second visibility limit.
+- [x] Show connectivity only for an ordinary Admin viewing another owner's source;
+      hide data navigation and show restricted counts. The backend enforces access.
+- [x] Verify 244/244 unit tests and 44/44 desktop/mobile browser cases, lint, build
+      and zero dependency advisories. Add the privacy/Reveal cases to GitHub CI.
+- [ ] Publish the verified correction and deploy the runtime on Pi with the exact
+      selected ngrok origin. Do not transfer test fixtures or handover documents.

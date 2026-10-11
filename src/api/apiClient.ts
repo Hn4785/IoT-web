@@ -3,7 +3,7 @@ import type { AxiosError, InternalAxiosRequestConfig } from "axios";
 
 import { env } from "../config/env.ts";
 import { authStorage } from "../utils/authStorage.ts";
-import type { ApiSuccessEnvelope } from "../types/api.ts";
+import type { ApiErrorEnvelope, ApiSuccessEnvelope } from "../types/api.ts";
 import { createSingleFlight } from "./refreshCoordinator.ts";
 import {
   getCurrentSessionSnapshot,
@@ -69,8 +69,12 @@ apiClient.interceptors.response.use(
     const isAuthOperation = ["/auth/login", "/auth/refresh", "/auth/logout"].some(
       (endpoint) => path.endsWith(endpoint),
     );
+    const body = error.response?.data as ApiErrorEnvelope | undefined;
+    // A rejected password confirmation does not revoke the authenticated session.
+    const isRevealPasswordFailure = /^\/data-sources\/[^/?]+\/reveal$/.test(path)
+      && body?.success === false && body.error?.code === "INVALID_CREDENTIALS";
 
-    if (error.response?.status !== 401 || !request || isAuthOperation) {
+    if (error.response?.status !== 401 || !request || isAuthOperation || isRevealPasswordFailure) {
       return Promise.reject(error);
     }
 

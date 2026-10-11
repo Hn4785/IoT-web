@@ -26,6 +26,7 @@ export default function ApiSources() {
   const navigate = useNavigate();
   const hierarchy = useStationHierarchy();
   const revealTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const revealGeneration = useRef(0);
   const { sources, setSources, loading, refreshing, error, setError, checks, markChecked, loadSources } = useApiSources();
   const [busyId, setBusyId] = useState("");
   const [notice, setNotice] = useState("");
@@ -43,9 +44,11 @@ export default function ApiSources() {
   const [revealSource, setRevealSource] = useState<DataSource | null>(null);
   const [currentPassword, setCurrentPassword] = useState("");
   const [revealedKey, setRevealedKey] = useState("");
+  const [revealError, setRevealError] = useState("");
   const [copyStatus, setCopyStatus] = useState("");
 
   useEffect(() => () => {
+    revealGeneration.current++;
     if (revealTimer.current) clearTimeout(revealTimer.current);
   }, []);
 
@@ -128,28 +131,35 @@ export default function ApiSources() {
   };
 
   const closeReveal = () => {
+    revealGeneration.current++;
     if (revealTimer.current) clearTimeout(revealTimer.current);
     revealTimer.current = null;
     setRevealSource(null);
     setCurrentPassword("");
     setRevealedKey("");
+    setRevealError("");
     setCopyStatus("");
+    setBusyId(current => current === "reveal" ? "" : current);
   };
 
   const revealKey = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!revealSource) return;
+    const generation = ++revealGeneration.current;
     setBusyId("reveal");
-    setError("");
+    setRevealError("");
+    const password = new FormData(event.currentTarget as HTMLFormElement).get("currentPassword");
     try {
-      const result = await dataSourceService.reveal(revealSource.id, currentPassword);
+      const result = await dataSourceService.reveal(revealSource.id, typeof password === "string" ? password : "");
+      if (generation !== revealGeneration.current) return;
       setRevealedKey(result.xApiKey);
       setCurrentPassword("");
       revealTimer.current = setTimeout(closeReveal, result.expiresInSeconds * 1000);
     } catch (reason) {
-      setError(normalizeApiError(reason).message);
+      if (generation !== revealGeneration.current) return;
+      setRevealError(normalizeApiError(reason).message);
     } finally {
-      setBusyId("");
+      if (generation === revealGeneration.current) setBusyId("");
     }
   };
 
@@ -241,7 +251,8 @@ export default function ApiSources() {
 
       <Modal isOpen={Boolean(revealSource)} onClose={closeReveal} title="Reveal X-API-Key" description="Only the source owner can reveal this key. It closes automatically after 30 seconds." size="sm">
         {!revealedKey ? <form className={styles.form} onSubmit={revealKey}>
-          <label>Current password<input required minLength={12} type="password" autoComplete="current-password" value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} /></label>
+          <label>Current password<input name="currentPassword" required minLength={12} maxLength={128} type="password" autoComplete="current-password" value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} /></label>
+          {revealError && <p role="alert">{revealError}</p>}
           <div className={styles.modalActions}><Button variant="outline" onClick={closeReveal}>Cancel</Button><Button type="submit" loading={busyId === "reveal"}>Reveal</Button></div>
         </form> : <div className={styles.secretBox}>
           <code>{revealedKey}</code>
