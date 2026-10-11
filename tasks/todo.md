@@ -27,8 +27,11 @@ Updated: 2026-10-11
       rejected password from an expired login session in the frontend.
 - [x] Verify 93/93 files and 626/626 tests against isolated `iot_test`; pass format,
       typecheck, lint, build, production audit and secret scan. No schema change.
-- [ ] Publish and deploy the correction on Pi. Use only the selected ngrok login
-      origin, retain exact Origin checks and verify the database/tunnel are unchanged.
+- [x] Publish BE `abd4080` and FE `7650b6f`; deploy both runtime images on Pi.
+      Health/readiness and asset hashes passed. The selected ngrok origin passes
+      refresh/logout Origin checks; unrelated origins remain forbidden. PostgreSQL
+      and ngrok retained their container IDs and start times. No migration or seed.
+      Password-confirmation success was tested with isolated fixtures, not a real key.
 
 This is the single short status index for the project. Detailed acceptance
 criteria for the original modules remain in the
