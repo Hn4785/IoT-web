@@ -109,10 +109,19 @@ POST   /data-sources/:sourceId/reveal
 PUT    /data-sources/:sourceId/grants/:userId
 DELETE /data-sources/:sourceId/grants/:userId
 GET    /data-sources/:sourceId/grants?limit=50&cursor=...
-GET    /data-sources/:sourceId/grant-candidates?limit=50&cursor=...
+GET    /data-sources/:sourceId/grant-candidates?limit=50&cursor=...&email=...
 ```
 
 `grant-candidates` is owner-only and returns active Farmer and Client Developer
+accounts. Release v3.0 adds an optional `email` substring filter (trimmed,
+3–254 characters, case-insensitive), applied before cursor pagination. Omitting
+it preserves the existing list contract. Only the source owner can search.
+The sharing dialog searches on explicit submission, lets the owner choose one
+account and soil-station subset, and writes only on Save Access. Its separate
+shared-account list supports editing and revoking existing grants; typing or
+selecting an account never grants access.
+
+The endpoint returns active Farmer and Client Developer
 accounts that may receive station access. It exposes the minimum account fields
 required by the sharing dialog (`id`, `displayName`, `email`, and `role`),
 excludes the source owner, and never grants access through the Admin

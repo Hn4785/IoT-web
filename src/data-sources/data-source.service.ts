@@ -7,6 +7,7 @@ import type {
   CreateDataSourceInput,
   DataSourceDto,
   ListDataSourcesQuery,
+  ListGrantCandidatesQuery,
   RevealDataSourceInput,
   SetDataSourceGrantInput,
 } from './data-source.contracts.js';
@@ -84,7 +85,7 @@ export class DataSourceService {
   listGrantCandidates(
     principal: CurrentPrincipalValue,
     sourceId: string,
-    query: ListDataSourcesQuery,
+    query: ListGrantCandidatesQuery,
   ) {
     this.requireSupportedRole(principal);
     return this.repository.listGrantCandidates(principal, sourceId, query);

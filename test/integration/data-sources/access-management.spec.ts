@@ -247,6 +247,37 @@ describe('API source access management', () => {
     expect(nonOwnerResponse.statusCode).toBe(403);
   });
 
+  it('filters eligible recipients by email before pagination without widening ownership', async () => {
+    type CandidatePage = { data: { items: { id: string }[]; nextCursor: string | null } };
+    const get = (query: string, token = ownerToken) =>
+      app.inject({
+        method: 'GET',
+        url: `/api/v1/data-sources/${adminSourceId}/grant-candidates?${query}`,
+        headers: { authorization: `Bearer ${token}` },
+      });
+    const filtered = await get('email=%20CANDIDATE-FARMER%20&limit=1');
+    expect(filtered.statusCode).toBe(200);
+    expect(filtered.json<CandidatePage>().data).toMatchObject({
+      items: [{ id: candidateFarmerId }],
+      nextCursor: null,
+    });
+    const first = await get('email=farmer&limit=1');
+    expect(first.statusCode).toBe(200);
+    const page = first.json<CandidatePage>().data;
+    expect(page.items).toHaveLength(1);
+    expect(page.nextCursor).toBeTruthy();
+    const second = await get(`email=farmer&limit=1&cursor=${String(page.nextCursor)}`);
+    expect(second.statusCode).toBe(200);
+    expect(second.json<CandidatePage>().data.items).toHaveLength(1);
+    expect(second.json<CandidatePage>().data.items[0]?.id).not.toBe(page.items[0]?.id);
+    expect(second.json<CandidatePage>().data.nextCursor).toBeNull();
+    expect((await get('email=disabled')).json<CandidatePage>().data.items).toEqual([]);
+    expect((await get('email=access-admin')).json<CandidatePage>().data.items).toEqual([]);
+    expect((await get('email=candidate', otherAdminToken)).statusCode).toBe(403);
+    expect((await get('email=ab')).statusCode).toBe(400);
+    expect((await get(`email=${'a'.repeat(255)}`)).statusCode).toBe(400);
+  });
+
   afterAll(async () => {
     await app.close();
     await prisma.$disconnect();

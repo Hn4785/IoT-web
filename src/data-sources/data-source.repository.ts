@@ -11,6 +11,7 @@ import type {
   DataSourceGrantCandidateDto,
   DataSourceGrantDto,
   ListDataSourcesQuery,
+  ListGrantCandidatesQuery,
   ResourceChoice,
 } from './data-source.contracts.js';
 import type { EncryptedSourceSecret } from './source-secret.service.js';
@@ -544,7 +545,7 @@ export class DataSourceRepository {
   async listGrantCandidates(
     principal: CurrentPrincipalValue,
     sourceId: string,
-    query: ListDataSourcesQuery,
+    query: ListGrantCandidatesQuery,
   ): Promise<{ items: DataSourceGrantCandidateDto[]; nextCursor: string | null }> {
     const source = await this.prisma.dataSource.findFirst({
       where: { id: sourceId, kind: 'MANAGED', removedAt: null },
@@ -572,6 +573,7 @@ export class DataSourceRepository {
         role: { in: ['FARMER', 'CLIENT_DEVELOPER'] },
         status: 'ACTIVE',
         id: { not: source.ownerUserId },
+        ...(query.email ? { email: { contains: query.email, mode: 'insensitive' as const } } : {}),
         ...(cursor
           ? {
               OR: [

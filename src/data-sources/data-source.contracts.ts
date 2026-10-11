@@ -22,6 +22,10 @@ const listDataSourcesSchema = z.strictObject({
   limit: z.coerce.number().int().min(1).max(100).default(50),
 });
 
+const listGrantCandidatesSchema = listDataSourcesSchema.extend({
+  email: z.string().trim().min(3).max(254).optional(),
+});
+
 const revealDataSourceSchema = z.strictObject({
   currentPassword: z.string().min(12).max(128),
 });
@@ -38,6 +42,7 @@ const setDataSourceGrantSchema = z.strictObject({
 
 export type CreateDataSourceInput = z.output<typeof createDataSourceSchema>;
 export type ListDataSourcesQuery = z.output<typeof listDataSourcesSchema>;
+export type ListGrantCandidatesQuery = z.output<typeof listGrantCandidatesSchema>;
 export type RevealDataSourceInput = z.output<typeof revealDataSourceSchema>;
 export type SetDataSourceGrantInput = z.output<typeof setDataSourceGrantSchema>;
 
@@ -102,6 +107,8 @@ export const parseCreateDataSource = (value: unknown): CreateDataSourceInput =>
   parse(createDataSourceSchema, value, 'Request body is invalid');
 export const parseListDataSources = (value: unknown): ListDataSourcesQuery =>
   parse(listDataSourcesSchema, value, 'Query is invalid');
+export const parseListGrantCandidates = (value: unknown): ListGrantCandidatesQuery =>
+  parse(listGrantCandidatesSchema, value, 'Query is invalid');
 export const parseDataSourceId = (value: unknown): string =>
   parse(z.uuid(), value, 'Data source identifier is invalid');
 export const parseGrantUserId = (value: unknown): string =>

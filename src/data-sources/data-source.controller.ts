@@ -16,6 +16,7 @@ import {
   ApiBody,
   ApiCreatedResponse,
   ApiOkResponse,
+  ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
 import type { FastifyRequest } from 'fastify';
@@ -32,6 +33,7 @@ import {
   parseDataSourceId,
   parseGrantUserId,
   parseListDataSources,
+  parseListGrantCandidates,
   parseRevealDataSource,
   parseSetDataSourceGrant,
   revealDataSourceOpenApiSchema,
@@ -166,6 +168,12 @@ export class DataSourceController {
   }
 
   @Get(':sourceId/grant-candidates')
+  @ApiQuery({
+    name: 'email',
+    required: false,
+    description: 'Case-insensitive email substring, 3–254 characters',
+    schema: { type: 'string', minLength: 3, maxLength: 254 },
+  })
   @Header('Cache-Control', 'no-store')
   async listGrantCandidates(
     @CurrentPrincipal() principal: CurrentPrincipalValue,
@@ -177,7 +185,7 @@ export class DataSourceController {
       data: await this.sources.listGrantCandidates(
         principal,
         parseDataSourceId(sourceId),
-        parseListDataSources(query),
+        parseListGrantCandidates(query),
       ),
     };
   }
