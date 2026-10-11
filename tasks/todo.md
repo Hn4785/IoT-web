@@ -60,5 +60,7 @@ unchanged; no Pi redeployment or sample-data transfer was performed.
       hide data navigation and show restricted counts. The backend enforces access.
 - [x] Verify 244/244 unit tests and 44/44 desktop/mobile browser cases, lint, build
       and zero dependency advisories. Add the privacy/Reveal cases to GitHub CI.
-- [ ] Publish the verified correction and deploy the runtime on Pi with the exact
-      selected ngrok origin. Do not transfer test fixtures or handover documents.
+- [x] Publish BE `abd4080` and FE `7650b6f`; deploy runtime images on Pi with the
+      exact selected ngrok origin. Public health/readiness and positive/negative
+      Origin checks passed; database and tunnel remained running. No test fixtures
+      or handover documents were transferred. Real-account Reveal needs user retest.

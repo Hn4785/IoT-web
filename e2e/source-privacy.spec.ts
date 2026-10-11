@@ -84,7 +84,7 @@ test("ordinary Admin sees only connectivity for another owner's source", async (
   await expect(page.getByText("Restricted", { exact: true })).toHaveCount(2);
   await expect(page.getByRole("button", { name: "View Data" })).toHaveCount(0);
   await expect(page.getByText("Connection status only", { exact: true })).toBeVisible();
-  await page.screenshot({ path: `artifacts/source-privacy-health-${testInfo.project.name}.png`, fullPage: true });
+  await page.screenshot({ path: testInfo.outputPath("source-privacy-health.png"), fullPage: true });
 });
 
 for (const role of ["ADMIN", "FARMER"] as const) {
