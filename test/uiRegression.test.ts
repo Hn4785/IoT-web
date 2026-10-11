@@ -41,13 +41,13 @@ test("interactive API reference is hidden from production builds", () => {
   assert.match(source, /isInteractiveApiReferenceAvailable/);
 });
 
-test("login identifies the deployed v2.5 release", () => {
+test("login identifies the deployed v3.0 release", () => {
   const source = readFileSync(
     new URL("../src/pages/auth/Login.tsx", import.meta.url),
     "utf8",
   );
 
-  assert.match(source, /Monitoring Node System v2\.5\.6/);
+  assert.match(source, /Monitoring Node System v3\.0/);
   assert.doesNotMatch(source, /Monitoring Node System v2\.4/);
 });
 

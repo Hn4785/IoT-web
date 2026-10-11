@@ -14,7 +14,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import { useAuth } from "@/hooks/useAuth";
 import { authService } from "@/services/authService";
-import { getDefaultRouteByRole } from "@/auth/defaultRoute";
+import { getLoginRedirectByRole } from "@/auth/defaultRoute";
 import { normalizeApiError } from "@/utils/apiError";
 import { requiresPasswordChange } from "@/auth/passwordChange";
 
@@ -81,8 +81,7 @@ export default function Login() {
 
       const destination = requiresPasswordChange(result.user)
         ? "/change-password"
-        : state?.from?.pathname ||
-          getDefaultRouteByRole(result.user.role);
+        : getLoginRedirectByRole(result.user.role, state?.from?.pathname);
 
       navigate(destination, {
         replace: true,
@@ -356,7 +355,7 @@ export default function Login() {
         </form>
 
         <footer className={styles.footer}>
-          AgriSense Monitoring Node System v2.5.6
+          AgriSense Monitoring Node System v3.0
         </footer>
       </section>
     </main>

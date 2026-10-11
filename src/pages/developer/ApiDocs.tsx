@@ -82,7 +82,7 @@ const responseExamples: Record<string, string> = {
   "success": true,
   "data": {
   "service": "iot-api",
-  "version": "2.5.6",
+  "version": "3.0.0",
   "status": "healthy",
   "environment": "development",
   "time": "2026-09-12T05:00:00.000Z"

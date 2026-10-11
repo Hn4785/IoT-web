@@ -39,7 +39,7 @@ jobs:
         run: npm run build
 
       - name: Run E2E smoke test
-        run: npm run test:e2e -- e2e/smoke.spec.ts
+        run: npm run test:e2e -- e2e/smoke.spec.ts e2e/source-access.spec.ts
 
       - name: Audit dependencies
         run: npm audit --audit-level=high

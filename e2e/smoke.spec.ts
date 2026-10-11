@@ -2,6 +2,19 @@ import { test, expect } from "@playwright/test";
 import { setupMockApi, loginAs } from "./support/mockApi";
 
 test.describe("Mock smoke suite", () => {
+  test("Admin login from a different role route returns to Admin and preserves denial guards", async ({ page }) => {
+    await setupMockApi(page, { userRole: "ADMIN", revokeRefresh: true });
+    await page.goto("/farm-owner/api-sources");
+    await expect(page).toHaveURL(/\/login/);
+    await page.fill("#login-email", "qa-admin@example.test");
+    await page.fill("#login-password", "valid-password-123");
+    await page.click('button[type="submit"]');
+    await expect(page).toHaveURL(/\/admin$/);
+    await page.route("**/api/v1/auth/refresh", route => route.fulfill({ json: { success: true, data: { accessToken: "mock-token", expiresIn: 3600 } } }));
+    await page.goto("/farm-owner/api-sources");
+    await expect(page).toHaveURL(/\/unauthorized$/);
+  });
+
   test("restore and login role routing", async ({ page }) => {
     await setupMockApi(page, { userRole: "ADMIN" });
     await loginAs(page, "qa-admin@example.test");

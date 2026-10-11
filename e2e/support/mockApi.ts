@@ -64,7 +64,7 @@ export async function setupMockApi(page: Page, options: MockApiOptions = {}) {
     if (path === "/auth/logout" && method === "POST") return ok(null);
 
     if (path === "/health" && method === "GET") {
-      return ok({ service: "AgriSense API", status: "healthy", version: "2.5.6", environment: "development", time: new Date().toISOString() });
+      return ok({ service: "AgriSense API", status: "healthy", version: "3.0.0", environment: "development", time: new Date().toISOString() });
     }
 
     if (path === "/notifications" && method === "GET") {
