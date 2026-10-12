@@ -1,6 +1,5 @@
 # AgriSense Backend
 
-Phiên bản ứng dụng: 3.0.0. Cập nhật tài liệu: 12/10/2026.
 
 Backend quản lý tài khoản, phiên đăng nhập, nguồn API quan trắc đất, quyền truy cập
 trạm, lịch sử số đo, cảnh báo và thông báo trong ứng dụng. Frontend nằm riêng tại
