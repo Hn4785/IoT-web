@@ -1,6 +1,5 @@
 # AgriSense Backend
 
-
 Backend quản lý tài khoản, phiên đăng nhập, nguồn API quan trắc đất, quyền truy cập
 trạm, lịch sử số đo, cảnh báo và thông báo trong ứng dụng. Frontend nằm riêng tại
 `D:/IoT-web`; backend nằm tại `D:/IoT-api`. PostgreSQL lưu dữ liệu nghiệp vụ và
