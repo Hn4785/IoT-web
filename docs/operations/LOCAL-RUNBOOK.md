@@ -1,58 +1,42 @@
-# Lệnh chạy backend trên máy local
+# Vận hành backend trên máy local
 
-File này là hướng dẫn thao tác nhanh cho backend `iot-api`. Chạy các lệnh trong PowerShell tại thư mục:
+Phiên bản: 3.0.0. Cập nhật: 12/10/2026.
+
+Chạy tại `D:/IoT-api` hoặc thư mục backend đã nhận. Máy mới làm theo
+[QUICKSTART.md](../project/QUICKSTART.md) trước; file này dùng để chạy hằng ngày,
+kiểm tra database, tài khoản và bảo trì.
+
+Các ví dụ dùng Compose project `iot-local`. Nếu máy đang dùng tên project khác,
+giữ nguyên tên và chỗ lưu dữ liệu đó trong mọi lệnh. Không khởi động thêm một
+PostgreSQL trên cùng bind directory.
+
+## 1. Kiểm tra trước khi chạy
+
+Yêu cầu Node.js `>=24.17.0 <25`, pnpm `11.19.0` và Docker đang hoạt động.
+`.env` phải tồn tại và đã thay placeholder; xem
+[ENV-REFERENCE.md](../project/ENV-REFERENCE.md).
 
 ```powershell
 cd D:\IoT-api
+node --version
+pnpm --version
+docker compose -p iot-local ps
 ```
 
-Đường dẫn trên là ví dụ sau khi clone. Chọn thư mục backend có `package.json`.
-Có thể đặt source ở vị trí khác, không cần dùng đường dẫn của máy phát triển. Đối chiếu phiên bản và phạm vi kiểm chứng
-tại [task index](../../tasks/todo.md) và
-tài liệu bàn giao gửi riêng (không lưu trong Git).
+`DATABASE_URL` trỏ tới database nghiệp vụ; `TEST_DATABASE_URL` phải tách biệt.
+Local mặc định dùng `iot_dev` và `iot_test`. Dữ liệu nằm ở
+`POSTGRES_DATA_DIR` bên ngoài source, không nằm trong thư mục tạm của checkout.
 
-## 1. Chuẩn bị lần đầu
+## 2. Database và migration
 
-Yêu cầu: Node.js `>=24.17.0 <25`, pnpm `11.19.0` và Docker Desktop đang hoạt động.
+Khởi động database:
 
 ```powershell
-pnpm install --frozen-lockfile
-Copy-Item .env.example .env
-New-Item -ItemType Directory -Force E:\IoT-data\postgres
+docker compose -p iot-local up -d postgres
+docker compose -p iot-local ps
 ```
 
-Nếu không có ổ E, đổi `POSTGRES_DATA_DIR` trong `.env` sang thư mục riêng trên
-ổ hiện có và tạo thư mục đó trước khi chạy Compose. Không trỏ vào source hoặc
-thư mục dữ liệu của hệ thống khác.
-
-Sau khi copy, mở `.env` và thay các giá trị mẫu. Cần đặt mật khẩu PostgreSQL,
-Weather API key, `JWT_SECRET`, `CREDENTIAL_PEPPER` và
-`DATA_SOURCE_ENCRYPTION_KEY`. Hai secret đăng nhập phải khác nhau và dài tối
-thiểu 32 ký tự. Khóa mã hóa nguồn dữ liệu phải là đúng 32 byte được mã hóa
-base64. `DATA_SOURCE_ALLOWED_ORIGINS` là danh sách origin HTTPS phân cách bằng
-dấu phẩy; không gồm path. Không gửi hoặc commit file `.env`.
-
-`FRONTEND_ORIGIN` phải đúng địa chỉ trình duyệt dùng để đăng nhập, gồm giao thức,
-hostname và cổng nếu có; không thêm path hoặc dấu `/` cuối. Khi truy cập qua
-ngrok/HTTPS, đặt origin HTTPS công khai, không dùng địa chỉ IP nội bộ. Nếu login
-thành công nhưng refresh/logout trả `403 FORBIDDEN`, kiểm tra giá trị này và
-khởi động lại riêng dịch vụ backend sau khi sửa. Không bỏ kiểm tra Origin hoặc
-đổi sang wildcard để khắc phục. Cookie production vẫn phải dùng `Secure`.
-
-Có thể tạo khóa mã hóa cục bộ bằng Node.js rồi dán kết quả vào `.env`:
-
-```powershell
-node -e "console.log(require('node:crypto').randomBytes(32).toString('base64'))"
-```
-
-## 2. Khởi động database
-
-```powershell
-docker compose up -d postgres
-docker compose ps
-```
-
-Chỉ tiếp tục khi container PostgreSQL hiện trạng thái `healthy`.
+Chờ `healthy`. Khi dựng máy mới hoặc cập nhật một revision có migration:
 
 ```powershell
 pnpm db:generate
@@ -60,126 +44,193 @@ pnpm db:migrate:deploy
 pnpm db:status
 ```
 
-Nếu cần dừng database mà vẫn giữ dữ liệu:
+Không chạy `migrate:dev` để áp release; lệnh đó phục vụ tạo migration khi phát triển.
+Không reset schema hoặc sửa `_prisma_migrations` để vượt qua lỗi status.
+
+Dừng mà không xoá dữ liệu:
 
 ```powershell
-docker compose stop postgres
+docker compose -p iot-local stop postgres
 ```
 
-Khởi động lại database đã dừng:
+Khởi động lại container đã có:
 
 ```powershell
-docker compose start postgres
+docker compose -p iot-local start postgres
 ```
 
-Không dùng `docker compose down -v`: tùy chọn `-v` có thể xóa dữ liệu database.
+Không dùng `down -v` khi muốn giữ volume/database. Thay thư mục bind hoặc project
+name không chuyển dữ liệu tự động và có thể làm xuất hiện database trống khác.
 
-## 3. Khởi tạo tài khoản và nguồn thật
+## 3. Chạy ứng dụng
 
-Tạo Super Admin lần đầu. Mật khẩu được nhập bằng prompt ẩn:
-
-```powershell
-pnpm db:bootstrap-super-admin -- --email root@example.com
-```
-
-Không chạy seed demo trong quy trình vận hành/bàn giao. Sau khi đăng nhập, thêm
-nguồn thật tại API Sources và cấp quyền tại đó. Không sao chép database fixture
-`iot_test` hoặc dữ liệu mẫu sang Pi/server. Nếu upstream nghỉ, chỉ hiển thị phần
-đã lưu cùng timestamp/nhãn dữ liệu cũ; không dựng số liệu thay thế.
-
-## 4. Chạy backend khi phát triển
+Phát triển:
 
 ```powershell
 pnpm dev
 ```
 
-Các địa chỉ thường dùng:
-
-- Health: `http://localhost:3000/api/v1/health`
-- Swagger UI: `http://localhost:3000/docs`
-- OpenAPI JSON: `http://localhost:3000/docs-json`
-
-Kiểm tra nhanh bằng PowerShell:
-
-```powershell
-Invoke-RestMethod http://localhost:3000/api/v1/health
-```
-
-Swagger chỉ được bật trong môi trường `development` và `test`.
-
-## 5. Chạy bản đã build trên local
+Chạy output đã build:
 
 ```powershell
 pnpm build
 pnpm start
 ```
 
-`pnpm start` không tự build. Nếu source vừa thay đổi, luôn chạy `pnpm build` trước.
-Các lệnh này dùng môi trường local đã cấu hình, không tự đặt production.
-Để chạy website với cookie HTTPS và cấu hình được kiểm tra, dùng
-[`DELIVERY-RECOVERY.md`](./DELIVERY-RECOVERY.md), không chỉ đổi tên lệnh start.
+`start` không tự build và không tự đổi `NODE_ENV` sang production.
+Dừng server bằng `Ctrl+C`. Các địa chỉ local:
 
-## 6. Kiểm tra trước khi commit
+| Địa chỉ                                  | Mục đích                            |
+| ---------------------------------------- | ----------------------------------- |
+| `http://localhost:3000/api/v1/health`    | Tiến trình API còn đáp ứng          |
+| `http://localhost:3000/api/v1/readiness` | Database đáp ứng                    |
+| `http://localhost:3000/docs`             | Swagger trong development/test      |
+| `http://localhost:3000/docs-json`        | OpenAPI JSON trong development/test |
+
+```powershell
+Invoke-RestMethod http://localhost:3000/api/v1/health
+Invoke-RestMethod http://localhost:3000/api/v1/readiness
+```
+
+Hai kiểm tra này không chứng minh provider đang có dữ liệu mới.
+
+## 4. Tài khoản và khóa
+
+Bootstrap chỉ khi database chưa có user và authority:
+
+```powershell
+pnpm db:bootstrap-super-admin -- --email admin@example.com
+```
+
+Nhập mật khẩu hai lần qua prompt ẩn; đổi email theo người giữ quyền thực tế.
+Không bootstrap lại một database đang hoạt động.
+
+Nếu mất quyền đăng nhập của đúng authority holder, thực hiện recovery có chủ đích:
+
+```powershell
+pnpm db:recover-super-admin -- --email holder@example.com
+```
+
+Lệnh chỉ xử lý người đang giữ authority, đặt mật khẩu qua prompt ẩn, mở khóa,
+chuyển trạng thái ACTIVE, thu hồi phiên cũ và ghi audit. Không truyền mật khẩu
+bằng `--password`, environment hoặc sửa `passwordHash` bằng SQL.
+
+Không đổi `DATA_SOURCE_ENCRYPTION_KEY` sau khi có nguồn mã hoá nếu chưa có kế hoạch
+chuyển ciphertext. Giữ cùng key khi restore; pepper/JWT secret cũng phải được
+quản lý, không thay tất cả để xử lý một lỗi đăng nhập.
+
+## 5. Nguồn thật và chia sẻ
+
+Thêm nguồn qua API Sources bằng Admin/Farmer sở hữu nguồn. URL và credential do
+nhà cung cấp giao; host phải nằm trong allowlist. Chủ nguồn tìm email tài khoản
+ACTIVE Farmer/Client Developer, chọn station rồi Save Access.
+
+Người nhận chỉ có quyền trạm được chia sẻ. Không có khóa nguồn, quyền Reveal,
+Test, Remove hay quản lý grant chỉ nhờ quyền đọc. Ordinary Admin nhìn thấy health
+nguồn khác không có nghĩa đọc được số đo nguồn đó.
+
+`Connected` ở kiểm tra kết nối không phải `observedAt` mới. Khi nguồn nghỉ, chỉ
+dùng phần đã lưu có quyền và đúng nhãn stored/stale/partial. Không seed để làm
+đẹp biểu đồ hoặc thay thế số đo provider.
+
+## 6. Kiểm tra trên máy phát triển
+
+Các kiểm tra không dùng database tích hợp:
 
 ```powershell
 pnpm verify
-pnpm test
-pnpm test:coverage
-pnpm audit --prod --audit-level=high
+pnpm exec vitest run src
 pnpm security:secrets
-pnpm db:status
 git diff --check
 ```
 
-Nếu test tích hợp database thất bại, kiểm tra theo thứ tự:
+Toàn bộ test tạo/dọn dữ liệu fixture trong database test. Kiểm tra target rồi mới chạy:
 
 ```powershell
-docker compose ps
-pnpm db:status
+pnpm test
+pnpm test:coverage
+pnpm audit --prod --audit-level=high
 ```
 
-Sau đó xác nhận `DATABASE_URL` và `TEST_DATABASE_URL` trong `.env` trỏ tới đúng `iot_dev` và `iot_test`. Không in giá trị secret ra terminal hoặc báo cáo lỗi.
+Không chạy test tích hợp hoặc fault injection trên database dữ liệu thật.
+Không ghi kết quả test cũ thành bằng chứng của lần chạy hiện tại.
 
-## 7. DBeaver
+DBeaver local: host `localhost`, port `5432`, database/user theo `.env`; nhập
+mật khẩu qua UI của DBeaver, không đưa vào báo cáo hoặc commit.
 
-Dùng các thông tin sau để tạo kết nối PostgreSQL:
+## 7. Retention và diễn tập restore
 
-- Host: `localhost`
-- Port: `5432`
-- Database: `iot_dev`
-- Username: giá trị `POSTGRES_USER` trong `.env`
-- Password: giá trị `POSTGRES_PASSWORD` trong `.env`
-
-Database test là `iot_test`. Không chỉnh trực tiếp migration history hoặc các cột hash bằng DBeaver.
-
-## 8. Lệnh bảo trì
-
-Nếu mất mật khẩu của tài khoản đang giữ quyền Super Admin:
-
-```powershell
-pnpm db:recover-super-admin -- --email <email-super-admin>
-```
-
-Lệnh yêu cầu nhập mật khẩu mới hai lần qua prompt ẩn, chỉ cập nhật đúng authority holder, mở khóa tài khoản, thu hồi phiên cũ và ghi audit. Không truyền mật khẩu trên command line.
-
-Chỉ chạy retention khi chủ động thực hiện bảo trì:
+Bảo trì lifecycle là lệnh riêng, không tự chạy khi app khởi động:
 
 ```powershell
 pnpm retention:run -- --confirm-retention
 ```
 
-Không chạy lệnh này để sửa lỗi phát triển thông thường. Hãy sao lưu database trước khi thực hiện trên dữ liệu quan trọng.
+| Dữ liệu           | Điều kiện xử lý                                                             |
+| ----------------- | --------------------------------------------------------------------------- |
+| Session           | Hết hạn hoặc revoke quá 30 ngày                                             |
+| API key           | Hết hạn hoặc revoke quá 90 ngày                                             |
+| User              | Yêu cầu xoá quá 90 ngày; anonymize, giữ ID audit; loại trừ authority holder |
+| Notification      | Tạo quá 180 ngày                                                            |
+| Alert             | RESOLVED quá 365 ngày, không còn delivery job đang chờ                      |
+| Idempotency claim | Hết hạn                                                                     |
 
-Hướng dẫn build image, diễn tập restore và kiểm tra contract nối frontend nằm ở
-[`DELIVERY-RECOVERY.md`](./DELIVERY-RECOVERY.md).
+Lệnh có batch và audit; cần backup dữ liệu quan trọng trước khi chạy.
+Retention raw là cơ chế riêng trong collector: giữ 90 ngày theo `observedAt`,
+cắt coverage quá hạn và giữ snapshot cuối.
 
-## Trình tự chạy hằng ngày
+Diễn tập restore local bằng script có kiểm tra target mới:
+
+```powershell
+$postgresContainerId = docker compose -p iot-local ps -q postgres
+pwsh -File ./scripts/operations/backup-restore-rehearsal.ps1 -Container $postgresContainerId -SourceDatabase iot_dev -RestoreDatabase iot_restore_handover -DatabaseUser iot_app
+```
+
+Dừng nếu container ID rỗng hoặc lệnh trước báo lỗi. Thay database/user theo cấu
+hình thực tế. Target phải chưa tồn tại, có prefix `iot_restore_`, không phải
+database nguồn/test/postgres. Script giữ dump và database diễn tập cho review;
+nó không xác nhận đầy đủ ứng dụng đã phục hồi hoặc đạt RPO/RTO.
+
+## 8. Seed chỉ dành cho fixture đã được duyệt
+
+Không seed trong các bước dựng hệ thống dùng nguồn thật hoặc khi bàn giao runtime.
+Nếu chủ động dựng fixture local, dùng một PostgreSQL riêng đã được duyệt, không
+chứa dữ liệu thật, với database đặt tên `iot_dev` và `NODE_ENV` là development/test.
+Kiểm tra host, port và tên database trong `DATABASE_URL` trước khi chạy; không trỏ
+vào database `iot_dev` đang dùng cho ứng dụng có dữ liệu thật:
+
+```powershell
+pnpm db:seed-station-demo -- --confirm-demo-seed
+```
+
+Lệnh chỉ chấp nhận tên database `iot_dev` ngoài production cùng cờ xác nhận;
+không chấp nhận `iot_test` hoặc tên khác. Kiểm tra tên không chứng minh môi trường
+đã được cô lập, nên vẫn phải xác nhận đúng PostgreSQL và dữ liệu trước khi chạy.
+Không chuyển dữ liệu tạo bởi lệnh này sang Pi/server hoặc export để commit.
+
+## 9. Xử lý sự cố
+
+| Tình huống                       | Kiểm tra / xử lý                                                                      |
+| -------------------------------- | ------------------------------------------------------------------------------------- |
+| API không lên                    | Version Node/pnpm, cấu hình bắt buộc, port và log đã lược bỏ secret                   |
+| Database không ready             | Compose ps/log, URL, user và migration; không reset database                          |
+| Login được, refresh/logout 403   | Origin của frontend và HTTPS; sửa cấu hình rồi restart API, không tắt kiểm tra Origin |
+| Reveal báo sai mật khẩu          | Giữ phiên và hiện lỗi xác nhận; lỗi business này khác lỗi session hết hạn             |
+| Nguồn mất kết nối                | Status/timestamp và dữ liệu đã lưu; không sinh số mẫu                                 |
+| History chưa đủ                  | Coverage/checkpoint; lỗi window rỗng đang mở trong CAPABILITY-MAP                     |
+| Collector báo storage limit      | Dừng thu mới theo giới hạn; đánh giá capacity, không xoá raw còn trong hạn            |
+| Khóa nguồn không đọc sau restore | Xác nhận đúng key giải mã qua kênh bảo vệ; không in key hoặc ciphertext               |
+
+Xem [CAPABILITY-MAP.md](../../CAPABILITY-MAP.md) cho tồn đọng;
+[DELIVERY-RECOVERY.md](DELIVERY-RECOVERY.md) cho triển khai/cutover.
+
+## 10. Chạy hằng ngày
 
 ```powershell
 cd D:\IoT-api
-docker compose up -d postgres
-docker compose ps
+docker compose -p iot-local up -d postgres
+docker compose -p iot-local ps
 pnpm dev
 ```
 
-Khi kết thúc, nhấn `Ctrl+C` để dừng backend. Có thể để PostgreSQL chạy hoặc dùng `docker compose stop postgres` nếu muốn giải phóng tài nguyên.
+Sau khi dùng, `Ctrl+C` dừng backend. Có thể giữ database chạy hoặc dùng `stop postgres`.
