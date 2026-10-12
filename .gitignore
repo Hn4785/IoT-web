@@ -31,3 +31,16 @@ blob-report/
 .env
 .env.local
 .env.*.local
+.env.*
+!.env.example
+
+# Public frontend handover documentation.
+artifacts/
+*.md
+!/README.md
+!/docs/ARCHITECTURE-FE.md
+!/docs/INTEGRATION.md
+!/docs/ROLE-PAGES-GUIDE.md
+!/docs/DEPLOYMENT-NGINX.md
+*.docx
+*.pdf
