@@ -1,0 +1,46 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+test-results/
+playwright-report/
+blob-report/
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.vs/
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+.env.*
+!.env.example
+
+# Public frontend handover documentation.
+artifacts/
+*.md
+!/README.md
+!/docs/ARCHITECTURE-FE.md
+!/docs/INTEGRATION.md
+!/docs/ROLE-PAGES-GUIDE.md
+!/docs/DEPLOYMENT-NGINX.md
+*.docx
+*.pdf

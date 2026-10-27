@@ -1,0 +1,63 @@
+// Các vai trò được định nghĩa trong hệ thống
+export type UserRole =
+  | "ADMIN"
+  | "FARMER"
+  | "CLIENT_DEVELOPER";
+
+// Các trạng thái của người dùng trong hệ thống
+export type UserStatus =
+  | "ACTIVE"
+  | "DISABLED"
+  | "PENDING_PASSWORD_CHANGE";
+
+// Quyền truy cập của người dùng đối với các tài nguyên trong hệ thống
+export type Permission =
+  | "view"
+  | "edit"
+  | "configure"
+  | "manage_alerts"
+  | "export_data"
+  | "manage_devices";
+
+/**
+ * Quyền trên một resource cụ thể.
+ * Resource có thể là:
+ * Farm -> Plot -> Station
+ */
+export interface ResourcePermission {
+  farmId: string;
+
+  // Có thể không có plot nếu quyền áp dụng toàn Farm.
+  plotId?: string;
+
+  // Có thể không có station nếu quyền áp dụng toàn Plot.
+  stationId?: string;
+
+  permissions: Permission[];
+}
+
+export interface User {
+  id: string;
+  displayName: string;
+  email: string;
+  phone?: string;
+
+  role: UserRole;
+  isSuperAdmin: boolean;
+  status: UserStatus;
+
+  assignedFarmIds: string[]; // Các farm mà user được phép truy cập
+  assignedPlotIds: string[]; // Các plot mà user được phép truy cập
+  assignedStationIds: string[]; // Các station mà user được phép truy cập
+  sharedSources?: Array<{
+    id: string;
+    name: string;
+    stations: Array<{ id: string; name: string; code: string }>;
+  }>;
+
+  permissions?: ResourcePermission[]; // Quyền truy cập chi tiết theo resource
+
+  lastLogin?: string;
+  createdAt: string;
+  updatedAt: string;
+}

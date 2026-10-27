@@ -1,0 +1,44 @@
+/* ============================================================
+   DEVELOPER SECTION TABS
+   ============================================================ */
+
+.tabs {
+  display: flex;
+  gap: var(--spacing-1);
+  margin-bottom: var(--spacing-5);
+  overflow-x: auto;
+  border-bottom: 1px solid var(--color-border-default);
+  -webkit-overflow-scrolling: touch;
+}
+
+.tab {
+  display: inline-flex;
+  align-items: center;
+
+  padding: var(--spacing-2-5) var(--spacing-4);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-body-sm);
+  font-weight: var(--font-weight-medium);
+  text-decoration: none;
+  white-space: nowrap;
+  border-bottom: 2px solid transparent;
+  transition:
+    color var(--transition-normal),
+    border-color var(--transition-normal);
+}
+
+.tab:hover {
+  color: var(--color-text-primary);
+}
+
+.tab:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+  border-radius: var(--radius-xs) var(--radius-xs) 0 0;
+}
+
+.tabActive {
+  color: var(--color-primary);
+  font-weight: var(--font-weight-semibold);
+  border-bottom-color: var(--color-primary);
+}

@@ -1,0 +1,95 @@
+/* ---------- Spinner ---------- */
+
+.spinner {
+  animation: spin 0.7s linear infinite;
+  color: var(--color-primary);
+}
+
+.spinnerWrapper {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-3);
+}
+
+.spinnerLabel {
+  font-size: var(--font-size-body-sm);
+  color: var(--color-text-secondary);
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ---------- Skeleton ---------- */
+
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background-color: var(--color-bg-subtle);
+  border-radius: var(--radius-sm);
+}
+
+.skeletonCircle {
+  border-radius: var(--radius-full);
+}
+
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background-image: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0,
+    rgba(255, 255, 255, 0.6) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  animation: shimmer 1.6s infinite;
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* ---------- Full-page overlay ---------- */
+
+.fullPage {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-4);
+  background-color: rgba(248, 250, 252, 0.85);
+}
+
+.fullPageLabel {
+  font-size: var(--font-size-body);
+  color: var(--color-text-secondary);
+}
+
+/* ---------- Inline container (fills parent instead of viewport) ---------- */
+
+.inline {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-3);
+  padding: var(--spacing-8) 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation: none;
+  }
+  .skeleton::after {
+    animation: none;
+  }
+}

@@ -1,0 +1,85 @@
+.wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: 100%;
+}
+
+.searchIcon {
+  position: absolute;
+  left: var(--spacing-3);
+  display: inline-flex;
+  color: var(--color-text-tertiary);
+  pointer-events: none;
+}
+
+.input {
+  width: 100%;
+  padding-left: var(--spacing-8);
+  padding-right: var(--spacing-8);
+  font-family: var(--font-family-base);
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-surface);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-sm);
+  transition: border-color var(--transition-normal), box-shadow var(--transition-normal);
+}
+
+.input::placeholder {
+  color: var(--color-text-placeholder);
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-light);
+}
+
+.input:disabled {
+  cursor: not-allowed;
+  opacity: var(--opacity-disabled);
+  background-color: var(--color-bg-subtle);
+}
+
+/* ---------- Sizes ---------- */
+
+.sm {
+  height: var(--height-input-sm);
+  font-size: var(--font-size-body-sm);
+}
+
+.md {
+  height: var(--height-input-md);
+  font-size: var(--font-size-body);
+}
+
+.lg {
+  height: var(--height-input-lg);
+  font-size: var(--font-size-body-lg);
+}
+
+.clearButton {
+  position: absolute;
+  right: var(--spacing-2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: none;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.clearButton:hover {
+  background-color: var(--color-bg-subtle);
+  color: var(--color-text-primary);
+}
+
+.clearButton:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}

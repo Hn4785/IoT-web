@@ -1,0 +1,56 @@
+.wrapper {
+  width: 100%;
+  min-width: 0;
+}
+
+.chart {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.gridLine {
+  stroke: var(--color-border, #e2e8f0);
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+}
+
+.axisLabel,
+.label {
+  fill: var(--color-text-muted, #64748b);
+  font-family: Inter, sans-serif;
+  font-size: 11px;
+}
+
+.value {
+  fill: var(--color-text-primary, #0f172a);
+  font-family: Inter, sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.bar {
+  fill: var(--color-primary, #16a34a);
+  transition:
+    opacity 120ms ease,
+    transform 120ms ease;
+  cursor: pointer;
+}
+
+.bar:hover,
+.bar.active {
+  opacity: 0.8;
+}
+
+.emptyState {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 240px;
+  color: var(--color-text-muted, #64748b);
+  font-size: 13px;
+  border: 1px dashed var(--color-border, #e2e8f0);
+  border-radius: 8px;
+  background: var(--color-bg-subtle, #f8fafc);
+}

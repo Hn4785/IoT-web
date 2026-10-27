@@ -1,0 +1,304 @@
+import {
+  BookOpen,
+  ChevronRight,
+  Copy,
+  ExternalLink,
+  FileJson,
+  LockKeyhole,
+} from "lucide-react";
+import { useState } from "react";
+import { copyText } from "@/utils/credentialInput";
+import { isInteractiveApiReferenceAvailable } from "@/utils/apiDocsAvailability";
+import DeveloperSectionTabs from "@/components/developer/DeveloperSectionTabs";
+import styles from "./ApiDocs.module.css";
+
+interface Endpoint {
+  id: string;
+  method: "GET";
+  path: string;
+  title: string;
+  description: string;
+  auth: boolean;
+  parameters: Array<{ name: string; type: string; description: string }>;
+}
+
+const endpoints: Endpoint[] = [
+  {
+    id: "health",
+    method: "GET",
+    path: "/api/v1/health",
+    title: "Health Check",
+    description: "Check API service availability.",
+    auth: false,
+    parameters: [],
+  },
+  {
+    id: "stations",
+    method: "GET",
+    path: "/api/v1/client/stations",
+    title: "List Stations",
+    description: "Return stations available to the API key.",
+    auth: true,
+    parameters: [
+      { name: "limit", type: "integer", description: "Optional page size from 1 to 100; default 50." },
+      { name: "cursor", type: "string", description: "Optional opaque continuation cursor, maximum 2048 characters." },
+    ],
+  },
+  {
+    id: "latest",
+    method: "GET",
+    path: "/api/v1/client/data/latest",
+    title: "Latest Data",
+    description: "Retrieve the latest telemetry for authorized stations.",
+    auth: true,
+    parameters: [
+      { name: "station", type: "string", description: "Required station code: letters, digits, underscore or hyphen; maximum 64 characters." },
+      { name: "fields", type: "string", description: "Optional unique comma-separated soil fields with no spaces." },
+    ],
+  },
+  {
+    id: "history",
+    method: "GET",
+    path: "/api/v1/client/data/history",
+    title: "Historical Data",
+    description: "Retrieve historical telemetry and supported aggregates.",
+    auth: true,
+    parameters: [
+      { name: "station", type: "string", description: "Required authorized station code." },
+      { name: "fields", type: "string", description: "Optional unique comma-separated soil fields." },
+      { name: "begin", type: "date-time", description: "Required UTC ISO-8601 range start." },
+      { name: "end", type: "date-time", description: "Required UTC ISO-8601 range end." },
+      { name: "interval", type: "enum", description: "raw, 5m, 30m, 1h or 1d; default raw." },
+      { name: "aggregate", type: "enum", description: "Required for non-raw intervals; forbidden for raw. mean, min, max, first or last." },
+      { name: "order", type: "enum", description: "asc or desc; default asc." },
+      { name: "limit", type: "integer", description: "Optional page size from 1 to 500; default 100." },
+      { name: "cursor", type: "string", description: "Optional opaque continuation cursor, maximum 2048 characters." },
+    ],
+  },
+];
+
+const responseExamples: Record<string, string> = {
+  health: `{
+  "success": true,
+  "data": {
+  "service": "iot-api",
+  "version": "3.0.0",
+  "status": "healthy",
+  "environment": "development",
+  "time": "2026-09-12T05:00:00.000Z"
+  }
+}`,
+  stations: `{
+  "success": true,
+  "data": {
+    "items": [{ "id": "...", "farmId": "...", "plotId": "...", "name": "Center", "code": "CENTER" }],
+    "nextCursor": null
+  }
+}`,
+  latest: `{
+  "success": true,
+  "data": {
+    "station": { "id": "...", "name": "Center", "code": "CENTER" },
+    "measurement": "soil",
+    "fields": [{ "field": "moisture", "value": 43, "unit": "%", "observedAt": "2026-09-12T05:00:00.000Z", "quality": "good", "sensorId": null, "depthCm": null }],
+    "fetchedAt": "2026-09-12T05:00:01.000Z",
+    "isFromCache": false,
+    "isStale": false
+  }
+}`,
+  history: `{
+  "success": true,
+  "data": {
+    "stationId": "...",
+    "measurement": "soil",
+    "series": [{ "field": "moisture", "unit": "%", "sensorId": null, "depthCm": null, "points": [] }],
+    "page": { "nextCursor": null },
+    "fetchedAt": "2026-09-12T05:00:01.000Z",
+    "isFromCache": false,
+    "isStale": false
+  }
+}`,
+};
+
+export default function ApiDocs() {
+  const [selectedId, setSelectedId] = useState("health");
+  const [copyStatus, setCopyStatus] = useState<{
+    target: "headers" | "response";
+    result: "copied" | "failed";
+  } | null>(null);
+
+  const selected =
+    endpoints.find((endpoint) => endpoint.id === selectedId) ?? endpoints[0];
+
+  return (
+    <div className={styles.page}>
+      <div className={styles.header}>
+        <div>
+          <div className={styles.eyebrow}>DEVELOPER PORTAL / REFERENCE</div>
+          <h1>API Documentation</h1>
+          <p>
+            Current Client Developer API v1 endpoints and validation limits.
+          </p>
+        </div>
+
+        {isInteractiveApiReferenceAvailable(import.meta.env.PROD) && (
+          <a className={styles.externalButton} href="/docs" target="_blank" rel="noreferrer">
+            <ExternalLink size={16} />
+            API Reference
+          </a>
+        )}
+      </div>
+
+      <DeveloperSectionTabs section="tools" />
+
+      <div className={styles.docsLayout}>
+        <aside className={styles.sidebar}>
+          <div className={styles.sidebarTitle}>
+            <BookOpen size={16} />
+            Endpoints
+          </div>
+
+          {endpoints.map((endpoint) => (
+            <button
+              key={endpoint.id}
+              className={`${styles.endpointButton} ${
+                selected.id === endpoint.id ? styles.selected : ""
+              }`}
+              onClick={() => { setSelectedId(endpoint.id); setCopyStatus(null); }}
+            >
+              <div>
+                <span className={styles.method}>GET</span>
+                <strong>{endpoint.title}</strong>
+                <code>{endpoint.path}</code>
+              </div>
+              <ChevronRight size={15} />
+            </button>
+          ))}
+        </aside>
+
+        <main className={styles.documentation}>
+          <div className={styles.endpointHeader}>
+            <div className={styles.endpointMethod}>GET</div>
+            <code>{selected.path}</code>
+          </div>
+
+          <h2>{selected.title}</h2>
+          <p className={styles.description}>{selected.description}</p>
+
+          <section className={styles.section}>
+            <h3>Authentication</h3>
+
+            <div className={styles.authBox}>
+              {selected.auth ? (
+                <>
+                  <LockKeyhole size={17} />
+                  <div>
+                    <strong>X-API-Key required</strong>
+                    <span>
+                      Requests must include a valid API key with station
+                      authorization.
+                    </span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <FileJson size={17} />
+                  <div>
+                    <strong>No authentication required</strong>
+                    <span>
+                      This endpoint is available for service health checks.
+                    </span>
+                  </div>
+                </>
+              )}
+            </div>
+          </section>
+
+          <section className={styles.section}>
+            <h3>Parameters</h3>
+
+            {selected.parameters.length === 0 ? (
+              <div className={styles.empty}>No query parameters.</div>
+            ) : (
+              <div className={styles.parameterTable}>
+                <div className={styles.parameterHead}>
+                  <span>Name</span>
+                  <span>Type</span>
+                  <span>Description</span>
+                </div>
+
+                {selected.parameters.map((parameter) => (
+                  <div className={styles.parameterRow} key={parameter.name}>
+                    <code>{parameter.name}</code>
+                    <span>{parameter.type}</span>
+                    <span>{parameter.description}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
+          <section className={styles.section}>
+            <h3>Request Headers</h3>
+
+            <div className={styles.codeBlock}>
+              <button
+                aria-label="Copy request headers"
+                title={copyStatus?.target === "headers" && copyStatus.result === "copied" ? "Copied" : "Copy request headers"}
+                onClick={async () => setCopyStatus({ target: "headers", result: await copyText(selected.auth ? "X-API-Key: YOUR_API_KEY\nAccept: application/json" : "Accept: application/json") ? "copied" : "failed" })}
+              >
+                <Copy size={15} />
+              </button>
+
+              {copyStatus?.target === "headers" && (
+                <span className={styles.copyStatus} role="status">
+                  {copyStatus.result === "copied" ? "Copied" : "Select and copy manually"}
+                </span>
+              )}
+
+              <pre>
+                <code>
+                  {selected.auth
+                    ? "X-API-Key: YOUR_API_KEY\nAccept: application/json"
+                    : "Accept: application/json"}
+                </code>
+              </pre>
+            </div>
+          </section>
+
+          <section className={styles.section}>
+            <h3>Example Response</h3>
+
+            <div className={styles.codeBlock}>
+              <button
+                aria-label="Copy example response"
+                title={copyStatus?.target === "response" && copyStatus.result === "copied" ? "Copied" : "Copy example response"}
+                onClick={async () => setCopyStatus({ target: "response", result: await copyText(responseExamples[selected.id]) ? "copied" : "failed" })}
+              >
+                <Copy size={15} />
+              </button>
+
+              {copyStatus?.target === "response" && (
+                <span className={styles.copyStatus} role="status">
+                  {copyStatus.result === "copied" ? "Copied" : "Select and copy manually"}
+                </span>
+              )}
+
+              <pre>
+                <code>{responseExamples[selected.id]}</code>
+              </pre>
+            </div>
+          </section>
+        </main>
+      </div>
+
+      <div className={styles.notice}>
+        <strong>Contract status:</strong>
+        <span>
+          Endpoint names, parameters, and response examples match the current
+          Backend OpenAPI contract.
+        </span>
+      </div>
+    </div>
+  );
+}

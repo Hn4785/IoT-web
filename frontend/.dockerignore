@@ -1,0 +1,8 @@
+node_modules
+dist
+.git
+.agent-handoff
+.env
+.env.*
+*.log
+npm-debug.log*

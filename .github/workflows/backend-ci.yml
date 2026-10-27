@@ -2,9 +2,9 @@ name: Backend CI
 
 on:
   push:
-    branches: [BE]
+    branches: [codex/monorepo-final]
   pull_request:
-    branches: [BE]
+    branches: [codex/monorepo-final]
 
 permissions:
   contents: read
@@ -13,6 +13,9 @@ jobs:
   verify:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: backend
     services:
       postgres:
         image: postgres:17.6-alpine3.22@sha256:ef257d85f76e48da1c64832459b59fcaba1a4dac97bf5d7450c77753542eee94
@@ -49,7 +52,7 @@ jobs:
       ALERT_EVALUATOR_LEASE_MS: 55000
       ALERT_IDEMPOTENCY_RETENTION_HOURS: 168
       ALERT_DEMO_METADATA_ENABLED: false
-      ALERT_DEMO_STATION_CODES: ''
+      ALERT_DEMO_STATION_CODES: ""
       DATA_SOURCE_ENCRYPTION_KEY: MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDE=
       DATA_SOURCE_ALLOWED_ORIGINS: https://example.invalid
     steps:
@@ -57,11 +60,13 @@ jobs:
       - uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa
         with:
           version: 11.19.0
+          package_json_file: backend/package.json
           run_install: false
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: 24.17.0
           cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
       - name: Create isolated test database
         run: docker exec ${{ job.services.postgres.id }} createdb -U iot_app iot_test

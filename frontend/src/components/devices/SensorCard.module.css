@@ -1,0 +1,276 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+
+  padding: 20px;
+
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+
+  box-shadow: var(--shadow-sm);
+
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.card:hover {
+  border-color: var(--color-border-strong);
+  box-shadow: var(--shadow-md);
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.identity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  min-width: 0;
+}
+
+.icon {
+  display: grid;
+  place-items: center;
+
+  width: 40px;
+  height: 40px;
+
+  flex: 0 0 40px;
+
+  color: var(--color-primary);
+  background: var(--color-primary-subtle);
+  border-radius: var(--radius-md);
+}
+
+.titleGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+
+  min-width: 0;
+}
+
+.title {
+  padding: 0;
+
+  overflow: hidden;
+
+  color: var(--color-text-primary);
+  background: transparent;
+  border: 0;
+
+  font: inherit;
+  font-size: 15px;
+  font-weight: 650;
+
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  cursor: pointer;
+}
+
+.title:hover {
+  color: var(--color-primary);
+}
+
+.id {
+  color: var(--color-text-muted);
+
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px;
+}
+
+.model {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+
+  color: var(--color-text-secondary);
+
+  font-size: 12px;
+}
+
+.separator {
+  color: var(--color-text-muted);
+}
+
+.measurement {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  padding: 13px;
+
+  background: var(--color-bg-page);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.measurementMain {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+
+  min-width: 0;
+}
+
+.field {
+  overflow: hidden;
+
+  color: var(--color-text-primary);
+
+  font-size: 14px;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.measurementType {
+  color: var(--color-text-muted);
+
+  font-size: 11px;
+  text-transform: capitalize;
+}
+
+.unit {
+  flex: 0 0 auto;
+
+  color: var(--color-primary);
+
+  font-family: "JetBrains Mono", monospace;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.metric {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  padding: 11px 12px;
+
+  background: var(--color-bg-page);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.metricLabel {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+
+  color: var(--color-text-muted);
+
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.metricValue {
+  color: var(--color-text-primary);
+
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.calibration {
+  width: fit-content;
+
+  padding: 3px 7px;
+
+  border-radius: var(--radius-sm);
+
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.calibrationValid {
+  color: var(--color-success);
+  background: var(--color-success-subtle);
+}
+
+.calibrationExpired {
+  color: var(--color-danger);
+  background: var(--color-danger-subtle);
+}
+
+.calibrationWarning {
+  color: var(--color-warning);
+  background: var(--color-warning-subtle);
+}
+
+.calibrationNeutral {
+  color: var(--color-text-secondary);
+  background: var(--color-bg-muted);
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding-top: 14px;
+
+  border-top: 1px solid var(--color-border);
+}
+
+.updated {
+  color: var(--color-text-muted);
+
+  font-size: 11px;
+}
+
+.configureButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  padding: 6px 9px;
+
+  color: var(--color-text-secondary);
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+
+  font-size: 12px;
+  font-weight: 600;
+
+  cursor: pointer;
+}
+
+.configureButton:hover {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+@media (max-width: 640px) {
+  .header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .footer {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+  }
+}

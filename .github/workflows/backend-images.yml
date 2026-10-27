@@ -2,9 +2,9 @@ name: Backend Images & Architecture Gate
 
 on:
   push:
-    branches: [BE]
+    branches: [codex/monorepo-final]
   pull_request:
-    branches: [BE]
+    branches: [codex/monorepo-final]
 
 permissions:
   contents: read
@@ -13,6 +13,9 @@ jobs:
   image-matrix:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: backend
     strategy:
       matrix:
         os: [ubuntu-24.04, ubuntu-24.04-arm]
@@ -38,7 +41,7 @@ jobs:
       ALERT_EVALUATOR_LEASE_MS: 55000
       ALERT_IDEMPOTENCY_RETENTION_HOURS: 168
       ALERT_DEMO_METADATA_ENABLED: false
-      ALERT_DEMO_STATION_CODES: ''
+      ALERT_DEMO_STATION_CODES: ""
       DATA_SOURCE_ENCRYPTION_KEY: MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDE=
       DATA_SOURCE_ALLOWED_ORIGINS: https://example.invalid
     steps:
@@ -46,11 +49,13 @@ jobs:
       - uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa
         with:
           version: 11.19.0
+          package_json_file: backend/package.json
           run_install: false
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: 24.17.0
           cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
       - name: Build Docker runtime & tools
         run: |
@@ -99,7 +104,7 @@ jobs:
           curl --fail --silent http://127.0.0.1:3000/api/v1/readiness
           test "$(docker exec iot-api-smoke id -u)" = 1000
       - name: Export verified runtime artifact
-        if: github.event_name == 'push' && github.ref == 'refs/heads/BE'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/codex/monorepo-final'
         run: |
           mkdir -p runtime-artifact
           docker tag iot-backend-runtime agrisense-api:${{ github.sha }}
@@ -107,12 +112,12 @@ jobs:
           cd runtime-artifact
           sha256sum runtime.tar.gz > SHA256SUMS
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        if: github.event_name == 'push' && github.ref == 'refs/heads/BE'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/codex/monorepo-final'
         with:
           name: runtime-${{ matrix.os }}-${{ github.sha }}
           path: |
-            runtime-artifact/runtime.tar.gz
-            runtime-artifact/SHA256SUMS
+            backend/runtime-artifact/runtime.tar.gz
+            backend/runtime-artifact/SHA256SUMS
           retention-days: 3
           if-no-files-found: error
           compression-level: 0

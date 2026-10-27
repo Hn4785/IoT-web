@@ -1,0 +1,128 @@
+import { NavLink, useLocation } from 'react-router-dom';
+import {
+  LayoutDashboard,
+  Users,
+  Settings,
+  History,
+  Leaf,
+  Radio,
+  BellRing,
+  Droplets,
+  BarChart3,
+  BookOpen,
+  DatabaseZap,
+  KeyRound,
+  type LucideIcon,
+} from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import type { UserRole } from '@/types/user';
+import styles from './Sidebar.module.css';
+import { findActiveNavigationPath } from './sidebarSelection';
+
+interface NavItem {
+  label: string;
+  path: string;
+  icon: LucideIcon;
+}
+
+const NAV_CONFIG: Record<UserRole, NavItem[]> = {
+  ADMIN: [
+    { label: 'Dashboard', path: '/admin', icon: LayoutDashboard },
+    { label: "Stations & Devices", path: "/admin/devices", icon: Radio},
+    { label: "API Sources", path: "/admin/api-sources", icon: DatabaseZap },
+    { label: "Alert Center", path: "/admin/alert-center", icon: BellRing},
+    { label: 'Users', path: '/admin/users', icon: Users },
+    { label: 'Audit Log', path: '/admin/audit-logs', icon: History },
+  ],
+  FARMER: [
+    { label: 'Dashboard', path: '/farm-owner/dashboard', icon: LayoutDashboard },
+    { label: 'Soil Dashboard', path: '/farm-owner/soil-dashboard', icon: Droplets},
+    { label: 'Historical Analysis', path: '/farm-owner/historical-analysis', icon: BarChart3 },
+    { label: 'History Report', path: '/farm-owner/history-reports', icon: History },
+    { label: 'API Sources', path: '/farm-owner/api-sources', icon: DatabaseZap },
+    { label: 'Notifications', path: '/farm-owner/notifications', icon: Settings },
+    { label: 'Alert Center', path: '/farm-owner/alert-center', icon: BellRing },
+  ],
+  CLIENT_DEVELOPER: [
+    { label: 'Dashboard', path: '/developer/dashboard', icon: LayoutDashboard },
+    { label: 'API Access', path: '/developer/api-access', icon: KeyRound },
+    { label: 'API Tools', path: '/developer/api-tools', icon: BookOpen },
+  ],
+};
+
+function getInitials(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  const first = parts[0]?.[0] ?? '';
+  const last = parts.length > 1 ? parts[parts.length - 1][0] : '';
+  return (first + last).toUpperCase();
+}
+
+/**
+ * ⚠️ GIẢ ĐỊNH — label hiển thị cho từng role, chưa xác nhận với Figma
+ * (ảnh mẫu chỉ cho thấy "Admin").
+ */
+function formatRoleLabel(role: UserRole): string {
+  const map: Record<UserRole, string> = {
+    ADMIN: 'Admin',
+    FARMER: 'Farm Owner',
+    CLIENT_DEVELOPER: 'Developer',
+  };
+  return map[role] ?? role;
+}
+
+export default function Sidebar() {
+  const { user } = useAuth();
+  const { pathname } = useLocation();
+
+  if (!user) return null;
+
+  const items = (NAV_CONFIG[user.role] ?? []).filter(
+    ({ path }) => path !== '/admin/audit-logs' || user.isSuperAdmin,
+  );
+  const activePath = findActiveNavigationPath(
+    items.map(({ path }) => path),
+    pathname,
+  );
+
+  return (
+    <aside className={styles.sidebar}>
+      <div className={styles.brand}>
+        <span className={styles.brandIcon}>
+          <Leaf size={18} strokeWidth={2.5} />
+        </span>
+        <span className={styles.brandName}>AgriSense</span>
+      </div>
+
+      <nav className={styles.nav} aria-label="Main navigation">
+        <ul className={styles.navList}>
+          {items.map(({ label, path, icon: Icon }) => (
+            <li key={path}>
+              <NavLink
+                to={path}
+                end={path === '/admin'}
+                aria-label={label}
+                title={label}
+                className={
+                  path === activePath
+                    ? `${styles.navItem} ${styles.navItemActive}`
+                    : styles.navItem
+                }
+              >
+                <Icon size={18} strokeWidth={2} className={styles.navIcon} aria-hidden="true" />
+                <span>{label}</span>
+              </NavLink>
+            </li>
+          ))}
+        </ul>
+      </nav>
+
+      <div className={styles.userFooter}>
+        <span className={styles.userAvatar}>{getInitials(user.displayName)}</span>
+        <div className={styles.userInfo}>
+          <span className={styles.userName}>{user.displayName}</span>
+          <span className={styles.userRole}>{formatRoleLabel(user.role)}</span>
+        </div>
+      </div>
+    </aside>
+  );
+}

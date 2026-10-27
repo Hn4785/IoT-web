@@ -1,0 +1,27 @@
+.worktrees/
+.vs/
+node_modules/
+dist/
+coverage/
+artifacts/
+src/generated/prisma/
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+*.log
+
+# Handover documentation: only the approved nine Markdown files.
+*.md
+!/README.md
+!/CAPABILITY-MAP.md
+!/CONTRIBUTING.md
+!/docs/project/QUICKSTART.md
+!/docs/project/ARCHITECTURE.md
+!/docs/project/ENV-REFERENCE.md
+!/docs/operations/LOCAL-RUNBOOK.md
+!/docs/operations/DELIVERY-RECOVERY.md
+!/docs/security/integration-core-threat-model.md
+*.docx
+*.pdf

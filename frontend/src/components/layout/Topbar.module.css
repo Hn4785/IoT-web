@@ -1,0 +1,342 @@
+/**
+ * ⚠️ GIẢ ĐỊNH TOKEN:
+ *   --topbar-height  (ước lượng từ ảnh: ~64px)
+ */
+
+.topbar {
+  height: var(--topbar-height, 64px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 0 24px;
+  background-color: var(--color-bg-surface, #ffffff);
+  border-bottom: 1px solid var(--color-border, #e2e8f0);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.left {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.searchBox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 320px;
+  padding: 8px 14px;
+  border-radius: var(--radius-full, 9999px);
+  background-color: var(--color-bg-page, #f8fafc);
+  border: 1px solid var(--color-border, #e2e8f0);
+}
+
+.searchIcon {
+  color: var(--color-text-secondary, #94a3b8);
+  flex-shrink: 0;
+}
+
+.searchInput {
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 13px;
+  color: var(--color-text-primary, #0f172a);
+  width: 100%;
+}
+
+.searchInput::placeholder {
+  color: var(--color-text-secondary, #94a3b8);
+}
+
+.iconButton {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full, 9999px);
+  border: none;
+  background: transparent;
+  color: var(--color-text-secondary, #475569);
+  cursor: pointer;
+  transition: background-color 150ms ease-in-out;
+}
+
+.iconButton:hover {
+  background-color: var(--color-bg-page, #f8fafc);
+}
+
+.notificationMenu {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: var(--radius-full, 9999px);
+  background-color: var(--color-danger, #ef4444);
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.avatarButton {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full, 9999px);
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.avatarFallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--color-primary, #16a34a);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* ============================================================
+   USER MENU
+   ============================================================ */
+
+.userMenu {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.avatarButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+
+  width: 32px;
+  height: 32px;
+
+  padding: 0;
+
+  border: 0;
+  border-radius: 50%;
+
+  background: transparent;
+
+  cursor: pointer;
+}
+
+.avatarButton:hover {
+  background: var(--color-bg-subtle);
+}
+
+.avatarButton:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.avatarFallback {
+  width: 28px;
+  height: 28px;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 50%;
+
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
+}
+
+/* ============================================================
+   DROPDOWN
+   ============================================================ */
+
+.userDropdown {
+  position: absolute;
+  z-index: 1000;
+
+  top: calc(100% + 8px);
+  right: 0;
+
+  width: 220px;
+
+  padding: 7px;
+
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 8px;
+
+  background: var(--color-bg-surface);
+  box-shadow: var(--shadow-lg);
+}
+
+/* ============================================================
+   DROPDOWN HEADER
+   ============================================================ */
+
+.userDropdownHeader {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+
+  padding: 9px;
+}
+
+.dropdownAvatar {
+  width: 30px;
+  height: 30px;
+
+  flex-shrink: 0;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 50%;
+
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.dropdownUserInfo {
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dropdownUserInfo strong {
+  overflow: hidden;
+
+  color: var(--color-text-primary);
+
+  font-size: 10px;
+  font-weight: 600;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dropdownUserInfo span {
+  overflow: hidden;
+
+  color: var(--color-text-tertiary);
+
+  font-size: 8px;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dropdownDivider {
+  height: 1px;
+
+  margin: 4px 2px;
+
+  background: var(--color-border-subtle);
+}
+
+/* ============================================================
+   DROPDOWN ITEM
+   ============================================================ */
+
+.dropdownItem {
+  width: 100%;
+
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  min-height: 34px;
+
+  padding: 7px 9px;
+
+  border: 0;
+  border-radius: 5px;
+
+  background: transparent;
+
+  color: var(--color-text-primary);
+
+  font-family: inherit;
+  font-size: 9px;
+  font-weight: 500;
+
+  text-align: left;
+
+  cursor: pointer;
+}
+
+.dropdownItem:hover {
+  background: var(--color-bg-subtle);
+}
+
+.dropdownItem:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+.dropdownItem svg {
+  flex-shrink: 0;
+
+  color: var(--color-text-tertiary);
+}
+
+.logoutItem {
+  color: var(--color-error);
+}
+
+.logoutItem svg {
+  color: var(--color-error);
+}
+
+@media (max-width: 768px) {
+  .topbar {
+    gap: 8px;
+    padding: 0 12px;
+  }
+
+  .right {
+    gap: 8px;
+  }
+
+  .left { display: none; }
+  .right { flex: 1; min-width: 0; }
+}
