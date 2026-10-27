@@ -19,6 +19,7 @@ import {
 import { normalizeApiError } from "@/utils/apiError";
 import { copyText } from "@/utils/credentialInput";
 import { formatVietnamDateTime } from "@/utils/formatDateTime";
+import { dataSourceDisplayName } from "@/utils/dataSourceDisplayName";
 
 import styles from "./ApiSources.module.css";
 
@@ -86,7 +87,7 @@ export default function ApiSources() {
       });
       setSources((current) => [created, ...current]);
       markChecked(created.id);
-      setNotice(`${created.name} is connected.`);
+      setNotice(`${dataSourceDisplayName(created)} is connected.`);
       closeAdd();
     } catch (reason) {
       setError(normalizeApiError(reason).message);
@@ -98,13 +99,14 @@ export default function ApiSources() {
   const testConnection = async (source: DataSource) => {
     setBusyId(source.id);
     setError("");
+    setNotice("");
     try {
       const result = await dataSourceService.test(source.id);
       markChecked(source.id);
       setSources((current) => current.map((item) => item.id === source.id
-        ? { ...item, ...result }
+        ? { ...item, connectionStatus: result.connectionStatus, lastCheckedAt: result.lastCheckedAt }
         : item));
-      setNotice(`${source.name} is connected to ${result.stationCount} station${result.stationCount === 1 ? "" : "s"}.`);
+      setNotice(`${dataSourceDisplayName(source)}: ${result.stationCount} soil station${result.stationCount === 1 ? "" : "s"} detected upstream. Registered stations and sharing permissions are unchanged.`);
     } catch (reason) {
       const message = normalizeApiError(reason).message;
       await loadSources();
@@ -121,7 +123,7 @@ export default function ApiSources() {
     try {
       await dataSourceService.remove(removeSource.id);
       setSources((current) => current.filter((source) => source.id !== removeSource.id));
-      setNotice(`${removeSource.name} was removed. Its historical audit data was preserved.`);
+      setNotice(`${dataSourceDisplayName(removeSource)} was removed. Its historical audit data was preserved.`);
       setRemoveSource(null);
     } catch (reason) {
       setError(normalizeApiError(reason).message);
@@ -175,7 +177,7 @@ export default function ApiSources() {
       />
       {error && <ErrorState description={error} onRetry={() => { setError(""); void loadSources(); }} />}
       {notice && <p className={styles.notice} role="status">{notice}</p>}
-      <p className={styles.help}>API reachability checks run on entry and Refresh; results may be reused for 30 seconds.</p>
+      <p className={styles.help}>API reachability checks run on entry and Refresh; results may be reused for 30 seconds. Stations shows registered stations, or only those shared with you. Test does not register new stations.</p>
       {loading && <Loading label="Loading API sources..." />}
       {!loading && !error && sources.length === 0 && (
         <EmptyState
@@ -195,7 +197,7 @@ export default function ApiSources() {
               </tr></thead>
               <tbody>{sources.map((source) => (
                 <tr key={source.id}>
-                  <td><strong>{source.name}</strong><span className={styles.subtle}>{source.baseUrl}</span></td>
+                  <td><strong>{dataSourceDisplayName(source)}</strong><span className={styles.subtle}>{source.baseUrl}</span></td>
                   <td>{source.owner.displayName}<span className={styles.subtle}>{source.owner.role === "ADMIN" ? "Admin" : "Farmer"}</span></td>
                   <td>{source.stationCount ?? "Restricted"}</td>
                   <td>{source.visibleAccountCount ?? "Restricted"}</td>
@@ -235,7 +237,7 @@ export default function ApiSources() {
         </form>
       </Modal>
 
-      <Modal isOpen={Boolean(accessSource)} onClose={() => setAccessSource(null)} title={`Manage Access${accessSource ? ` — ${accessSource.name}` : ""}`} description="Shared accounts can view station data but cannot reveal or revoke the source key." size="md">
+      <Modal isOpen={Boolean(accessSource)} onClose={() => setAccessSource(null)} title={`Manage Access${accessSource ? ` — ${dataSourceDisplayName(accessSource)}` : ""}`} description="Shared accounts can view station data but cannot reveal or revoke the source key." size="md">
         {accessSource && <SourceAccessManager key={accessSource.id} sourceId={accessSource.id} onSaved={() => { void loadSources(); }} />}
       </Modal>
 
@@ -244,7 +246,7 @@ export default function ApiSources() {
         onClose={() => setRemoveSource(null)}
         onConfirm={() => void confirmRemoveSource()}
         title="Remove API Source"
-        description={`Remove ${removeSource?.name ?? "this source"}? Access and alert rules will stop immediately. Historical audit data will be kept.`}
+        description={`Remove ${removeSource ? dataSourceDisplayName(removeSource) : "this source"}? Access and alert rules will stop immediately. Historical audit data will be kept.`}
         confirmText="Remove Source"
         variant="danger"
       />

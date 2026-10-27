@@ -2,6 +2,72 @@ import { test, expect } from "@playwright/test";
 import { setupMockApi, loginAs } from "./support/mockApi";
 
 for (const role of ["ADMIN", "FARMER"] as const) {
+  test(`${role} Test keeps registered and shared station counts separate from upstream discovery`, async ({ page }, testInfo) => {
+    await setupMockApi(page, { userRole: role });
+    const errors: string[] = [];
+    page.on("pageerror", error => errors.push(error.message));
+    const owned = {
+      id: "owned-source", name: "provider.example — 6 soil stations",
+      owner: { id: "owner", displayName: "Owner", role },
+      baseUrl: "https://provider.example/api/v1", keyPreview: "1234",
+      stationCount: 6, visibleAccountCount: 2, connectionStatus: "CONNECTED",
+      lastCheckedAt: "2026-10-27T00:00:00Z", canReadData: true,
+      canManageAccess: true, canRevealKey: true,
+      createdAt: "2026-10-01T00:00:00Z", updatedAt: "2026-10-27T00:00:00Z",
+    };
+    const shared = {
+      ...owned, id: "shared-source", name: "Shared source", stationCount: 3,
+      owner: { id: "other", displayName: "Other owner", role: "ADMIN" },
+      canManageAccess: false, canRevealKey: false,
+    };
+    const custom = { ...owned, id: "custom-source", name: "North field — 6 soil stations" };
+    let tests = 0;
+    const unexpectedWrites: string[] = [];
+    await page.route("**/api/v1/data-sources**", async route => {
+      const path = new URL(route.request().url()).pathname;
+      let data: unknown;
+      if (path === "/api/v1/data-sources/owned-source/test") {
+        tests++;
+        data = { connectionStatus: "CONNECTED", stationCount: 9, lastCheckedAt: "2026-10-27T00:01:00Z" };
+      } else if (route.request().method() !== "GET") {
+        unexpectedWrites.push(`${route.request().method()} ${path}`);
+        return route.fulfill({ status: 403, json: { success: false, error: { code: "FORBIDDEN", message: "Unexpected mutation" } } });
+      } else if (path.endsWith("/connection-status")) {
+        data = { connectionStatus: "CONNECTED", lastCheckedAt: owned.lastCheckedAt, isFromCache: false };
+      } else {
+        data = { items: [owned, shared, custom], nextCursor: null };
+      }
+      await route.fulfill({ json: { success: true, data } });
+    });
+    await loginAs(page, `qa-${role === "ADMIN" ? "admin" : "farmer"}@example.test`);
+    await page.goto(role === "ADMIN" ? "/admin/api-sources" : "/farm-owner/api-sources");
+    const ownedRow = page.locator("tbody tr").nth(0);
+    const sharedRow = page.getByRole("row").filter({ hasText: "Shared source" });
+    await expect(ownedRow.getByRole("cell").nth(2)).toHaveText("6");
+    await expect(sharedRow.getByRole("cell").nth(2)).toHaveText("3");
+    await expect(ownedRow.getByRole("button", { name: "Test", exact: true })).toBeEnabled();
+    await ownedRow.getByRole("button", { name: "Test", exact: true }).click();
+    await expect.poll(() => tests).toBe(1);
+    await expect(ownedRow.getByRole("button", { name: "Test", exact: true })).toBeEnabled();
+    await expect(ownedRow.getByRole("cell").nth(2)).toHaveText("6");
+    await expect(sharedRow.getByRole("cell").nth(2)).toHaveText("3");
+    await expect(page.getByRole("status").filter({ hasText: "9 soil stations detected upstream" })).toBeVisible();
+    await expect(ownedRow.locator("strong")).toHaveText("provider.example");
+    await expect(page.getByText(custom.name, { exact: true })).toBeVisible();
+    await expect(sharedRow.getByRole("button", { name: "Test", exact: true })).toHaveCount(0);
+    await expect(ownedRow.getByRole("cell").nth(3)).toHaveText("2");
+    await page.screenshot({ path: testInfo.outputPath("source-counts.png"), fullPage: true });
+    await page.getByRole("button", { name: "Refresh", exact: true }).click();
+    await expect(ownedRow.getByRole("button", { name: "Test", exact: true })).toBeEnabled();
+    await expect(ownedRow.getByRole("cell").nth(2)).toHaveText("6");
+    await expect(sharedRow.getByRole("cell").nth(2)).toHaveText("3");
+    await expect(ownedRow.locator("strong")).toHaveText("provider.example");
+    expect(unexpectedWrites).toEqual([]);
+    expect(errors).toEqual([]);
+  });
+}
+
+for (const role of ["ADMIN", "FARMER"] as const) {
   for (const scenario of ["valid", "autofill", "invalid", "expired"] as const) {
     test(`${role} Reveal handles ${scenario} password without unintended logout`, async ({ page }) => {
       await setupMockApi(page, { userRole: role });

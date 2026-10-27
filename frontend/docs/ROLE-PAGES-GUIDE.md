@@ -121,6 +121,11 @@ Nếu một station lỗi trong **Historical Analysis**, các station thành cô
 
 Quy trình này áp dụng cho cả Admin và Farmer là chủ nguồn.
 
+Cột **Stations** là số trạm đã đăng ký của nguồn hoặc số trạm được chia sẻ cho
+tài khoản hiện tại. **Test** chỉ kiểm tra kết nối và báo riêng số trạm đất phát
+hiện từ API; thao tác này không thêm trạm hoặc thay đổi quyền chia sẻ. Tên nguồn
+tự sinh theo mẫu cũ được hiển thị bằng hostname, không kèm số trạm lúc tạo.
+
 1. Trong **API Sources**, chọn thêm nguồn, nhập URL API và `X-API-Key` hợp lệ; chọn hoặc tạo farm và plot theo biểu mẫu rồi chọn **Connect Source**. Tên nguồn có thể để trống để hệ thống tạo từ kết nối.
 2. Với nguồn sở hữu, chọn **Manage Access**. Nhập ít nhất 3 ký tự của email và chọn **Search accounts**.
 3. Chọn tài khoản Farmer hoặc Client Developer đang `ACTIVE`, chọn các station cần chia sẻ rồi lưu. Có thể mở **Edit access** để thay đổi hoặc thu hồi quyền.
