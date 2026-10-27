@@ -16,7 +16,7 @@ describe('CI Packaging and Workflows', () => {
       const content = fs.readFileSync(workflowPath, 'utf8');
       expect(content).toMatch(/defaults:\s*\n\s*run:\s*\n\s*working-directory: backend/);
       expect(content).toContain('cache-dependency-path: backend/pnpm-lock.yaml');
-      expect(content.match(/branches: \[codex\/monorepo-final\]/g)).toHaveLength(2);
+      expect(content.match(/branches: \[main\]/g)).toHaveLength(2);
     }
     const imagesContent = fs.readFileSync(imagesPath, 'utf8');
     expect(imagesContent).toContain('backend/runtime-artifact/runtime.tar.gz');
@@ -92,9 +92,7 @@ describe('CI Packaging and Workflows', () => {
     expect(upload).toBeGreaterThan(save);
     expect(content.indexOf('- name: Cleanup CI container and network')).toBeGreaterThan(upload);
     expect(
-      content.match(
-        /if: github.event_name == 'push' && github.ref == 'refs\/heads\/codex\/monorepo-final'/g,
-      ),
+      content.match(/if: github.event_name == 'push' && github.ref == 'refs\/heads\/main'/g),
     ).toHaveLength(2);
     expect(content).toContain('pull_request:');
     expect(content).toContain('runtime-artifact/runtime.tar.gz');

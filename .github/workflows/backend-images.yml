@@ -2,9 +2,9 @@ name: Backend Images & Architecture Gate
 
 on:
   push:
-    branches: [codex/monorepo-final]
+    branches: [main]
   pull_request:
-    branches: [codex/monorepo-final]
+    branches: [main]
 
 permissions:
   contents: read
@@ -104,7 +104,7 @@ jobs:
           curl --fail --silent http://127.0.0.1:3000/api/v1/readiness
           test "$(docker exec iot-api-smoke id -u)" = 1000
       - name: Export verified runtime artifact
-        if: github.event_name == 'push' && github.ref == 'refs/heads/codex/monorepo-final'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
           mkdir -p runtime-artifact
           docker tag iot-backend-runtime agrisense-api:${{ github.sha }}
@@ -112,7 +112,7 @@ jobs:
           cd runtime-artifact
           sha256sum runtime.tar.gz > SHA256SUMS
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        if: github.event_name == 'push' && github.ref == 'refs/heads/codex/monorepo-final'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         with:
           name: runtime-${{ matrix.os }}-${{ github.sha }}
           path: |

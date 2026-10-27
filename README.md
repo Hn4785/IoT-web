@@ -18,13 +18,14 @@ Ví dụ cho PowerShell trên máy mới, khi chưa có thư mục `D:\IoT`:
 
 ```powershell
 cd D:\
-git clone --branch codex/monorepo-final https://github.com/Hn4785/IoT-web.git IoT
+git clone --branch main https://github.com/Hn4785/IoT-web.git IoT
 cd D:\IoT
 git rev-parse HEAD
 ```
 
 Khi bàn giao hoặc triển khai, ghi lại commit cụ thể; không chỉ ghi tên nhánh.
-Lịch sử hai nhánh `BE` và `FE` được giữ nguyên làm mốc đối chiếu.
+Lịch sử backend và frontend đã được gộp đầy đủ vào `main`; các nhánh `BE` và
+`FE` cũ không còn cần giữ riêng. Có thể đối chiếu các commit trước trong lịch sử Git.
 
 ## Dựng môi trường
 

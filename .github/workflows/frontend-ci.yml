@@ -2,9 +2,9 @@ name: Frontend CI
 
 on:
   push:
-    branches: [codex/monorepo-final]
+    branches: [main]
   pull_request:
-    branches: [codex/monorepo-final]
+    branches: [main]
 
 permissions:
   contents: read

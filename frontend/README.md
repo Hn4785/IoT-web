@@ -7,7 +7,7 @@ Frontend hiển thị trạm, số đo, lịch sử, cảnh báo và thông báo
 khoản. Backend NestJS/PostgreSQL xác thực, phân quyền và lưu dữ liệu; frontend
 không kết nối database hoặc gọi trực tiếp nguồn cảm biến bằng khóa của chủ nguồn.
 
-Nhánh tích hợp `codex/monorepo-final` đặt giao diện trong `frontend/` và backend
+Nhánh chính `main` đặt giao diện trong `frontend/` và backend
 trong `backend/`. Hai mốc nhập vào là frontend `7592952` và backend `085a4b9`,
 kế thừa logic frontend `7650b6f` và backend `abd4080` ngày 11/10/2026.
 Việc gộp thư mục không thay đổi chức năng v3.0.
@@ -50,7 +50,7 @@ Tải source tích hợp nếu chưa có checkout. Không clone đè thư mục 
 
 ```powershell
 cd D:\
-git clone --branch codex/monorepo-final https://github.com/Hn4785/IoT-web.git IoT
+git clone --branch main https://github.com/Hn4785/IoT-web.git IoT
 cd D:\IoT\frontend
 npm ci
 ```

@@ -25,7 +25,7 @@ Ví dụ đường dẫn ở đây không bắt buộc người nhận đặt so
 Nếu chưa có source, clone nhánh tích hợp vào thư mục mới:
 
 ```powershell
-git clone --branch codex/monorepo-final https://github.com/Hn4785/IoT-web.git IoT
+git clone --branch main https://github.com/Hn4785/IoT-web.git IoT
 cd IoT
 git switch --detach <revision-tich-hop-da-duoc-giao>
 cd backend

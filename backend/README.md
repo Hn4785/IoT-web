@@ -7,7 +7,7 @@ số đo; ứng dụng không điều khiển thiết bị từ xa.
 
 ## 1. Phạm vi và trạng thái
 
-Nhánh tích hợp `codex/monorepo-final` gộp backend `085a4b9` và frontend `7592952`.
+Nhánh chính `main` gộp backend `085a4b9` và frontend `7592952`.
 Logic kế thừa bản sửa backend `abd4080` và frontend `7650b6f` ngày 11/10/2026.
 Việc gộp thư mục không bổ sung chức năng; revision bàn giao phải là commit tích hợp cụ thể.
 

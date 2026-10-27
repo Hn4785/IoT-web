@@ -13,10 +13,10 @@ describe("Frontend CI Workflow", () => {
     // Runner OS
     assert.match(content, /runs-on:\s*ubuntu-24\.04/, "must use ubuntu-24.04 runner");
 
-    // Triggers for the combined branch
-    assert.match(content, /push:\s*\n\s*branches:\s*\[\s*codex\/monorepo-final\s*\]/, "push must trigger on the combined branch");
-    assert.match(content, /pull_request:\s*\n\s*branches:\s*\[\s*codex\/monorepo-final\s*\]/, "pull_request must trigger on the combined branch");
-    assert.doesNotMatch(content, /main|master|develop|feature\/\*|agent\/\*/, "must not include other branch patterns");
+    // Triggers for the default branch
+    assert.match(content, /push:\s*\n\s*branches:\s*\[\s*main\s*\]/, "push must trigger on main only");
+    assert.match(content, /pull_request:\s*\n\s*branches:\s*\[\s*main\s*\]/, "pull_request must trigger on main only");
+    assert.doesNotMatch(content, /master|develop|feature\/\*|agent\/\*/, "must not include other branch patterns");
 
     // Permissions
     assert.match(content, /permissions:\s*\n\s*contents:\s*read/, "must specify read-only contents permissions");
