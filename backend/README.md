@@ -1,5 +1,7 @@
 # AgriSense Backend
 
+Phiên bản ứng dụng: 3.0.0. Cập nhật tài liệu: 27/10/2026.
+
 Backend quản lý tài khoản, phiên đăng nhập, nguồn API quan trắc đất, quyền truy cập
 trạm, lịch sử số đo, cảnh báo và thông báo trong ứng dụng. Backend nằm trong
 `backend/`, [frontend](../frontend/README.md) nằm trong `frontend/` của cùng repository. PostgreSQL lưu dữ liệu nghiệp vụ và
@@ -7,9 +9,9 @@ số đo; ứng dụng không điều khiển thiết bị từ xa.
 
 ## 1. Phạm vi và trạng thái
 
-Nhánh chính `main` gộp backend `085a4b9` và frontend `7592952`.
-Logic kế thừa bản sửa backend `abd4080` và frontend `7650b6f` ngày 11/10/2026.
-Việc gộp thư mục không bổ sung chức năng; revision bàn giao phải là commit tích hợp cụ thể.
+Mã nguồn phiên bản 3.0.0 được quản lý trên nhánh `main`, gồm `backend/` và
+`frontend/`. Khi bàn giao hoặc triển khai, ghi lại commit cụ thể bằng
+`git rev-parse HEAD`; không chỉ ghi tên nhánh hoặc số phiên bản.
 
 Đã có luồng đăng nhập/đổi mật khẩu/refresh/logout, quản lý tài khoản và authority,
 API key theo trạm, thêm nguồn thật, chia sẻ trạm cho tài khoản nhận, latest/history,

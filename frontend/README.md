@@ -1,16 +1,15 @@
 # AgriSense Frontend
 
-Phiên bản ứng dụng: 3.0.0. Cập nhật tài liệu: 12/10/2026.
+Phiên bản ứng dụng: 3.0.0. Cập nhật tài liệu: 27/10/2026.
 
 Ứng dụng web giám sát đất nông nghiệp, sử dụng React, TypeScript và Vite.
 Frontend hiển thị trạm, số đo, lịch sử, cảnh báo và thông báo theo quyền tài
 khoản. Backend NestJS/PostgreSQL xác thực, phân quyền và lưu dữ liệu; frontend
 không kết nối database hoặc gọi trực tiếp nguồn cảm biến bằng khóa của chủ nguồn.
 
-Nhánh chính `main` đặt giao diện trong `frontend/` và backend
-trong `backend/`. Hai mốc nhập vào là frontend `7592952` và backend `085a4b9`,
-kế thừa logic frontend `7650b6f` và backend `abd4080` ngày 11/10/2026.
-Việc gộp thư mục không thay đổi chức năng v3.0.
+Mã nguồn được quản lý trên nhánh `main`: giao diện trong `frontend/`, backend
+trong `backend/`. Khi bàn giao hoặc triển khai, ghi lại commit cụ thể bằng
+`git rev-parse HEAD`; không chỉ ghi tên nhánh hoặc số phiên bản.
 
 ## 1. Phạm vi hiện tại
 
