@@ -129,9 +129,20 @@ export function createDataSourceService(client: HttpClient) {
       );
       return unwrapApiResponse(response.data);
     },
-    async test(sourceId: string): Promise<{ connectionStatus: "CONNECTED"; stationCount: number; lastCheckedAt: string }> {
-      const response = await client.post<ApiSuccessEnvelope<{ connectionStatus: "CONNECTED"; stationCount: number; lastCheckedAt: string }>>(
+    async test(sourceId: string): Promise<{ connectionStatus: "CONNECTED"; stationCount: number; lastCheckedAt: string; newStationCodes: string[] }> {
+      const response = await client.post<ApiSuccessEnvelope<{ connectionStatus: "CONNECTED"; stationCount: number; lastCheckedAt: string; newStationCodes?: string[] }>>(
         API_ENDPOINTS.dataSources.test(sourceId),
+      );
+      const data = unwrapApiResponse(response.data);
+      return {
+        ...data,
+        newStationCodes: data.newStationCodes ?? [],
+      };
+    },
+    async importStations(sourceId: string, stationCodes: string[]): Promise<{ source: DataSource; importedStationCodes: string[] }> {
+      const response = await client.post<ApiSuccessEnvelope<{ source: DataSource; importedStationCodes: string[] }>>(
+        API_ENDPOINTS.dataSources.stations(sourceId),
+        { stationCodes },
       );
       return unwrapApiResponse(response.data);
     },

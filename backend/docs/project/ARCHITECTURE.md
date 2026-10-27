@@ -1,6 +1,6 @@
 # Kiến trúc backend giám sát đất
 
-Phiên bản: 3.0.0. Cập nhật: 12/10/2026.
+Phiên bản: 3.0.0. Cập nhật: 27/10/2026.
 
 Tài liệu liên quan: [tổng quan](../../README.md), [khởi chạy](QUICKSTART.md), [biến môi trường](ENV-REFERENCE.md), [vận hành cục bộ](../operations/LOCAL-RUNBOOK.md), [phân phối và phục hồi](../operations/DELIVERY-RECOVERY.md), [mô hình đe dọa](../security/integration-core-threat-model.md), [bản đồ năng lực](../../CAPABILITY-MAP.md), [quy định đóng góp](../../CONTRIBUTING.md).
 
@@ -61,6 +61,14 @@ Chủ nguồn mới được xem và sửa danh sách chia sẻ, xem ứng viên
 API key phải đồng thời có scope trạm và quyền hiện tại của chủ key qua `ClientStationGrant` hoặc `DataSourceGrantStation`. Thu hồi một trong các quyền này làm mất quyền đọc. Scope kiểm tra nguồn còn hoạt động và loại `CENTER`. Xem [`station.repository.ts`](../../src/station-data/station.repository.ts).
 
 Quyền đọc cũng khác quyền thay đổi cảnh báo. Admin được quản lý rule và vòng đời cảnh báo trên trạm SYSTEM hoặc nguồn mình sở hữu. Farmer được thay đổi trên nguồn mình sở hữu. Farmer nhận chia sẻ và SuperAdmin giám sát nguồn người khác không có quyền thay đổi cảnh báo của chủ nguồn.
+
+### Phát hiện và thêm node của nguồn
+
+`POST /data-sources/:sourceId/test` kiểm tra API nguồn và trả `newStationCodes`: những mã trạm đất hiện có ở upstream nhưng chưa đăng ký cho nguồn này. `stationCount` trong kết quả Test là số trạm upstream, không phải số trạm đã lưu. Test không đăng ký trạm hoặc thay đổi quyền chia sẻ.
+
+Chủ nguồn Admin/Farmer có thể xác nhận những mã muốn thêm bằng `POST /data-sources/:sourceId/stations`, với body `{ "stationCodes": ["NODE07"] }`. Mỗi yêu cầu nhận từ 1 đến 100 mã không trùng, dài tối đa 64 ký tự, chỉ gồm chữ, số, dấu gạch dưới hoặc gạch nối; không nhận `CENTER`. Backend kiểm tra lại chủ sở hữu và dữ liệu đất hiện tại trước khi ghi; mã không hợp lệ bị từ chối toàn bộ. Kết quả gồm `source` đã cập nhật và `importedStationCodes` thực sự được thêm. Gọi lại cùng lựa chọn không tạo bản ghi trùng.
+
+Node mới dùng plot duy nhất của các trạm hiện có thuộc nguồn. Nếu không có hoặc có nhiều plot, yêu cầu bị từ chối với `409` thay vì tự chọn vị trí. Thao tác chỉ tạo Station mới, không nhận lại Station SYSTEM và không tạo quyền trong các bảng grant hoặc phạm vi API key. Người đã được chia sẻ node cũ không tự có quyền với node mới. Việc thêm và audit được ghi trong cùng transaction; quyền giám sát SuperAdmin hiện có không thay đổi và không cho phép thêm node vào nguồn của người khác.
 
 ## Từ điển dữ liệu: 27 model
 

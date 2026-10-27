@@ -10,6 +10,7 @@ import type {
   ListGrantCandidatesQuery,
   RevealDataSourceInput,
   SetDataSourceGrantInput,
+  ImportSourceStationsInput,
 } from './data-source.contracts.js';
 import { DataSourceRepository } from './data-source.repository.js';
 import { SourceSecretService } from './source-secret.service.js';
@@ -150,7 +151,12 @@ export class DataSourceService {
     principal: CurrentPrincipalValue,
     sourceId: string,
     requestId: string,
-  ): Promise<{ connectionStatus: 'CONNECTED'; stationCount: number; lastCheckedAt: string }> {
+  ): Promise<{
+    connectionStatus: 'CONNECTED';
+    stationCount: number;
+    lastCheckedAt: string;
+    newStationCodes: string[];
+  }> {
     this.requireSupportedRole(principal);
     const source = await this.repository.getOwnedConnection(principal, sourceId);
     const xApiKey = this.secrets.decrypt(source.encrypted);
@@ -163,7 +169,12 @@ export class DataSourceService {
         stationCount: stations.length,
         requestId,
       });
-      return { connectionStatus: 'CONNECTED', stationCount: stations.length, lastCheckedAt };
+      return {
+        connectionStatus: 'CONNECTED',
+        stationCount: stations.length,
+        lastCheckedAt,
+        newStationCodes: stations.filter((code) => !source.stationCodes.includes(code)),
+      };
     } catch (error) {
       await this.repository.recordConnectionTest({
         principal,
@@ -174,6 +185,33 @@ export class DataSourceService {
       });
       throw error;
     }
+  }
+
+  async importStations(
+    principal: CurrentPrincipalValue,
+    sourceId: string,
+    input: ImportSourceStationsInput,
+    requestId: string,
+  ): Promise<{ source: DataSourceDto; importedStationCodes: string[] }> {
+    this.requireSupportedRole(principal);
+    const source = await this.repository.getOwnedConnection(principal, sourceId);
+    const currentCodes = await this.upstream.discoverSoilStations(
+      source.baseUrl,
+      this.secrets.decrypt(source.encrypted),
+    );
+    if (input.stationCodes.some((code) => !currentCodes.includes(code))) {
+      throw new AppError(
+        'VALIDATION_ERROR',
+        422,
+        'Some selected nodes are no longer available. Test the source again.',
+      );
+    }
+    return this.repository.importStations({
+      principal,
+      sourceId,
+      stationCodes: input.stationCodes,
+      requestId,
+    });
   }
 
   remove(

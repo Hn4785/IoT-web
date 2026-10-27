@@ -1,6 +1,6 @@
 # Mô hình rủi ro và kiểm soát bảo mật
 
-Phiên bản: 3.0.0. Cập nhật: 12/10/2026.
+Phiên bản: 3.0.0. Cập nhật: 27/10/2026.
 
 Phạm vi là toàn bộ backend hiện tại: cấu hình, HTTP, identity/session, API key,
 nguồn API, quyền trạm, dữ liệu bền vững, collector, cảnh báo/notification, audit
@@ -105,6 +105,13 @@ Raw/snapshot/history/alert/notification đều phải resolve quyền hiện t�
 Nguồn đã remove không được mở lại quyền nhờ dữ liệu còn trong database.
 CENTER không được suy ra là station đất hợp lệ.
 
+Test chỉ phát hiện mã node chưa đăng ký; không thêm trạm hoặc thay đổi quyền.
+Thêm node cần chủ nguồn xác nhận từ 1 đến 100 mã và backend kiểm tra lại với
+provider. Transaction khóa nguồn, kiểm tra lại nguồn còn hoạt động và chủ sở
+hữu trước khi tạo Station và ghi audit. Node mới không kế thừa grant hoặc
+scope API key của node cũ; Station SYSTEM không bị chuyển sang nguồn MANAGED.
+Nguồn có nhiều plot hoặc không xác định được plot bị từ chối thay vì tự chọn.
+
 `observedAt` không được thay bằng thời điểm tải khi provider thiếu thời gian.
 Unit/sensor/depth chưa xác minh là unknown/null theo DTO/metadata; không tạo
 giá trị mẫu hoặc metadata demo để làm rule có vẻ hợp lệ.
@@ -174,6 +181,14 @@ Mốc logic ngày 11/10/2026 có 93 file/626 test backend, các trường hợp 
 session/key lifecycle, source ownership, fetch/lease fencing, retention,
 fresh-only alert và delivery recovery, cùng quality/dependency/secret gates.
 Kết quả này là lịch sử tại revision đã nêu, không phải lần kiểm thử lại khi sửa docs.
+
+Đợt thêm node ngày 27/10/2026 đã chạy lại 94 file/643 test trên database kiểm
+thử cục bộ, gồm quyền chủ nguồn Admin/Farmer, phạm vi người nhận và API key,
+yêu cầu lặp/đồng thời, nguồn bị xóa và rollback khi audit thất bại. Provider
+trong các bài kiểm thử này là fixture, không thay nghiệm thu thiết bị thật.
+Kiểm tra định dạng, kiểu dữ liệu, lint và build backend cũng đã đạt. Vite dùng
+cho công cụ kiểm thử được ghim bản vá `8.2.4`; audit toàn bộ dependencies còn
+5 low và 7 moderate, không có high/critical tại thời điểm kiểm tra.
 
 Trước release tiếp theo phải chạy kiểm tra tương ứng, cập nhật ngày/revision và
 phân biệt unit/integration/fixture/live. Không dùng một con số test để kết luận

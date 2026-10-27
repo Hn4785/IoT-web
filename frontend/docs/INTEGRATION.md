@@ -134,6 +134,14 @@ Chủ nguồn tìm người nhận qua `GET /data-sources/:id/grant-candidates?e
 
 Reveal dùng `POST /data-sources/:id/reveal` với `currentPassword`; secret không nằm trong response danh sách nguồn. Key tạo/rotate trong API Keys cũng phải được xử lý như secret chỉ hiện khi thao tác tương ứng trả về. Không ghi password, token hay API key vào log, URL, ảnh hoặc tài liệu.
 
+### Node mới từ API nguồn
+
+`POST /data-sources/:id/test` trả thêm `newStationCodes`, là các mã trạm đất upstream chưa đăng ký cho nguồn. Giao diện dùng danh sách này để báo số node mới và cho chủ nguồn mở **Review and add nodes**; không lấy `stationCount` của Test ghi đè cột Stations. Nếu backend cũ chưa có `newStationCodes`, lớp service coi như danh sách rỗng và không hiện thao tác thêm.
+
+Sau khi chủ nguồn chọn và xác nhận, `POST /data-sources/:id/stations` nhận `{ "stationCodes": ["NODE07"] }` với từ 1 đến 100 mã không trùng, trả `{ "source": ..., "importedStationCodes": [...] }` trong envelope chuẩn. Giao diện cập nhật nguồn từ `source` và báo số mã thực sự được thêm, không tự cộng số đã yêu cầu. Hủy hoặc chọn **Later** không gửi POST thêm trạm. Khi lỗi, giữ lựa chọn và số trạm cũ để người dùng kiểm tra lại hoặc thử lại.
+
+Backend xác thực chủ nguồn và kiểm tra lại các mã với upstream; thao tác thêm lặp không tạo trùng. Node mới không kế thừa grant của người nhận node cũ và không mở rộng scope API key. Các quyền giám sát Super Admin hiện có giữ nguyên. Không có biến môi trường hay migration mới cho luồng này.
+
 ## Các nhóm route nghiệp vụ khác
 
 Mọi đường dẫn trong bảng dưới đây được nối vào base URL `/api/v1`.

@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 
 import Button from "@/components/common/Button";
 import SourceAccessManager from "@/components/data-sources/SourceAccessManager";
+import SourceNodeImport from "@/components/data-sources/SourceNodeImport";
 import EmptyState from "@/components/common/EmptyState";
 import ErrorState from "@/components/common/ErrorState";
 import Loading from "@/components/common/Loading";
@@ -31,6 +32,10 @@ export default function ApiSources() {
   const { sources, setSources, loading, refreshing, error, setError, checks, markChecked, loadSources } = useApiSources();
   const [busyId, setBusyId] = useState("");
   const [notice, setNotice] = useState("");
+
+  const [importSource, setImportSource] = useState<DataSource | null>(null);
+  const [discoveredCodes, setDiscoveredCodes] = useState<string[]>([]);
+  const [importOpen, setImportOpen] = useState(false);
 
   const [addOpen, setAddOpen] = useState(false);
   const [name, setName] = useState("");
@@ -87,6 +92,9 @@ export default function ApiSources() {
       });
       setSources((current) => [created, ...current]);
       markChecked(created.id);
+      setImportSource(null);
+      setDiscoveredCodes([]);
+      setImportOpen(false);
       setNotice(`${dataSourceDisplayName(created)} is connected.`);
       closeAdd();
     } catch (reason) {
@@ -106,7 +114,15 @@ export default function ApiSources() {
       setSources((current) => current.map((item) => item.id === source.id
         ? { ...item, connectionStatus: result.connectionStatus, lastCheckedAt: result.lastCheckedAt }
         : item));
-      setNotice(`${dataSourceDisplayName(source)}: ${result.stationCount} soil station${result.stationCount === 1 ? "" : "s"} detected upstream. Registered stations and sharing permissions are unchanged.`);
+      if (result.newStationCodes.length > 0) {
+        setImportSource(source);
+        setDiscoveredCodes(result.newStationCodes);
+        setNotice(`${dataSourceDisplayName(source)}: ${result.newStationCodes.length} new node${result.newStationCodes.length === 1 ? "" : "s"} detected: ${result.newStationCodes.join(", ")}. Would you like to add them? Registered stations and sharing permissions are unchanged.`);
+      } else {
+        setImportSource(null);
+        setDiscoveredCodes([]);
+        setNotice(`${dataSourceDisplayName(source)}: Connected successfully. No new nodes detected. Registered stations and sharing permissions are unchanged.`);
+      }
     } catch (reason) {
       const message = normalizeApiError(reason).message;
       await loadSources();
@@ -116,6 +132,13 @@ export default function ApiSources() {
     }
   };
 
+  const handleImportSuccess = (updatedSource: DataSource, count: number) => {
+    setSources((current) => current.map((item) => (item.id === updatedSource.id ? updatedSource : item)));
+    setImportSource(null);
+    setDiscoveredCodes([]);
+    setNotice(`${dataSourceDisplayName(updatedSource)}: ${count} soil station${count === 1 ? "" : "s"} added. Existing sharing was unchanged.`);
+  };
+
   const confirmRemoveSource = async () => {
     if (!removeSource) return;
     setBusyId(removeSource.id);
@@ -123,6 +146,9 @@ export default function ApiSources() {
     try {
       await dataSourceService.remove(removeSource.id);
       setSources((current) => current.filter((source) => source.id !== removeSource.id));
+      setImportSource(null);
+      setDiscoveredCodes([]);
+      setImportOpen(false);
       setNotice(`${dataSourceDisplayName(removeSource)} was removed. Its historical audit data was preserved.`);
       setRemoveSource(null);
     } catch (reason) {
@@ -176,7 +202,17 @@ export default function ApiSources() {
         </div>}
       />
       {error && <ErrorState description={error} onRetry={() => { setError(""); void loadSources(); }} />}
-      {notice && <p className={styles.notice} role="status">{notice}</p>}
+      {notice && (
+        <div className={styles.notice} role="status">
+          <span>{notice}</span>
+          {discoveredCodes.length > 0 && importSource && (
+            <div className={styles.actions} style={{ marginTop: "6px" }}>
+              <Button size="sm" onClick={() => setImportOpen(true)}>Review and add nodes</Button>
+              <Button size="sm" variant="outline" onClick={() => { setDiscoveredCodes([]); setImportSource(null); setNotice(""); }}>Later</Button>
+            </div>
+          )}
+        </div>
+      )}
       <p className={styles.help}>API reachability checks run on entry and Refresh; results may be reused for 30 seconds. Stations shows registered stations, or only those shared with you. Test does not register new stations.</p>
       {loading && <Loading label="Loading API sources..." />}
       {!loading && !error && sources.length === 0 && (
@@ -249,6 +285,15 @@ export default function ApiSources() {
         description={`Remove ${removeSource ? dataSourceDisplayName(removeSource) : "this source"}? Access and alert rules will stop immediately. Historical audit data will be kept.`}
         confirmText="Remove Source"
         variant="danger"
+      />
+
+      <SourceNodeImport
+        key={importSource ? `${importSource.id}-${discoveredCodes.join(",")}` : "none"}
+        source={importSource}
+        newStationCodes={discoveredCodes}
+        isOpen={importOpen}
+        onClose={() => setImportOpen(false)}
+        onSuccess={handleImportSuccess}
       />
 
       <Modal isOpen={Boolean(revealSource)} onClose={closeReveal} title="Reveal X-API-Key" description="Only the source owner can reveal this key. It closes automatically after 30 seconds." size="sm">

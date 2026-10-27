@@ -56,3 +56,72 @@ test("data source service maps the approved endpoints and unwraps envelopes", as
   ]);
   assert.deepEqual(calls.find((call) => call.url.endsWith("/stations") && call.method === "PUT")?.body, { stationIds: ["station-1"] });
 });
+
+test("data source service tests connection with upstream newStationCodes and imports selected station nodes", async () => {
+  const calls: Array<{ method: string; url: string; body?: unknown }> = [];
+  const source = {
+    id: "source-1", name: "North field", owner: { id: "user-1", displayName: "Owner", role: "ADMIN" as const },
+    baseUrl: "https://api.example.com", keyPreview: "1234", stationCount: 5,
+    visibleAccountCount: 2, connectionStatus: "CONNECTED" as const,
+    lastCheckedAt: "2026-09-28T00:00:00.000Z", canManageAccess: true, canRevealKey: true,
+    canReadData: true, createdAt: "2026-09-28T00:00:00.000Z", updatedAt: "2026-09-28T00:00:00.000Z",
+  };
+  const testPayload = {
+    connectionStatus: "CONNECTED" as const,
+    stationCount: 8,
+    lastCheckedAt: "2026-10-27T00:00:00.000Z",
+    newStationCodes: ["SN-01", "SN-02"],
+  };
+  const importPayload = {
+    source: { ...source, stationCount: 7 },
+    importedStationCodes: ["SN-01", "SN-02"],
+  };
+  const client = {
+    async get() { throw new Error("GET unexpected"); },
+    async post<T>(url: string, body?: unknown) {
+      calls.push({ method: "POST", url, body });
+      if (url === "/data-sources/source-1/test") {
+        return { data: { success: true, data: testPayload } as T };
+      }
+      if (url === "/data-sources/source-1/stations") {
+        return { data: { success: true, data: importPayload } as T };
+      }
+      throw new Error(`Unexpected POST url: ${url}`);
+    },
+    async put() { throw new Error("PUT unexpected"); },
+    async delete() { throw new Error("DELETE unexpected"); },
+  };
+  const service = createDataSourceService(client);
+  const testResult = await service.test("source-1");
+  assert.deepEqual(testResult, testPayload);
+
+  const importResult = await service.importStations("source-1", ["SN-01", "SN-02"]);
+  assert.deepEqual(importResult, importPayload);
+  assert.deepEqual(calls, [
+    { method: "POST", url: "/data-sources/source-1/test", body: undefined },
+    { method: "POST", url: "/data-sources/source-1/stations", body: { stationCodes: ["SN-01", "SN-02"] } },
+  ]);
+});
+
+test("data source service defaults missing newStationCodes to empty array", async () => {
+  const client = {
+    async get() { throw new Error("GET unexpected"); },
+    async post<T>() {
+      return {
+        data: {
+          success: true,
+          data: {
+            connectionStatus: "CONNECTED" as const,
+            stationCount: 5,
+            lastCheckedAt: "2026-10-27T00:00:00.000Z",
+          },
+        } as T,
+      };
+    },
+    async put() { throw new Error("PUT unexpected"); },
+    async delete() { throw new Error("DELETE unexpected"); },
+  };
+  const service = createDataSourceService(client);
+  const result = await service.test("source-1");
+  assert.deepEqual(result.newStationCodes, []);
+});

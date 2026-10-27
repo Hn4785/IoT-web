@@ -1,6 +1,6 @@
 # Chức năng và trạng thái bàn giao
 
-Phiên bản: 3.0.0. Cập nhật: 12/10/2026.
+Phiên bản: 3.0.0. Cập nhật: 27/10/2026.
 
 Tài liệu ghi phạm vi backend đã triển khai, bằng chứng kiểm tra và phần còn mở.
 "Đã có" nói về mã và luồng xử lý trong phiên bản này; không thay thế nghiệm thu
@@ -23,6 +23,8 @@ nguồn thật hoặc server của bên nhận.
 | Cảnh báo         | Rule theo metadata, mẫu mới, breach/recovery, acknowledge/resolve, optimistic revision và idempotency      | Không phát cảnh báo mới từ stored/stale/backfill; không điều khiển thiết bị             |
 | Notification     | Job theo lifecycle, snapshot người nhận, giao theo batch và tránh trùng                                    | Kiểm tra lại quyền khi đọc; không gửi email/SMS                                         |
 | Audit/vận hành   | Audit an toàn, chỉ số nội bộ hữu hạn, image runtime/tools, preflight, backup envelope và restore rehearsal | Rate limit/metrics process-local; server/backup ngoài máy cần bên nhận xác nhận         |
+
+Chủ nguồn có thể dùng Test để phát hiện mã node đất chưa đăng ký, sau đó xác nhận những mã muốn thêm. Test không tự thêm node; node được thêm không kế thừa quyền chia sẻ của node cũ hoặc scope API key. Yêu cầu thêm lặp không tạo bản ghi trùng. Nguồn phải có một plot xác định từ các trạm hiện có; trường hợp thiếu hoặc nhiều plot bị từ chối để tránh ghi sai vị trí.
 
 ## 2. Ranh giới phân quyền
 

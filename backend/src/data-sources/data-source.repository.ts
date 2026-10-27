@@ -676,6 +676,7 @@ export class DataSourceRepository {
         keyCiphertext: true,
         keyNonce: true,
         keyAuthTag: true,
+        stations: { select: { upstreamCode: true } },
       },
     });
     if (!source) throw new AppError('NOT_FOUND', 404, 'Resource not found');
@@ -687,6 +688,7 @@ export class DataSourceRepository {
     }
     return {
       baseUrl: source.baseUrl,
+      stationCodes: source.stations.map((station) => station.upstreamCode),
       encrypted: {
         ciphertext: source.keyCiphertext,
         nonce: source.keyNonce,
@@ -737,6 +739,89 @@ export class DataSourceRepository {
       where: { id: sourceId, kind: 'MANAGED', removedAt: null, lastCheckedAt: { lte: checkedAt } },
       data: { connectionStatus: connected ? 'CONNECTED' : 'FAILED', lastCheckedAt: checkedAt },
     });
+  }
+
+  async importStations(input: {
+    principal: CurrentPrincipalValue;
+    sourceId: string;
+    stationCodes: readonly string[];
+    requestId: string;
+  }): Promise<{ source: DataSourceDto; importedStationCodes: string[] }> {
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      try {
+        return await this.prisma.$transaction(
+          async (transaction) => {
+            // Fence removal and serialize imports for this source, not for other owners.
+            await transaction.$queryRaw`
+            SELECT id FROM "DataSource" WHERE id = ${input.sourceId}::uuid FOR UPDATE`;
+            const source = await transaction.dataSource.findFirst({
+              where: { id: input.sourceId, kind: 'MANAGED', removedAt: null },
+              select: {
+                ownerUserId: true,
+                stations: { select: { upstreamCode: true, plotId: true } },
+              },
+            });
+            if (!source) throw new AppError('NOT_FOUND', 404, 'Resource not found');
+            if (source.ownerUserId !== input.principal.userId) {
+              throw new AppError('FORBIDDEN', 403, 'Only the source owner can add nodes');
+            }
+            const registered = new Set(source.stations.map((station) => station.upstreamCode));
+            const importedStationCodes = input.stationCodes.filter((code) => !registered.has(code));
+            if (importedStationCodes.length > 0) {
+              const plots = [
+                ...new Set(
+                  source.stations
+                    .filter((station) => station.upstreamCode !== 'CENTER')
+                    .map((station) => station.plotId),
+                ),
+              ];
+              const [plotId] = plots;
+              if (plots.length !== 1 || plotId === undefined) {
+                throw new AppError(
+                  'CONFLICT',
+                  409,
+                  'The source must have one existing plot before adding nodes',
+                );
+              }
+              // Fresh station identities must never inherit SYSTEM station or sharing grants.
+              await transaction.station.createMany({
+                data: importedStationCodes.map((code) => ({
+                  dataSourceId: input.sourceId,
+                  plotId,
+                  upstreamCode: code,
+                  name: code,
+                })),
+              });
+              await this.audits.record(transaction, {
+                actorUserId: input.principal.userId,
+                action: 'DATA_SOURCE_STATIONS_IMPORTED',
+                targetType: 'DataSource',
+                targetId: input.sourceId,
+                requestId: input.requestId,
+                metadata: {
+                  stationCount: importedStationCodes.length,
+                  stationCodes: importedStationCodes,
+                },
+              });
+            }
+            const updated = await transaction.dataSource.findUniqueOrThrow({
+              where: { id: input.sourceId },
+              select: sourceSelect,
+            });
+            return { source: this.toDto(updated, input.principal), importedStationCodes };
+          },
+          { isolationLevel: 'Serializable' },
+        );
+      } catch (error) {
+        const retryable =
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          ['P2002', 'P2034'].includes(error.code);
+        if (!retryable) throw error;
+        if (attempt === 1)
+          throw new AppError('CONFLICT', 409, 'The source changed. Test it and try again.');
+      }
+    }
+    throw new AppError('INTERNAL_ERROR', 500, 'Node import failed');
   }
 
   async recordConnectionTest(input: {

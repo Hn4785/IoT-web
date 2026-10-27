@@ -1,6 +1,6 @@
 # Hướng dẫn sử dụng theo vai trò
 
-Tài liệu mô tả các trang và quyền đang có trong mã frontend `7650b6f`, đối chiếu với backend `abd4080`, ngày 12/10/2026. Đây là căn cứ từ mã nguồn; trạng thái máy chủ và thiết bị thực tế cần kiểm tra riêng khi vận hành.
+Tài liệu mô tả các trang và quyền đang có trong phiên bản `3.0.0`, ngày 27/10/2026. Đây là căn cứ từ mã nguồn; trạng thái máy chủ và thiết bị thực tế cần kiểm tra riêng khi vận hành.
 
 Tên mục trong menu được giữ theo giao diện để người dùng dễ tìm. Chi tiết kết nối API xem tại [Tích hợp frontend và backend](INTEGRATION.md).
 
@@ -122,9 +122,18 @@ Nếu một station lỗi trong **Historical Analysis**, các station thành cô
 Quy trình này áp dụng cho cả Admin và Farmer là chủ nguồn.
 
 Cột **Stations** là số trạm đã đăng ký của nguồn hoặc số trạm được chia sẻ cho
-tài khoản hiện tại. **Test** chỉ kiểm tra kết nối và báo riêng số trạm đất phát
-hiện từ API; thao tác này không thêm trạm hoặc thay đổi quyền chia sẻ. Tên nguồn
-tự sinh theo mẫu cũ được hiển thị bằng hostname, không kèm số trạm lúc tạo.
+tài khoản hiện tại. **Test** kiểm tra kết nối và phát hiện các trạm đất phía nhà cung cấp.
+Nếu có mã trạm mới chưa đăng ký, hệ thống hiển thị thông báo nêu rõ số lượng trạm mới
+kèm danh sách mã và hỏi người dùng có muốn thêm hay không, cung cấp tùy chọn **Review and add nodes**
+hoặc **Later**. Khi không có trạm mới, thông báo xác nhận kết nối thành công và không phát
+hiện trạm mới nào. Chọn **Later** bỏ qua mà không gửi yêu cầu thay đổi dữ liệu.
+Chọn **Review and add nodes** mở hộp thoại chọn trạm; ban đầu không có trạm nào được chọn sẵn
+và chỉ các mã được đánh dấu rõ ràng mới được gửi để thêm vào nguồn. Các trạm mới thuộc
+quyền chủ nguồn hiện tại, hoàn toàn không tự động chia sẻ cho các tài khoản khác (kể cả
+người đã nhận trạm cũ), và quyền các trạm cũ giữ nguyên. Khi thêm thành công, danh sách
+nguồn cập nhật số trạm đăng ký mới kèm thông báo số lượng trạm đã thêm và xác nhận phạm vi
+chia sẻ không thay đổi. Tên nguồn tự sinh theo mẫu cũ được hiển thị bằng hostname, không
+kèm số trạm lúc tạo.
 
 1. Trong **API Sources**, chọn thêm nguồn, nhập URL API và `X-API-Key` hợp lệ; chọn hoặc tạo farm và plot theo biểu mẫu rồi chọn **Connect Source**. Tên nguồn có thể để trống để hệ thống tạo từ kết nối.
 2. Với nguồn sở hữu, chọn **Manage Access**. Nhập ít nhất 3 ký tự của email và chọn **Search accounts**.

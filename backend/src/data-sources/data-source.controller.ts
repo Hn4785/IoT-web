@@ -36,6 +36,10 @@ import {
   parseListGrantCandidates,
   parseRevealDataSource,
   parseSetDataSourceGrant,
+  parseImportSourceStations,
+  importSourceStationsOpenApiSchema,
+  importSourceStationsResultOpenApiSchema,
+  testDataSourceResultOpenApiSchema,
   revealDataSourceOpenApiSchema,
   setDataSourceGrantOpenApiSchema,
   sourceConnectionStatusOpenApiSchema,
@@ -190,6 +194,33 @@ export class DataSourceController {
     };
   }
 
+  @Post(':sourceId/stations')
+  @Header('Cache-Control', 'no-store')
+  @ApiBody({ schema: importSourceStationsOpenApiSchema })
+  @ApiCreatedResponse({
+    description:
+      'Import selected current soil nodes; owner only, no sharing changes. Repeating a selection does not create duplicates.',
+    schema: {
+      properties: { success: { enum: [true] }, data: importSourceStationsResultOpenApiSchema },
+    },
+  })
+  async importStations(
+    @CurrentPrincipal() principal: CurrentPrincipalValue,
+    @Param('sourceId') sourceId: string,
+    @Body() body: unknown,
+    @Req() request: FastifyRequest,
+  ) {
+    return {
+      success: true,
+      data: await this.sources.importStations(
+        principal,
+        parseDataSourceId(sourceId),
+        parseImportSourceStations(body),
+        request.id,
+      ),
+    };
+  }
+
   @Get(':sourceId/stations')
   @Header('Cache-Control', 'no-store')
   async listStations(
@@ -265,6 +296,9 @@ export class DataSourceController {
 
   @Post(':sourceId/test')
   @Header('Cache-Control', 'no-store')
+  @ApiCreatedResponse({
+    schema: { properties: { success: { enum: [true] }, data: testDataSourceResultOpenApiSchema } },
+  })
   async testConnection(
     @CurrentPrincipal() principal: CurrentPrincipalValue,
     @Param('sourceId') sourceId: string,

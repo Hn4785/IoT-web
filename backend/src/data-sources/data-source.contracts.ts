@@ -30,6 +30,20 @@ const revealDataSourceSchema = z.strictObject({
   currentPassword: z.string().min(12).max(128),
 });
 
+const importSourceStationsSchema = z.strictObject({
+  stationCodes: z
+    .array(
+      z
+        .string()
+        .regex(/^[A-Za-z0-9_-]{1,64}$/)
+        .refine((code) => code !== 'CENTER'),
+    )
+    .min(1)
+    .max(100)
+    .refine((codes) => new Set(codes).size === codes.length),
+});
+export type ImportSourceStationsInput = z.output<typeof importSourceStationsSchema>;
+
 const setDataSourceGrantSchema = z.strictObject({
   stationIds: z
     .array(z.uuid())
@@ -118,6 +132,23 @@ export const parseRevealDataSource = (value: unknown): RevealDataSourceInput =>
   parse(revealDataSourceSchema, value, 'Request body is invalid');
 export const parseSetDataSourceGrant = (value: unknown): SetDataSourceGrantInput =>
   parse(setDataSourceGrantSchema, value, 'Request body is invalid');
+export const parseImportSourceStations = (value: unknown): ImportSourceStationsInput =>
+  parse(importSourceStationsSchema, value, 'Select unique soil station codes');
+
+export const importSourceStationsOpenApiSchema: SchemaObject = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['stationCodes'],
+  properties: {
+    stationCodes: {
+      type: 'array',
+      minItems: 1,
+      maxItems: 100,
+      uniqueItems: true,
+      items: { type: 'string', pattern: '^(?!CENTER$)[A-Za-z0-9_-]{1,64}$' },
+    },
+  },
+};
 
 export const setDataSourceGrantOpenApiSchema: SchemaObject = {
   type: 'object',
@@ -229,5 +260,42 @@ export const revealDataSourceOpenApiSchema: SchemaObject = {
   required: ['currentPassword'],
   properties: {
     currentPassword: { type: 'string', minLength: 12, maxLength: 128, writeOnly: true },
+  },
+};
+
+export const importSourceStationsResultOpenApiSchema: SchemaObject = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['source', 'importedStationCodes'],
+  properties: {
+    source: dataSourceOpenApiSchema,
+    importedStationCodes: {
+      type: 'array',
+      items: { type: 'string' },
+      maxItems: 100,
+      uniqueItems: true,
+    },
+  },
+};
+
+export const testDataSourceResultOpenApiSchema: SchemaObject = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['connectionStatus', 'stationCount', 'lastCheckedAt', 'newStationCodes'],
+  properties: {
+    connectionStatus: { type: 'string', enum: ['CONNECTED'] },
+    stationCount: {
+      type: 'integer',
+      minimum: 0,
+      description: 'Current upstream soil-node count, not registered inventory',
+    },
+    lastCheckedAt: { type: 'string', format: 'date-time' },
+    newStationCodes: {
+      type: 'array',
+      uniqueItems: true,
+      items: { type: 'string' },
+      description:
+        'Upstream soil codes not registered to this owned source; no automatic registration or sharing',
+    },
   },
 };
