@@ -19,6 +19,7 @@ const describeDb = isDbAvailable ? describe : describe.skip;
 describeDb('alert-config rules integration (PostgreSQL)', () => {
   let app: NestFastifyApplication;
   let prisma: ReturnType<typeof createTestPrismaClient>;
+  let adminUser: { id: string };
   let adminToken: string;
   let farmerToken: string;
   let clientToken: string;
@@ -64,6 +65,7 @@ describeDb('alert-config rules integration (PostgreSQL)', () => {
         },
       }),
     ]);
+    adminUser = admin;
 
     farmA = await prisma.farm.create({ data: { name: 'Farm A' } });
     farmB = await prisma.farm.create({ data: { name: 'Farm B' } });
@@ -416,6 +418,11 @@ describeDb('alert-config rules integration (PostgreSQL)', () => {
     const responses = await Promise.all([request(), request()]);
     expect(responses.map((response) => response.statusCode)).toEqual([201, 201]);
     expect(responses[0].json().data.id).toBe(responses[1].json().data.id);
+    expect(
+      await prisma.securityAuditEvent.count({
+        where: { action: 'ALERT_RULE_CREATED', targetId: responses[0].json().data.id },
+      }),
+    ).toBe(1);
   });
 
   it('allows only one concurrent PATCH for the same expected revision', async () => {
@@ -445,6 +452,96 @@ describeDb('alert-config rules integration (PostgreSQL)', () => {
       });
     const responses = await Promise.all([patch('CRITICAL'), patch('WARNING')]);
     expect(responses.map((response) => response.statusCode).sort()).toEqual([200, 409]);
+    expect(
+      await prisma.securityAuditEvent.count({
+        where: { action: 'ALERT_RULE_UPDATED', targetId: id },
+      }),
+    ).toBe(1);
+  });
+
+  it('records ALERT_RULE_CREATED and ALERT_RULE_UPDATED with actor, target and requestId, but no duplicate audit on replay or stale patch', async () => {
+    const key = `idem-audit-${randomUUID()}`;
+    const payload = {
+      field: 'nitrogen',
+      unit: 'mg/kg',
+      expectedMetadataRevision: 'demo:v1:nitrogen',
+      condition: { operator: 'BELOW', threshold: 15 },
+      severity: 'WARNING',
+      isEnabled: false,
+    };
+    const createRes = await app.inject({
+      method: 'POST',
+      url: `/api/v1/stations/${stationA.id}/alert-rules`,
+      headers: { authorization: `Bearer ${adminToken}`, 'idempotency-key': key },
+      payload,
+    });
+    expect(createRes.statusCode).toBe(201);
+    const createdRule = createRes.json().data;
+
+    const createAudits = await prisma.securityAuditEvent.findMany({
+      where: { targetType: 'AlertRule', targetId: createdRule.id },
+    });
+    expect(createAudits).toHaveLength(1);
+    const [firstCreateAudit] = createAudits;
+    expect(firstCreateAudit).toEqual(
+      expect.objectContaining({
+        actorUserId: adminUser.id,
+        action: 'ALERT_RULE_CREATED',
+        targetType: 'AlertRule',
+        targetId: createdRule.id,
+        result: 'SUCCESS',
+      }),
+    );
+    expect(firstCreateAudit?.requestId).toBe(createRes.headers['x-request-id']);
+
+    const replayRes = await app.inject({
+      method: 'POST',
+      url: `/api/v1/stations/${stationA.id}/alert-rules`,
+      headers: { authorization: `Bearer ${adminToken}`, 'idempotency-key': key },
+      payload,
+    });
+    expect(replayRes.statusCode).toBe(201);
+    expect(
+      await prisma.securityAuditEvent.count({
+        where: { targetType: 'AlertRule', targetId: createdRule.id },
+      }),
+    ).toBe(1);
+
+    const patchRes = await app.inject({
+      method: 'PATCH',
+      url: `/api/v1/alert-rules/${createdRule.id}`,
+      headers: { authorization: `Bearer ${adminToken}` },
+      payload: { severity: 'CRITICAL', expectedRevision: 1 },
+    });
+    expect(patchRes.statusCode).toBe(200);
+
+    const patchAudits = await prisma.securityAuditEvent.findMany({
+      where: { targetType: 'AlertRule', targetId: createdRule.id, action: 'ALERT_RULE_UPDATED' },
+    });
+    expect(patchAudits).toHaveLength(1);
+    const [firstPatchAudit] = patchAudits;
+    expect(firstPatchAudit).toEqual(
+      expect.objectContaining({
+        actorUserId: adminUser.id,
+        action: 'ALERT_RULE_UPDATED',
+        targetType: 'AlertRule',
+        targetId: createdRule.id,
+        result: 'SUCCESS',
+      }),
+    );
+    expect(firstPatchAudit?.requestId).toBe(patchRes.headers['x-request-id']);
+
+    const staleRes = await app.inject({
+      method: 'PATCH',
+      url: `/api/v1/alert-rules/${createdRule.id}`,
+      headers: { authorization: `Bearer ${adminToken}` },
+      payload: { severity: 'WARNING', expectedRevision: 1 },
+    });
+    expect(staleRes.statusCode).toBe(409);
+    const afterStaleAudits = await prisma.securityAuditEvent.findMany({
+      where: { targetType: 'AlertRule', targetId: createdRule.id, action: 'ALERT_RULE_UPDATED' },
+    });
+    expect(afterStaleAudits).toHaveLength(1);
   });
 
   it('exposes canonical soil metadata in normal runtime and allows owner rule creation', async () => {

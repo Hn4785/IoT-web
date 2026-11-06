@@ -227,8 +227,8 @@ describeDb('latest soil browser HTTP API', () => {
     expect(data1.station.code).toBe('NODE01');
     expect(data1.isFromCache).toBe(false);
     expect(data1.fields).toHaveLength(2);
-    expect(data1.fields[0]).toMatchObject({ field: 'moisture', value: 43, unit: null });
-    expect(data1.fields[1]).toMatchObject({ field: 'temperature', value: 25.5, unit: null });
+    expect(data1.fields[0]).toMatchObject({ field: 'moisture', value: 43, unit: '%' });
+    expect(data1.fields[1]).toMatchObject({ field: 'temperature', value: 25.5, unit: '°C' });
 
     // Admin can also read latest soil data
     const adminRes = await get(

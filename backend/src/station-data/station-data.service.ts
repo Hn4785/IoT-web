@@ -22,11 +22,13 @@ import type {
   LatestSoilQuery,
   NormalizedHistoryPage,
   NormalizedLatestSoil,
+  SoilField,
   SoilHistoryDto,
   SoilHistoryQuery,
 } from './station-data.contracts.js';
 import type { AuthorizedStation } from './station.repository.js';
 import { StationSourceClientResolver } from './station-source-client.resolver.js';
+import { SOIL_METADATA_PROVIDER, type SoilMetadataProvider } from './soil-metadata.provider.js';
 
 @Injectable()
 export class StationDataService {
@@ -52,6 +54,9 @@ export class StationDataService {
     private readonly readings?: SoilReadingRepository,
     @Optional()
     private readonly storedHistory?: StoredHistoryRepository,
+    @Optional()
+    @Inject(SOIL_METADATA_PROVIDER)
+    private readonly metadataProvider?: SoilMetadataProvider,
   ) {
     this.clock = clock ?? { now: () => new Date() };
     this.cache =
@@ -124,7 +129,7 @@ export class StationDataService {
       });
       if (!cacheResult.isFromCache)
         await this.sourceClients?.markConnected(station.dataSourceId, now);
-      return result;
+      return await this.enrichLatestUnits(station, result);
     } catch (error) {
       if (
         !this.readings ||
@@ -139,10 +144,11 @@ export class StationDataService {
         throw error;
       const stored = await this.readings.getLatest(station, query.fields);
       if (!stored) throw error;
-      return toLatestSoilDto(stored, now, this.config.soilStaleAfterMs, {
+      const result = toLatestSoilDto(stored, now, this.config.soilStaleAfterMs, {
         isFromCache: true,
         isStale: true,
       });
+      return await this.enrichLatestUnits(station, result);
     }
   }
 
@@ -153,7 +159,7 @@ export class StationDataService {
         decodeCursor(query.cursor, 'stored-soil-history');
         const stored = await this.storedHistory.getHistory(station, query);
         if (!stored) throw new AppError('NOT_FOUND', 404, 'Resource not found');
-        return stored;
+        return await this.enrichHistoryUnits(station, stored);
       } catch (error) {
         if (!(error instanceof AppError) || error.code !== 'VALIDATION_ERROR') throw error;
         // A v1 upstream cursor is validated below; never reinterpret its boundary locally.
@@ -253,7 +259,7 @@ export class StationDataService {
         : undefined;
       if (!cacheResult.isFromCache)
         await this.sourceClients?.markConnected(station.dataSourceId, now);
-      return {
+      return await this.enrichHistoryUnits(station, {
         stationId: cacheResult.value.stationId,
         dataOrigin: 'upstream',
         ...(coverage ? { coverage } : {}),
@@ -263,7 +269,7 @@ export class StationDataService {
         fetchedAt: cacheResult.value.fetchedAt,
         isFromCache: cacheResult.isFromCache,
         isStale: cacheResult.isStale,
-      };
+      });
     } catch (error) {
       if (
         !this.storedHistory ||
@@ -279,7 +285,73 @@ export class StationDataService {
         throw error;
       const stored = await this.storedHistory.getHistory(station, query);
       if (!stored) throw error;
-      return stored;
+      return await this.enrichHistoryUnits(station, stored);
     }
+  }
+
+  private async resolveUnits(
+    station: AuthorizedStation,
+    fields: readonly SoilField[],
+  ): Promise<Map<SoilField, string | null>> {
+    const units = new Map<SoilField, string | null>();
+    const provider = this.metadataProvider;
+    if (!provider) {
+      return units;
+    }
+    const uniqueFields = Array.from(new Set(fields));
+    await Promise.all(
+      uniqueFields.map(async (field) => {
+        try {
+          let meta = await provider.getFieldMetadata(station.upstreamCode, field);
+          if (!meta.isConfirmed) {
+            meta = await provider.getFieldMetadata(station.id, field);
+          }
+          units.set(field, meta.isConfirmed ? meta.unit : null);
+        } catch {
+          units.set(field, null);
+        }
+      }),
+    );
+    return units;
+  }
+
+  private async enrichLatestUnits(
+    station: AuthorizedStation,
+    dto: LatestSoilDataDto,
+  ): Promise<LatestSoilDataDto> {
+    if (!this.metadataProvider || dto.fields.length === 0) {
+      return dto;
+    }
+    const units = await this.resolveUnits(
+      station,
+      dto.fields.map((f) => f.field),
+    );
+    return {
+      ...dto,
+      fields: dto.fields.map((f) => ({
+        ...f,
+        unit: units.get(f.field) ?? null,
+      })),
+    };
+  }
+
+  private async enrichHistoryUnits(
+    station: AuthorizedStation,
+    dto: SoilHistoryDto,
+  ): Promise<SoilHistoryDto> {
+    if (!this.metadataProvider || dto.series.length === 0) {
+      return dto;
+    }
+    const units = await this.resolveUnits(
+      station,
+      dto.series.map((s) => s.field),
+    );
+    return {
+      ...dto,
+      series: dto.series.map((s) => ({
+        ...s,
+        unit: units.get(s.field) ?? null,
+      })),
+    };
   }
 }

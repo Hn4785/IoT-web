@@ -8,6 +8,7 @@ import type { RuntimeConfig } from '../config/runtime-config.js';
 import { PrismaService } from '../database/prisma.service.js';
 import { Prisma, type SoilAlertField } from '../generated/prisma/client.js';
 import { queueLifecycleNotifications } from '../notifications/notification-delivery.js';
+import { SecurityAuditService } from '../security-audit/security-audit.service.js';
 import {
   SOIL_METADATA_PROVIDER,
   type SoilMetadataProvider,
@@ -32,6 +33,7 @@ export class AlertRuleService {
     private readonly metadataProvider: SoilMetadataProvider,
     @Inject(RUNTIME_CONFIG) private readonly config: RuntimeConfig,
     private readonly stations: StationRepository,
+    private readonly audits: SecurityAuditService,
   ) {}
 
   async listRules(
@@ -90,6 +92,7 @@ export class AlertRuleService {
     stationId: string,
     idempotencyKey: string,
     input: CreateAlertRuleInput,
+    requestId: string,
   ): Promise<AlertRuleDto> {
     this.assertAuthorizedRole(principal);
     const station = await this.requireStationMutation(principal, stationId);
@@ -175,6 +178,13 @@ export class AlertRuleService {
         await tx.idempotencyClaim.update({
           where: { operation_key: { operation: 'RULE_CREATE', key: trimmedKey } },
           data: { status: 'COMPLETED', response: dto },
+        });
+        await this.audits.record(tx, {
+          actorUserId: principal.userId,
+          action: 'ALERT_RULE_CREATED',
+          targetType: 'AlertRule',
+          targetId: created.id,
+          requestId,
         });
         return dto;
       });
@@ -315,6 +325,13 @@ export class AlertRuleService {
         if (result.count !== 1) {
           throw new AlertConfigError('VERSION_CONFLICT', 409, 'Rule revision conflict');
         }
+        await this.audits.record(tx, {
+          actorUserId: principal.userId,
+          action: 'ALERT_RULE_UPDATED',
+          targetType: 'AlertRule',
+          targetId: current.id,
+          requestId,
+        });
         return tx.alertRule.findUniqueOrThrow({ where: { id: current.id } });
       });
       return toAlertRuleDto(updated);

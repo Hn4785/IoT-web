@@ -1,10 +1,10 @@
 # Kiến trúc backend giám sát đất
 
-Phiên bản: 3.0.0. Cập nhật: 27/10/2026.
+Phiên bản: 3.0.0. Cập nhật: 06/11/2026.
 
 Tài liệu liên quan: [tổng quan](../../README.md), [khởi chạy](QUICKSTART.md), [biến môi trường](ENV-REFERENCE.md), [vận hành cục bộ](../operations/LOCAL-RUNBOOK.md), [phân phối và phục hồi](../operations/DELIVERY-RECOVERY.md), [mô hình đe dọa](../security/integration-core-threat-model.md), [bản đồ năng lực](../../CAPABILITY-MAP.md), [quy định đóng góp](../../CONTRIBUTING.md).
 
-Tài liệu mô tả logic backend của mốc `085a4b9`, gồm bản sửa quyền riêng tư `abd4080` ngày 11/10/2026. Nhánh tích hợp đặt backend trong `backend/` và [giao diện web](../../../frontend/README.md) trong `frontend/`. Ngày cập nhật tài liệu không phải ngày chạy lại toàn bộ kiểm thử. Backend chịu trách nhiệm xác thực, phân quyền, dữ liệu, tích hợp, cảnh báo và vận hành.
+Tài liệu mô tả logic backend phiên bản 3.0.0 trên nhánh `main`. Backend nằm trong `backend/` và [giao diện web](../../../frontend/README.md) trong `frontend/`. Ngày cập nhật tài liệu không phải ngày chạy lại toàn bộ kiểm thử. Backend chịu trách nhiệm xác thực, phân quyền, dữ liệu, tích hợp, cảnh báo và vận hành.
 
 ## Luồng dữ liệu và ranh giới hệ thống
 
@@ -175,7 +175,9 @@ erDiagram
 
 Row `origin` có `latest` hoặc `rawHistory`, thể hiện đường nhập số đo. API `dataOrigin` có `upstream` hoặc `stored`, thể hiện đường cung cấp phản hồi. Latest đọc lại snapshot chuẩn trong cơ sở dữ liệu: nếu số đo không khớp phản hồi latest vừa xác nhận, phản hồi được đánh dấu stored/stale. Khi upstream lỗi thuộc nhóm cho phép fallback và có dữ liệu lưu, backend trả stored với `isFromCache=true`, `isStale=true`. Dữ liệu lịch sử lưu có cursor riêng; không diễn giải lại cursor upstream bằng dữ liệu cục bộ.
 
-Lịch sử raw được lưu theo từng field và timestamp; kết quả aggregate từ upstream không được lưu thành mẫu raw. Lịch sử stored có thể tổng hợp theo bucket với mean/min/max/first/last, chỉ trả bucket đầy đủ trong khoảng yêu cầu. Trường unit, sensorId và depthCm của phản hồi số đo hiện là `null`; ứng dụng không được suy ra chúng từ giá trị số. Metadata cho rule được cung cấp qua endpoint riêng theo hợp đồng chuẩn, gồm unit và metadataRevision. Provider mặc định dùng đơn vị chuẩn của hợp đồng đất; chế độ metadata demo chỉ áp dụng các mã trạm được cấu hình. Metadata này không xác nhận danh tính hoặc độ sâu cảm biến ngoài upstream.
+Lịch sử raw được lưu theo từng field và timestamp; kết quả aggregate từ upstream không được lưu thành mẫu raw. Lịch sử stored có thể tổng hợp theo bucket với mean/min/max/first/last, chỉ trả bucket đầy đủ trong khoảng yêu cầu. Phản hồi latest và history dùng `unit` từ provider metadata đã cấu hình khi field được xác nhận; nếu chưa xác nhận, `unit` giữ `null`. Đơn vị được bổ sung ở lớp trả phản hồi, kể cả khi đọc cache hoặc stored, không chuyển đổi giá trị số hoặc thay đổi thời điểm, chất lượng và nguồn dữ liệu. `sensorId` và `depthCm` vẫn là `null` khi không có thông tin xác nhận.
+
+Provider được tra theo mã upstream của trạm, sau đó theo ID trạm nếu kết quả đầu chưa được xác nhận, thống nhất với endpoint metadata cho rule. Provider mặc định dùng đơn vị chuẩn của hợp đồng đất; chế độ metadata demo chỉ áp dụng các mã trạm được cấu hình. Endpoint metadata riêng trả unit và metadataRevision để tạo rule. Metadata này không xác nhận danh tính hoặc độ sâu cảm biến ngoài upstream.
 
 Raw lưu trữ và coverage có cửa sổ giữ 90 ngày. Mỗi yêu cầu raw tối đa 7 ngày; yêu cầu aggregate tối đa 90 ngày. Giới hạn khoảng yêu cầu không phải cam kết có đủ dữ liệu. Retention xóa SoilReading cũ và cắt/xóa coverage theo lô tối đa 5.000; SoilLatestReading vẫn giữ mẫu cuối, có thể đã stale. Stored history tự chặn phần trước cửa sổ 90 ngày ngay cả khi retention chưa dọn xong.
 
@@ -192,6 +194,8 @@ Giới hạn raw mặc định là 10.000.000 mẫu toàn hệ thống và 2.000
 Xóa nguồn là soft delete có transaction: tắt rule, kết thúc cảnh báo chưa resolved với lý do SOURCE_REMOVED, tạo sự kiện phân phối, thu hồi grant và xóa vật liệu khóa. Trạm và dữ liệu lịch sử còn được giữ để bảo toàn bản ghi, nhưng phạm vi đọc hiện tại loại nguồn đã xóa. Lock nguồn trong đường ghi dữ liệu ngăn yêu cầu đang chạy đưa số đo vào sau khi xóa.
 
 ## Cảnh báo và thông báo
+
+Tạo rule thành công ghi `ALERT_RULE_CREATED`; cập nhật rule, bao gồm bật/tắt, ghi `ALERT_RULE_UPDATED` vào `SecurityAuditEvent`. Mỗi bản ghi gắn người thực hiện, ID rule và request ID trong cùng transaction với thay đổi rule. Nếu ghi audit thất bại, thay đổi rule không được commit. Gửi lại yêu cầu tạo với cùng Idempotency-Key và cùng nội dung không tạo thêm rule hoặc audit thành công. Quyền đọc Audit Log và quyền thay đổi rule vẫn theo phân quyền hiện có. `AlertLifecycleEvent` là lịch sử vòng đời cảnh báo riêng, không thay thế audit của thao tác cấu hình rule.
 
 Rule gắn field, đơn vị và revision metadata; đánh giá dừng khi binding không còn xác nhận. Chỉ mẫu latest fresh, có chất lượng good và giá trị hữu hạn mới được đánh giá breach/recovery. Mẫu stored hoặc stale được ghi trạng thái STALE; lỗi upstream, thiếu mẫu và dữ liệu không hợp lệ không tạo breach giả. Lease `alert-evaluator` và khóa rule trong transaction bảo vệ ghi đồng thời. Số mẫu breach/recovery liên tiếp và thời điểm mẫu cuối tránh đếm lại một mẫu. Xem [`alert-evaluation.service.ts`](../../src/alert-config/alert-evaluation.service.ts), [`alert-evaluator.ts`](../../src/alert-config/alert-evaluator.ts).
 
@@ -215,7 +219,7 @@ Prefix API là `/api/v1`; tên tài nguyên dùng danh từ số nhiều, trư�
 | `/notifications`, `/notifications/:notificationId`                                                                                     | Thông báo của người dùng                                                        |
 | `/health`, `/readiness`, `/admin/audit-events`, `/device-configurations/capability`                                                    | Trạng thái dịch vụ, audit và khả năng cấu hình thiết bị                         |
 
-Metadata riêng trả các field được xác nhận và `canManageRules`; cờ này được tính ở máy chủ theo quyền thay đổi. Frontend phải đọc `dataOrigin`, `isStale`, quality và coverage để phân biệt dữ liệu còn fresh với fallback. `null` ở thuộc tính metadata số đo là thông tin chưa có trong DTO, không phải giá trị bằng không. Phân trang là cursor theo hợp đồng từng endpoint; không tái dùng cursor giữa upstream và stored hoặc đổi query của cursor.
+Metadata riêng trả các field được xác nhận và `canManageRules`; cờ này được tính ở máy chủ theo quyền thay đổi. Frontend phải đọc `dataOrigin`, `isStale`, quality và coverage để phân biệt dữ liệu còn fresh với fallback. `null` ở thuộc tính metadata số đo nghĩa là thông tin chưa được xác nhận, không phải giá trị bằng không. Phân trang là cursor theo hợp đồng từng endpoint; không tái dùng cursor giữa upstream và stored hoặc đổi query của cursor.
 
 Tham số history dùng ISO 8601 UTC cho `begin` và `end`. `interval` mặc định là `raw`; raw không nhận `aggregate`, còn `5m`, `30m`, `1h`, `1d` bắt buộc có `mean`, `min`, `max`, `first` hoặc `last`. `limit` mặc định 100, tối đa 500; dùng `nextCursor` để lấy trang tiếp, không tự đổi bộ lọc trong một cursor chain. `fields` chọn các trường đất được contract cho phép: temperature, moisture, ec, ph, nitrogen, phosphorus, potassium, light. Client dùng `station` theo contract client và `X-API-Key`; browser dùng station ID trên đường dẫn và Bearer session.
 

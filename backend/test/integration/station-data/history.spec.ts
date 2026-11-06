@@ -115,8 +115,8 @@ describeDb('soil history browser HTTP API', () => {
       isStale: false,
       page: { nextCursor: null },
       series: [
-        { field: 'moisture', unit: null, points: [{ value: 40 }, { value: 41 }] },
-        { field: 'light', unit: null, points: [{ value: 300 }] },
+        { field: 'moisture', unit: '%', points: [{ value: 40 }, { value: 41 }] },
+        { field: 'light', unit: 'lx', points: [{ value: 300 }] },
       ],
     });
     expect(upstream.requests[0]?.path).toContain('station=NODE01');

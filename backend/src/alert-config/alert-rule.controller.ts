@@ -100,6 +100,7 @@ export class AlertRuleController {
     @Param('stationId') stationId: string,
     @Headers('idempotency-key') idempotencyKey: string | undefined,
     @Body() body: unknown,
+    @Req() request: FastifyRequest,
   ) {
     return {
       success: true,
@@ -108,6 +109,7 @@ export class AlertRuleController {
         parseAlertRuleId(stationId),
         idempotencyKey ?? '',
         parseCreateAlertRule(body),
+        request.id,
       ),
     };
   }
